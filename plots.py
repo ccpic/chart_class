@@ -2,6 +2,177 @@ from base import *
 from wordcloud import WordCloud
 
 
+# 继承基本类，气泡图类
+class PlotBubble(GridFigure):
+    def plot(
+        self,
+        show_label: bool = True,
+        label_limit: int = 20,
+        x_avg_line: bool = None,
+        x_avg_value: float = None,
+        x_avg_label: str = "",
+        y_avg_line: bool = None,
+        y_avg_value: float = None,
+        y_avg_label: str = "",
+        show_reg: bool = False,
+    ):
+        for j, ax in enumerate(self.axes):
+
+            # # 手动强制xy轴最小值/最大值
+            # if x_min is not None and x_min > min(x):
+            #     ax.set_xlim(xmin=x_min)
+            # if x_max is not None and x_max < max(x):
+            #     ax.set_xlim(xmax=x_max)
+            # if y_min is not None and y_min > min(y):
+            #     ax.set_ylim(ymin=y_min)
+            # if y_max is not None and y_max < max(y):
+            #     ax.set_ylim(ymax=y_max)
+
+            df = self.data[j]
+            x = df.iloc[:, 0].tolist()
+            y = df.iloc[:, 1].tolist()
+            z = (df.iloc[:, 2] / df.iloc[:, 2].max() * 100) ** 1.8
+            z = z.tolist()
+            labels = df.index
+
+            # 确定颜色方案
+            cmap = mpl.colors.ListedColormap(np.random.rand(256, 3))
+            colors = iter(cmap(np.linspace(0, 1, len(x))))
+
+            # 绘制气泡
+            for i in range(len(x)):
+                ax.scatter(
+                    x[i], y[i], z[i], color=next(colors), alpha=0.6, edgecolors="black"
+                )
+
+            # 添加系列标签，用adjust_text包保证标签互不重叠
+            if show_label is True:
+                texts = [
+                    plt.text(
+                        x[i],
+                        y[i],
+                        labels[i],
+                        ha="center",
+                        va="center",
+                        multialignment="center",
+                        fontproperties=MYFONT,
+                        fontsize=self.fontsize,
+                    )
+                    for i in range(len(labels[:label_limit]))
+                ]
+                adjust_text(
+                    texts,
+                    force_text=0.5,
+                    arrowprops=dict(arrowstyle="->", color="black"),
+                )
+
+            # 添加x轴分隔线（均值，中位数，0等）
+            if x_avg_line is True:
+                ax.axvline(x_avg_value, linestyle="--", linewidth=1, color="grey")
+                plt.text(
+                    x_avg_value,
+                    ax.get_ylim()[1],
+                    x_avg_label,
+                    ha="left",
+                    va="top",
+                    color="black",
+                    multialignment="center",
+                    fontproperties=MYFONT,
+                    fontsize=self.fontsize,
+                )
+
+            # 添加y轴分隔线（均值，中位数，0等）
+            if y_avg_line is True:
+                ax.axhline(y_avg_value, linestyle="--", linewidth=1, color="grey")
+                plt.text(
+                    ax.get_xlim()[1],
+                    y_avg_value,
+                    y_avg_label,
+                    ha="left",
+                    va="center",
+                    color="black",
+                    multialignment="center",
+                    fontproperties=MYFONT,
+                    fontsize=self.fontsize,
+                )
+
+            # 设置轴标签格式
+            ax.xaxis.set_major_formatter(
+                FuncFormatter(lambda y, _: self.fmt[j].format(y))
+            )
+            ax.yaxis.set_major_formatter(
+                FuncFormatter(lambda y, _: self.fmt[j].format(y))
+            )
+
+            """以下部分绘制回归拟合曲线及CI和PI
+            参考
+            http://nbviewer.ipython.org/github/demotu/BMC/blob/master/notebooks/CurveFitting.ipynb
+            https://stackoverflow.com/questions/27164114/show-confidence-limits-and-prediction-limits-in-scatter-plot
+            """
+            if show_reg:
+                n = len(x)  # 观察例数
+                if n > 2:  # 数据点必须大于cov矩阵的scale
+                    p, cov = np.polyfit(
+                        x, y, 1, cov=True
+                    )  # 简单线性回归返回parameter和covariance
+                    poly1d_fn = np.poly1d(p)  # 拟合方程
+                    y_model = poly1d_fn(x)  # 拟合的y值
+                    m = p.size  # 参数个数
+
+                    dof = n - m  # degrees of freedom
+                    t = stats.t.ppf(0.975, dof)  # 显著性检验t值
+
+                    # 拟合结果绘图
+                    ax.plot(
+                        x,
+                        y_model,
+                        "-",
+                        color="0.1",
+                        linewidth=1.5,
+                        alpha=0.5,
+                        label="Fit",
+                    )
+
+                    # 误差估计
+                    resid = y - y_model  # 残差
+                    s_err = np.sqrt(np.sum(resid ** 2) / dof)  # 标准误差
+
+                    # 拟合CI和PI
+                    x2 = np.linspace(np.min(x), np.max(x), 100)
+                    y2 = poly1d_fn(x2)
+
+                    # CI计算和绘图
+                    ci = (
+                        t
+                        * s_err
+                        * np.sqrt(
+                            1 / n
+                            + (x2 - np.mean(x)) ** 2 / np.sum((x - np.mean(x)) ** 2)
+                        )
+                    )
+                    ax.fill_between(
+                        x2, y2 + ci, y2 - ci, color="#b9cfe7", edgecolor="", alpha=0.5
+                    )
+
+                    # Pi计算和绘图
+                    pi = (
+                        t
+                        * s_err
+                        * np.sqrt(
+                            1
+                            + 1 / n
+                            + (x2 - np.mean(x)) ** 2 / np.sum((x - np.mean(x)) ** 2)
+                        )
+                    )
+                    ax.fill_between(x2, y2 + pi, y2 - pi, color="None", linestyle="--")
+                    ax.plot(
+                        x2, y2 - pi, "--", color="0.5", label="95% Prediction Limits"
+                    )
+                    ax.plot(x2, y2 + pi, "--", color="0.5")
+
+        return self.save()
+
+
 class PlotBoxWithDots(GridFigure):
     def plot(self, show_stats: bool = True) -> str:
         for j, ax in enumerate(self.axes):
