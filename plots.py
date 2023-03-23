@@ -540,3 +540,604 @@ class PlotStackedBar(GridFigure):
                 )
 
         return self.save()
+
+
+# 继承基本类，Histgram分布图类
+class PlotHist(GridFigure):
+    def __init__(
+        self,
+        data,  # 原始数
+        savepath: str = "./plots/",  # 保存位置
+        width: int = 15,  # 宽
+        height: int = 6,  # 高
+        fontsize: int = 14,  # 字体大小
+        title: str = None,  # 图表标题
+        ytitle: str = None,  # y轴标题
+        gs: GridSpec = None,  # GridSpec
+        gs_title: list = None,  # 每个Grid的标题
+        text_diff=None,  # 差异数据
+        *args,
+        **kwargs,
+    ):
+        super().__init__(
+            data,
+            savepath,
+            width,
+            height,
+            fontsize,
+            title,
+            ytitle,
+            gs,
+            gs_title,
+            *args,
+            **kwargs,
+        )
+        self.text_diff = data_to_list(text_diff)
+        if self.text_diff is not None:
+            check_data_with_axes(self.text_diff, self.axes)
+
+    def plot(
+        self,
+        bins: int = 100,
+        tiles: int = 10,
+        show_kde: bool = True,
+        show_metrics: bool = True,
+        show_tiles: bool = False,
+        *args,
+        **kwargs,
+    ):
+        for j, ax in enumerate(self.axes):
+            df = self.data[j]
+            df.plot(
+                kind="hist",
+                density=True,
+                bins=bins,
+                ax=ax,
+                color="grey",
+                legend=None,
+                alpha=0.5,
+            )
+            if show_kde:
+                ax_new = ax.twinx()
+                df.plot(kind="kde", ax=ax_new, color="darkorange", legend=None)
+                # ax_new.get_legend().remove()
+                ax_new.set_yticks([])  # 删除y轴刻度
+                ax_new.set_ylabel(None)
+
+            if "xlim" in kwargs:
+                ax.set_xlim(kwargs["xlim"][j][0], kwargs["xlim"][j][1])  # 设置x轴显示limit
+
+            # ax.set_title(title)
+            # ax.set_xlabel(xlabel)
+            # ax.set_yticks([])  # 删除y轴刻度
+            # ax.set_ylabel(ylabel)
+
+            # 添加百分位信息
+            if show_tiles:
+
+                # 计算百分位数据
+                percentiles = []
+                for i in range(tiles):
+                    percentiles.append(
+                        [df.quantile((i) / tiles), "D" + str(i + 1)]
+                    )  # 十分位Decile
+
+                # 在hist图基础上绘制百分位
+                for i, percentile in enumerate(percentiles):
+                    print(percentile[0])
+                    ax.axvline(percentile[0], color="crimson", linestyle=":")  # 竖分隔线
+                    ax.text(
+                        percentile[0],
+                        ax.get_ylim()[1] * 0.97,
+                        int(percentile[0]),
+                        ha="center",
+                        color="crimson",
+                        fontsize=self.fontsize,
+                    )
+                    if i < tiles - 1:
+                        ax.text(
+                            percentiles[i][0]
+                            + (percentiles[i + 1][0] - percentiles[i][0]) / 2,
+                            ax.get_ylim()[1],
+                            percentile[1],
+                            ha="center",
+                        )
+                    else:
+                        ax.text(
+                            percentiles[tiles - 1][0]
+                            + (ax.get_xlim()[1] - percentiles[tiles - 1][0]) / 2,
+                            ax.get_ylim()[1],
+                            percentile[1],
+                            ha="center",
+                        )
+
+            # 添加均值、中位数等信息
+            if show_metrics:
+                median = np.median(df.values)  # 计算中位数
+                mean = np.mean(df.values)  # 计算平均数
+                if self.text_diff is not None:
+                    median_diff = self.text_diff[j]["中位数"]  # 计算对比中位数
+                    mean_diff = self.text_diff[j]["平均数"]  # 计算对比平均数
+
+                if median > mean:
+                    yindex_median = 0.95
+                    yindex_mean = 0.9
+                    pos_median = "left"
+                    pos_mean = "right"
+                else:
+                    yindex_mean = 0.95
+                    yindex_median = 0.9
+                    pos_median = "right"
+                    pos_mean = "left"
+
+                ax.axvline(median, color="crimson", linestyle=":")
+                ax.text(
+                    median,
+                    ax.get_ylim()[1] * yindex_median,
+                    "中位数：%s(%s)"
+                    % ("{:.0f}".format(median), "{:+.0f}".format(median_diff)),
+                    ha=pos_median,
+                    color="crimson",
+                    fontsize=self.fontsize,
+                )
+
+                ax.axvline(mean, color="purple", linestyle=":")
+                ax.text(
+                    mean,
+                    ax.get_ylim()[1] * yindex_mean,
+                    "平均数：%s(%s)" % ("{:.1f}".format(mean), "{:+.1f}".format(mean_diff)),
+                    ha=pos_mean,
+                    color="purple",
+                    fontsize=self.fontsize,
+                )
+
+            # 去除ticks
+            ax.get_yaxis().set_ticks([])
+
+            # 轴标题
+            # 命名xlabel
+            if "xlabel" in kwargs:
+                ax.set_xlabel(kwargs["xlabel"], fontsize=self.fontsize)
+            ax.set_ylabel("频次", fontsize=self.fontsize)
+
+        return self.save()
+
+
+# 继承基本类，算珠图类
+class PlotStripDot(GridFigure):
+    def __init__(
+        self,
+        data,  # 原始数
+        savepath: str = "./plots/",  # 保存位置
+        width: int = 15,  # 宽
+        height: int = 6,  # 高
+        fontsize: int = 14,  # 字体大小
+        title: str = None,  # 图表标题
+        ytitle: str = None,  # y轴标题
+        gs: GridSpec = None,  # GridSpec
+        gs_title: list = None,  # 每个Grid的标题
+        fmt: list = [",.0f"],  # 每个grid的数字格式
+        text_diff=None,  # 差异数据
+        *args,
+        **kwargs,
+    ):
+        super().__init__(
+            data,
+            savepath,
+            width,
+            height,
+            fontsize,
+            title,
+            ytitle,
+            gs,
+            gs_title,
+            fmt,
+            *args,
+            **kwargs,
+        )
+        self.text_diff = data_to_list(text_diff)
+        check_data_with_axes(self.text_diff, self.axes)
+
+    def plot(
+        self,
+        color: list = ["crimson"],
+    ):
+        check_data_with_axes(color, self.axes)
+
+        fmt_diff = [fmt[:2] + "+" + fmt[2:] for fmt in self.fmt]
+
+        for j, ax in enumerate(self.axes):
+            df = self.data[j]
+            index_range = range(1, len(df.index) + 1)
+            ax.hlines(
+                y=index_range,
+                xmin=df.iloc[:, 0],
+                xmax=df.iloc[:, 1],
+                color="grey",
+                alpha=0.3,
+            )  # 连接线
+            ax.scatter(
+                df.iloc[:, 0],
+                index_range,
+                color="grey",
+                alpha=0.3,
+                label=df.columns[0],
+            )  # 起始端点
+            ax.scatter(
+                df.iloc[:, 1],
+                index_range,
+                color=color[j],
+                alpha=0.4,
+                label=df.columns[1],
+            )  # 结束端点
+
+            # 添加最新时点的数据标签
+            text_gap = (ax.get_xlim()[1] - ax.get_xlim()[0]) / 50
+            for i in index_range:
+                ax.text(
+                    df.iloc[i - 1, 1] + text_gap,
+                    i,
+                    self.fmt[j].format(df.iloc[i - 1, 1]),
+                    ha="left",
+                    va="center",
+                    color=color[j],
+                    fontsize=self.fontsize,
+                    zorder=20,
+                    **NUM_FONT,
+                )
+            # 添加间隔线
+            list_range = list(index_range)
+            list_range.append(max(list_range) + 1)
+            ax.hlines(
+                y=[i - 0.5 for i in list_range],
+                xmin=ax.get_xlim()[0],
+                xmax=ax.get_xlim()[1],
+                color="grey",
+                linestyle="--",
+                linewidth=0.5,
+                alpha=0.2,
+            )
+            ax.set_yticks(index_range, labels=df.index)  # 添加y轴标签
+            ax.tick_params(
+                axis="y", which="major", labelsize=self.fontsize
+            )  # 调整y轴标签字体大小
+            # if j != 0 and j != 2:  # 多图的情况，除第一张图以外删除y轴信息
+            #     ax.get_yaxis().set_ticks([])
+
+            if self.text_diff is not None:
+                if self.text_diff[j] is not None and self.text_diff[j].empty is False:
+                    for i in index_range:
+
+                        idx = df.index[i - 1]
+                        try:
+                            v_diff = self.text_diff[j].loc[idx].values[0]
+                        except:
+                            v_diff = 0
+
+                        # 正负色
+                        if v_diff < 0:
+                            fontcolor = "crimson"
+                        else:
+                            fontcolor = "black"
+
+                        if v_diff > 0:
+                            edgecolor_diff = "green"
+                        elif v_diff < 0:
+                            edgecolor_diff = "red"
+                        else:
+                            edgecolor_diff = "darkorange"
+
+                        if v_diff != 0 and math.isnan(v_diff) is False:
+                            t = ax.text(
+                                ax.get_xlim()[1] * 1.1,
+                                i,
+                                fmt_diff[j].format(v_diff),
+                                ha="center",
+                                va="center",
+                                color=fontcolor,
+                                fontsize=self.fontsize,
+                                zorder=20,
+                                **NUM_FONT,
+                            )
+                            # t.set_bbox(
+                            #     dict(
+                            #         facecolor=edgecolor_diff,
+                            #         alpha=0.25,
+                            #         edgecolor=edgecolor_diff,
+                            #         zorder=20,
+                            #     )
+                            # )
+
+            ax.invert_yaxis()  # 翻转y轴，最上方显示排名靠前的序列
+
+            # 图例
+            ax.legend(
+                # df.columns,
+                loc="lower right",
+                # ncol=4,
+                # bbox_to_anchor=(0.5, -0.1),
+                # labelspacing=1,
+                # frameon=False,
+                prop={"family": "SimHei", "size": self.fontsize},
+            )
+
+        return self.save()
+
+
+# 继承基本类，网格热力图类
+class PlotHeatGrid(GridFigure):
+    def __init__(
+        self,
+        *args,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+
+    def plot(self, cbar: bool = True, cmap: list = ["bwr"], fmt: list = [",.0f"]):
+        check_data_with_axes(cmap, self.axes)
+        check_data_with_axes(fmt, self.axes)
+
+        for j, ax in enumerate(self.axes):
+            df = self.data[j]
+            sns.heatmap(
+                df,
+                ax=ax,
+                annot=True,
+                cbar=cbar,
+                cmap=cmap[j],
+                fmt=fmt[j],
+                annot_kws={"fontsize": self.fontsize},
+            )
+
+            ax.set(ylabel=None)  # 去除y轴标题
+
+        return self.save()
+
+
+# 继承基本类，堆积柱状对比图类
+class PlotBarLine(GridFigure):
+    def plot(self, add_gr_text: bool = False, threshold: float = 0):
+        for j, ax in enumerate(self.axes):
+            # 处理绘图数据
+            df = self.data[j].transpose()
+            df_gr = self.data[j].pct_change(axis=1).transpose()
+
+            # 绝对值bar图和增长率标注
+            for k, index in enumerate(df.index):
+                bottom_pos = 0
+                bottom_neg = 0
+                bottom_gr = 0
+                bbox_props = None
+                for i, col in enumerate(df):
+                    if df.loc[index, col] >= 0:
+                        bottom = bottom_pos
+                    else:
+                        bottom = bottom_neg
+                    # 如果有指定颜色就颜色，否则按预设列表选取
+                    if col in COLOR_DICT.keys():
+                        color = COLOR_DICT[col]
+                    else:
+                        color = COLOR_LIST[i]
+
+                    # 绝对值bar图
+                    ax.bar(
+                        index,
+                        df.loc[index, col],
+                        width=0.5,
+                        color=color,
+                        bottom=bottom,
+                        label=col,
+                    )
+                    if abs(df.loc[index, col]) >= threshold:
+                        ax.text(
+                            index,
+                            bottom + df.loc[index, col] / 2,
+                            self.fmt[j].format(df.loc[index, col]),
+                            color="white",
+                            va="center",
+                            ha="center",
+                            fontsize=self.fontsize,
+                        )
+                    if df.loc[index, col] >= 0:
+                        bottom_pos += df.loc[index, col]
+                    else:
+                        bottom_neg += df.loc[index, col]
+
+                    patches = ax.patches
+                    for rect in patches:
+                        height = rect.get_height()
+                        # 负数则添加纹理
+                        if height < 0:
+                            rect.set_hatch("//")
+
+                    if add_gr_text:
+                        if k > 0:
+                            # 各系列增长率标注
+                            ax.annotate(
+                                "{:+.1%}".format(df_gr.iloc[k, i]),
+                                xy=(
+                                    0.5,
+                                    (
+                                        bottom_gr
+                                        + df.iloc[k - 1, i] / 2
+                                        + df.iloc[k, i] / 2
+                                    )
+                                    / 2,
+                                ),
+                                ha="center",
+                                va="center",
+                                color=color,
+                                fontsize=self.fontsize,
+                                bbox=bbox_props,
+                            )
+                            bottom_gr += df.iloc[k - 1, i] + df.iloc[k, i]
+            # 图例
+            box = ax.get_position()
+            ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+            handles, labels = ax.get_legend_handles_labels()
+            by_label = dict(
+                zip(
+                    labels[::-1],
+                    handles[::-1],
+                )
+            )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
+            ax.legend(
+                by_label.values(),
+                by_label.keys(),
+                loc="center left",
+                ncol=1,
+                bbox_to_anchor=(1, 0.5),
+                labelspacing=1,
+                frameon=False,
+                prop={"family": "SimHei", "size": self.fontsize},
+            )
+
+            ax.axhline(0, color="black", linewidth=0.5)  # y轴为0的横线
+            ax.get_yaxis().set_ticks([])  # 去除y ticks
+
+            ax.tick_params(axis="x", labelrotation=0)  # x轴标签旋转
+
+        return self.save()
+
+
+# 继承基本类，堆积柱状对比图（增强型）类
+class PlotStackedBarPlus(GridFigure):
+    def plot(self):
+        H_INDEX = 1.03  # 外框对比bar的高度系数
+        for j, ax in enumerate(self.axes):
+            # 处理绘图数据
+            df = self.data[j].transpose()
+            df_share = self.data[j].apply(lambda x: x / x.sum()).transpose()
+            df_gr = self.data[j].pct_change(axis=1).transpose()
+
+            # 绝对值bar图和增长率标注
+            for k, index in enumerate(df.index):
+                bottom = 0
+                bottom_gr = 0
+                bbox_props = None
+                for i, col in enumerate(df):
+                    # 如果有指定颜色就颜色，否则按预设列表选取
+                    if col in COLOR_DICT.keys():
+                        color = COLOR_DICT[col]
+                    else:
+                        color = COLOR_LIST[i]
+
+                    # 绝对值bar图
+                    ax.bar(
+                        index,
+                        df.loc[index, col],
+                        width=0.5,
+                        color=color,
+                        bottom=bottom,
+                        label=col,
+                    )
+                    ax.text(
+                        index,
+                        bottom + df.loc[index, col] / 2,
+                        "{:,.0f}".format(df.loc[index, col])
+                        + "("
+                        + "{:.1%}".format(df_share.loc[index, col])
+                        + ")",
+                        color="white",
+                        va="center",
+                        ha="center",
+                        fontsize=self.fontsize,
+                    )
+                    bottom += df.loc[index, col]
+
+                    if k > 0:
+                        # 各系列增长率标注
+                        ax.annotate(
+                            "{:+.1%}".format(df_gr.iloc[k, i]),
+                            xy=(
+                                0.5,
+                                (bottom_gr + df.iloc[k - 1, i] / 2 + df.iloc[k, i] / 2)
+                                / 2,
+                            ),
+                            ha="center",
+                            va="center",
+                            color=color,
+                            fontsize=self.fontsize,
+                            bbox=bbox_props,
+                        )
+                        bottom_gr += df.iloc[k - 1, i] + df.iloc[k, i]
+
+                # 绘制总体增长率
+                if k > 0:
+                    gr = df.iloc[k, :].sum() / df.iloc[k - 1, :].sum() - 1
+
+                    ax.annotate(
+                        "{:+.1%}".format(gr),
+                        xy=(
+                            0.5,
+                            (df.iloc[k, :].sum() + df.iloc[k - 1, :].sum())
+                            / 2
+                            * (H_INDEX + 0.02),
+                        ),
+                        ha="center",
+                        va="center",
+                        color="black",
+                        fontsize=self.fontsize,
+                        bbox=bbox_props,
+                    )
+            # 绘制总体表现外框
+            ax.bar(
+                df.index,
+                df.sum(axis=1) * H_INDEX,
+                width=0.6,
+                linewidth=1,
+                linestyle="--",
+                facecolor=(1, 0, 0, 0.0),
+                edgecolor=(0, 0, 0, 1),
+            )
+            for index in df.index:
+                ax.text(
+                    index,
+                    df.loc[index, :].sum() * (H_INDEX + 0.02),
+                    "{:,.0f}".format(df.loc[index, :].sum()),
+                    ha="center",
+                    fontsize=self.fontsize,
+                )
+
+            # 因为有总体数量标签，增加一些图表高度
+            box = ax.get_position()
+            ax.set_position(
+                [box.x0, box.y0 - box.height * 0.1, box.width, box.height * 1.1]
+            )
+
+            # 图例
+            if len(self.axes) > 1:  # 平行多图时的情况
+                ax.legend(
+                    df.columns,
+                    loc="upper center",
+                    ncol=4,
+                    bbox_to_anchor=(0.5, -0.1),
+                    labelspacing=1,
+                    frameon=False,
+                    prop={"family": "SimHei", "size": self.fontsize},
+                )
+            else:  # 单图时的情况
+                box = ax.get_position()
+                ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+                handles, labels = ax.get_legend_handles_labels()
+                by_label = dict(
+                    zip(
+                        labels[::-1],
+                        handles[::-1],
+                    )
+                )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
+                ax.legend(
+                    by_label.values(),
+                    by_label.keys(),
+                    loc="center left",
+                    ncol=1,
+                    bbox_to_anchor=(1, 0.5),
+                    labelspacing=1,
+                    frameon=False,
+                    prop={"family": "SimHei", "size": self.fontsize},
+                )
+            # 去除ticks
+            # ax.get_xaxis().set_ticks([])
+            ax.get_yaxis().set_ticks([])
+
+        return self.save()
