@@ -3,8 +3,62 @@ from wordcloud import WordCloud
 
 
 class PlotBoxWithDots(GridFigure):
-    def plot(self) -> str:
-        pass
+    def plot(self, show_stats: bool = True) -> str:
+        for j, ax in enumerate(self.axes):
+            try:
+                df = self.data[j]
+            except IndexError:
+                ax.axis("off")
+                continue
+
+            x = df.columns[0]
+            y = df.columns[1]
+
+            ax = sns.stripplot(
+                x=x,
+                y=y,
+                data=df,
+                edgecolor="black",
+                alpha=0.5,
+                s=8,
+                linewidth=1.0,
+                jitter=0.2,
+                ax=ax,
+            )
+            ax = sns.boxplot(
+                x=x,
+                y=y,
+                data=df,
+                whis=np.inf,
+                boxprops={"facecolor": "None"},
+            )
+
+            # 添加最大值， 最小值，中位数标签
+            if show_stats:
+                df_groupby = df.groupby(x)[y]
+                maxs = df_groupby.max()  # 最高值
+                mins = df_groupby.min()  # 最低值
+                medians = df_groupby.median()  # 中位数
+                for l in [maxs, mins, medians]:
+                    for xtick in ax.get_xticks():
+                        if xtick > 0:
+                            if l is medians:
+                                posx = xtick + 0.4
+                            else:
+                                posx = xtick + 0.25
+
+                            ax.text(
+                                posx,
+                                l[xtick],
+                                self.fmt[j].format(l[xtick]),
+                                horizontalalignment="left",
+                                verticalalignment="center",
+                                size=self.fontsize,
+                                color="black",
+                                weight="semibold",
+                            )
+
+        return self.save()
 
 
 class PlotWordCloud(GridFigure):
@@ -124,7 +178,7 @@ class PlotLine(GridFigure):
                                     self.fmt[j].format(df.iloc[k, i]),
                                     ha="right" if k == 0 else "left",
                                     va="center",
-                                    size="small",
+                                    size=self.fontsize,
                                     color="white",
                                 )
 
@@ -138,7 +192,7 @@ class PlotLine(GridFigure):
                                 self.fmt[j].format(df.iloc[k, i]),
                                 ha="center",
                                 va="center",
-                                size="small",
+                                size=self.fontsize,
                                 color="white",
                             )
                             t.set_bbox(

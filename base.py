@@ -33,6 +33,16 @@ MYFONT = fm.FontProperties(fname="C:/Windows/Fonts/SimHei.ttf")
 NUM_FONT = {"fontname": "Calibri"}
 
 COLOR_DICT = {
+    "最好的20%（90分）": "darkgreen",
+    "较好的20%（70分）": "olivedrab",
+    "中等的20%（50分）": "darkorange",
+    "较差的20%（30分）": "pink",
+    "最差的20%（10分）": "crimson",
+    "Top20%": "darkgreen",
+    "Top-Mid20%": "olivedrab",
+    "Mid20%": "darkorange",
+    "Mid-Bottom20%": "pink",
+    "Bottom20%": "crimson",
     "200MG * 1": "#44546A",
     "100MG * 2": "#6F8DB9",
     "100MG * 1": "#6F8DB9",
@@ -499,6 +509,7 @@ COLOR_LIST = [
     "magenta",
 ]
 
+
 class UnequalDataGridError(Exception):
     def __init__(self, message):
         super().__init__(message)
@@ -719,7 +730,7 @@ class GridFigure(Figure):
                         which="major",
                         color=self.style["major_grid"],
                         axis="both",
-                        linestyle="-",
+                        linestyle=":",
                         linewidth=0.5,
                     )
 
@@ -1355,7 +1366,6 @@ class PlotBubble(GridFigure):
         return self.save()
 
 
-
 # # 继承基本类，线形图
 # class PlotLine(GridFigure):
 #     def plot(
@@ -1668,8 +1678,6 @@ class PlotHorizontalBar(GridFigure):
             #             )
             #
         return self.save()
-
-
 
 
 # 继承基本类，堆积柱状对比图（增强型）类
