@@ -2,36 +2,48 @@ from base import *
 from wordcloud import WordCloud
 
 
-# 继承基本类，气泡图类
+# 继承基本类, 气泡图
 class PlotBubble(GridFigure):
     def plot(
         self,
-        show_label: bool = True,
-        label_limit: int = 20,
-        x_avg_line: bool = None,
-        x_avg_value: float = None,
-        x_avg_label: str = "",
-        y_avg_line: bool = None,
-        y_avg_value: float = None,
-        y_avg_label: str = "",
-        show_reg: bool = False,
-    ):
+        x_fmt: str = "{:.0%}",
+        y_fmt: str = "{:+.0%}",
+        x_avg: float = None,
+        y_avg: float = None,
+        label_limit: int = 15,
+        bubble_scale: float = 1,
+        show_reg=False,
+        corr: Union[None, float] = None,
+    ) -> str:
+        """继承基本类，绘制散点图
+        Parameters
+        ----------
+        x_fmt : str, optional
+            x轴数值格式字符串, by default "{:.0%}"
+        y_fmt : str, optional
+            y轴数值格式字符串, by default "{:+.0%}"
+        x_avg : float, optional
+            x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线, by default None
+        y_avg : float, optional
+            y轴平均值或其他分隔值，如提供则绘制y轴分隔竖线, by default None
+        label_limit : int, optional
+            限制显示标签的个数, by default 15
+        bubble_scale : float, optional
+            气泡大小系数, by default 1
+        show_reg : bool, optional
+            是否显示x,y的拟合趋势及置信区间, by default False
+        corr : float, optional
+            相关系数, by default False
+        Returns
+        -------
+        str
+            生成图片并返回保存路径
+        """
         for j, ax in enumerate(self.axes):
-
-            # # 手动强制xy轴最小值/最大值
-            # if x_min is not None and x_min > min(x):
-            #     ax.set_xlim(xmin=x_min)
-            # if x_max is not None and x_max < max(x):
-            #     ax.set_xlim(xmax=x_max)
-            # if y_min is not None and y_min > min(y):
-            #     ax.set_ylim(ymin=y_min)
-            # if y_max is not None and y_max < max(y):
-            #     ax.set_ylim(ymax=y_max)
-
             df = self.data[j]
             x = df.iloc[:, 0].tolist()
             y = df.iloc[:, 1].tolist()
-            z = (df.iloc[:, 2] / df.iloc[:, 2].max() * 100) ** 1.8
+            z = (df.iloc[:, 2] / df.iloc[:, 2].max() * 100) ** 1.8 * bubble_scale
             z = z.tolist()
             labels = df.index
 
@@ -46,33 +58,37 @@ class PlotBubble(GridFigure):
                 )
 
             # 添加系列标签，用adjust_text包保证标签互不重叠
-            if show_label is True:
-                texts = [
-                    plt.text(
-                        x[i],
-                        y[i],
-                        labels[i],
-                        ha="center",
-                        va="center",
-                        multialignment="center",
-                        fontproperties=MYFONT,
-                        fontsize=self.fontsize,
-                    )
-                    for i in range(len(labels[:label_limit]))
-                ]
-                adjust_text(
-                    texts,
-                    force_text=0.5,
-                    arrowprops=dict(arrowstyle="->", color="black"),
-                )
 
-            # 添加x轴分隔线（均值，中位数，0等）
-            if x_avg_line is True:
-                ax.axvline(x_avg_value, linestyle="--", linewidth=1, color="grey")
+            texts = [
                 plt.text(
-                    x_avg_value,
+                    x[i],
+                    y[i],
+                    labels[i],
+                    ha="center",
+                    va="center",
+                    multialignment="center",
+                    fontproperties=MYFONT,
+                    fontsize=self.fontsize,
+                )
+                for i in range(len(labels[:label_limit]))
+            ]
+            adjust_text(
+                texts,
+                force_text=0.5,
+                arrowprops=dict(arrowstyle="->", color="black"),
+            )
+
+            # 设置坐标轴格式
+            ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: x_fmt.format(x)))
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: y_fmt.format(y)))
+
+            # 绘制平均线
+            if x_avg is not None:
+                ax.axvline(x_avg, linestyle="--", linewidth=1, color="black")
+                plt.text(
+                    x_avg,
                     ax.get_ylim()[1],
-                    x_avg_label,
+                    x_fmt.format(x_avg),
                     ha="left",
                     va="top",
                     color="black",
@@ -80,14 +96,12 @@ class PlotBubble(GridFigure):
                     fontproperties=MYFONT,
                     fontsize=self.fontsize,
                 )
-
-            # 添加y轴分隔线（均值，中位数，0等）
-            if y_avg_line is True:
-                ax.axhline(y_avg_value, linestyle="--", linewidth=1, color="grey")
+            if y_avg is not None:
+                ax.axhline(y_avg, linestyle="--", linewidth=1, color="black")
                 plt.text(
                     ax.get_xlim()[1],
-                    y_avg_value,
-                    y_avg_label,
+                    y_avg,
+                    y_fmt.format(y_avg),
                     ha="left",
                     va="center",
                     color="black",
@@ -95,14 +109,6 @@ class PlotBubble(GridFigure):
                     fontproperties=MYFONT,
                     fontsize=self.fontsize,
                 )
-
-            # 设置轴标签格式
-            ax.xaxis.set_major_formatter(
-                FuncFormatter(lambda y, _: self.fmt[j].format(y))
-            )
-            ax.yaxis.set_major_formatter(
-                FuncFormatter(lambda y, _: self.fmt[j].format(y))
-            )
 
             """以下部分绘制回归拟合曲线及CI和PI
             参考
@@ -151,7 +157,12 @@ class PlotBubble(GridFigure):
                         )
                     )
                     ax.fill_between(
-                        x2, y2 + ci, y2 - ci, color="#b9cfe7", edgecolor="", alpha=0.5
+                        x2,
+                        y2 + ci,
+                        y2 - ci,
+                        color="#b9cfe7",
+                        edgecolor=["none"],
+                        alpha=0.5,
                     )
 
                     # Pi计算和绘图
@@ -170,11 +181,44 @@ class PlotBubble(GridFigure):
                     )
                     ax.plot(x2, y2 + pi, "--", color="0.5")
 
+                    # Add corr
+            if corr is not None:
+                plt.text(
+                    0.02,
+                    0.96,
+                    "x,y相关系数：" + str(corr),
+                    horizontalalignment="left",
+                    verticalalignment="center",
+                    transform=ax.transAxes,
+                    fontproperties=MYFONT,
+                    fontsize=10,
+                )
         return self.save()
 
 
 class PlotBoxWithDots(GridFigure):
-    def plot(self, show_stats: bool = True) -> str:
+    def plot(
+        self,
+        show_stats: bool = True,
+        order: Union[None, list] = None,
+        dot_size: int = 8,
+    ) -> str:
+        """继承基本类，绘制带数据点的箱型图
+
+        Parameters
+        ----------
+        show_stats : bool, optional
+            是否显示统计值，包括最大值、最小值、中位数, by default True
+        order : Union[None, list], optional
+            类别按什么排序，如果为None则按照数据自动排序, by default None
+        dot_size : int, optional
+            数据点大小, by default 8
+
+        Returns
+        -------
+        str
+            返回绘图保存的路径
+        """
         for j, ax in enumerate(self.axes):
             try:
                 df = self.data[j]
@@ -191,10 +235,11 @@ class PlotBoxWithDots(GridFigure):
                 data=df,
                 edgecolor="black",
                 alpha=0.5,
-                s=8,
+                s=dot_size,
                 linewidth=1.0,
                 jitter=0.2,
                 ax=ax,
+                order=order,
             )
             ax = sns.boxplot(
                 x=x,
@@ -202,32 +247,34 @@ class PlotBoxWithDots(GridFigure):
                 data=df,
                 whis=np.inf,
                 boxprops={"facecolor": "None"},
+                order=order,
             )
 
             # 添加最大值， 最小值，中位数标签
             if show_stats:
+                ax_xticklabels = [t.get_text() for t in ax.get_xticklabels()]
                 df_groupby = df.groupby(x)[y]
-                maxs = df_groupby.max()  # 最高值
-                mins = df_groupby.min()  # 最低值
-                medians = df_groupby.median()  # 中位数
+                maxs = df_groupby.max().reindex(ax_xticklabels)  # 最高值
+                mins = df_groupby.min().reindex(ax_xticklabels)  # 最低值
+                medians = df_groupby.median().reindex(ax_xticklabels)  # 中位数
+
                 for l in [maxs, mins, medians]:
                     for xtick in ax.get_xticks():
-                        if xtick > 0:
-                            if l is medians:
-                                posx = xtick + 0.4
-                            else:
-                                posx = xtick + 0.25
+                        if l is medians:
+                            posx = xtick + 0.4
+                        else:
+                            posx = xtick + 0.25
 
-                            ax.text(
-                                posx,
-                                l[xtick],
-                                self.fmt[j].format(l[xtick]),
-                                horizontalalignment="left",
-                                verticalalignment="center",
-                                size=self.fontsize,
-                                color="black",
-                                weight="semibold",
-                            )
+                        ax.text(
+                            posx,
+                            l[xtick],
+                            self.fmt[j].format(l[xtick]),
+                            horizontalalignment="left",
+                            verticalalignment="center",
+                            size=self.fontsize,
+                            color="black",
+                            weight="semibold",
+                        )
 
         return self.save()
 
@@ -266,7 +313,6 @@ class PlotWordCloud(GridFigure):
             d_words = {}
             for index, row in df.iterrows():
                 d_words[index] = row[0]
-            print(d_words)
 
             if mask_shape == "circle":
                 # 产生一个以(150,150)为圆心,半径为130的圆形mask
@@ -468,7 +514,6 @@ class PlotStackedBar(GridFigure):
         for j, ax in enumerate(self.axes):
             # 处理绘图数据
             df = self.data[j]
-            print(df)
             df_gr = self.data[j].pct_change(axis=1)
             if self.data_line is not None:
                 df_line = self.data_line[j]
@@ -795,7 +840,6 @@ class PlotHist(GridFigure):
 
                 # 在hist图基础上绘制百分位
                 for i, percentile in enumerate(percentiles):
-                    print(percentile[0])
                     ax.axvline(percentile[0], color="crimson", linestyle=":")  # 竖分隔线
                     ax.text(
                         percentile[0],
