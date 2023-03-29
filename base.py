@@ -589,6 +589,7 @@ class GridFigure(Figure):
         check_data_with_axes(self.fmt, self.axes)
 
     def set_default_style(self):
+        # print(self.gs.nrows*self.gs.ncols, len(self.axes))
         if self.style is None:
             return
         # 总标题
@@ -622,15 +623,11 @@ class GridFigure(Figure):
 
             # 旋转x轴标签
             if "xlabel_rotation" in self.style:
-                ax.tick_params(
-                    axis="x", labelrotation=self.style["xlabel_rotation"]
-                )
+                ax.tick_params(axis="x", labelrotation=self.style["xlabel_rotation"])
 
             # 旋转y轴标签
             if "ylabel_rotation" in self.style:
-                ax.tick_params(
-                    axis="y", labelrotation=self.style["ylabel_rotation"]
-                )
+                ax.tick_params(axis="y", labelrotation=self.style["ylabel_rotation"])
 
                 # 去除x轴ticks
             if "remove_xticks" in self.style and self.style["remove_xticks"]:
@@ -650,19 +647,16 @@ class GridFigure(Figure):
 
                 # 多个子图情况下只显示最下方图片的x轴label
             if "last_xticks_only" in self.style:
-                gs = self.axes[0].get_gridspec()
-                ncols = gs.ncols
-
-                if self.style["last_xticks_only"] and i < len(self.axes) - ncols:
-                    ax.get_xaxis().set_ticks([])
+                if (
+                    self.style["last_xticks_only"]
+                    and (i % self.gs.nrows) != self.gs.nrows - 1
+                ):
+                    ax.get_xaxis().set_visible(False)
 
                 # 多个子图情况下只显示最左边图片的x轴label
             if "first_yticks_only" in self.style:
-                gs = self.axes[0].get_gridspec()
-                ncols = gs.ncols
-
-                if self.style["first_yticks_only"] and (i % ncols) != 0:
-                    ax.get_yaxis().set_ticks([])
+                if self.style["first_yticks_only"] and (i % self.gs.ncols) != 0:
+                    ax.get_xaxis().set_visible(False)
 
                 # 隐藏上/右边框
             if (
@@ -677,7 +671,7 @@ class GridFigure(Figure):
             # x轴显示lim
             if "xlim" in self.style:
                 ax.set_xlim(self.style["xlim"][i][0], self.style["xlim"][i][1])
-                
+
             # y轴显示lim，如果有多个y轴需要注意传参的个数
             if "ylim" in self.style:
                 ax.set_ylim(self.style["ylim"][i][0], self.style["ylim"][i][1])
@@ -687,7 +681,7 @@ class GridFigure(Figure):
                     pass
                 if ax2 is not None:
                     ax2.set_ylim(self.style["ylim"][i][0], self.style["ylim"][i][1])
-                    
+
             if "same_ylim" in self.style and self.style["same_ylim"]:
                 ylim_min, ylim_max = ax.get_ylim()
                 if i == 0:
@@ -701,7 +695,7 @@ class GridFigure(Figure):
                         ax.set_ylim(top=ylim_range[1])
                     else:
                         ylim_range = [ylim_range[0], ylim_max]
-                        
+
             if "same_xlim" in self.style and self.style["same_xlim"]:
                 xlim_min, xlim_max = ax.get_xlim()
                 if i == 0:
@@ -711,7 +705,7 @@ class GridFigure(Figure):
                         xlim_range = [xlim_min, xlim_range[1]]
                     if xlim_max > xlim_range[1]:
                         xlim_range = [xlim_range[0], xlim_max]
-                        
+
             # # 次坐标y轴显示lim
             # if "y2lim" in self.style:
             #     ax2 = ax.get_shared_x_axes().get_siblings(ax)[0]

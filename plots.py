@@ -799,38 +799,6 @@ class PlotStackedBar(GridFigure):
 
 # 继承基本类，Histgram分布图类
 class PlotHist(GridFigure):
-    def __init__(
-        self,
-        data,  # 原始数
-        savepath: str = "./plots/",  # 保存位置
-        width: int = 15,  # 宽
-        height: int = 6,  # 高
-        fontsize: int = 14,  # 字体大小
-        title: str = None,  # 图表标题
-        ytitle: str = None,  # y轴标题
-        gs: GridSpec = None,  # GridSpec
-        gs_title: list = None,  # 每个Grid的标题
-        text_diff=None,  # 差异数据
-        *args,
-        **kwargs,
-    ):
-        super().__init__(
-            data,
-            savepath,
-            width,
-            height,
-            fontsize,
-            title,
-            ytitle,
-            gs,
-            gs_title,
-            *args,
-            **kwargs,
-        )
-        self.text_diff = data_to_list(text_diff)
-        if self.text_diff is not None:
-            check_data_with_axes(self.text_diff, self.axes)
-
     def plot(
         self,
         bins: int = 100,
@@ -838,8 +806,7 @@ class PlotHist(GridFigure):
         show_kde: bool = True,
         show_metrics: bool = True,
         show_tiles: bool = False,
-        *args,
-        **kwargs,
+        ind: list = None,
     ):
         for j, ax in enumerate(self.axes):
             df = self.data[j]
@@ -854,13 +821,10 @@ class PlotHist(GridFigure):
             )
             if show_kde:
                 ax_new = ax.twinx()
-                df.plot(kind="kde", ax=ax_new, color="darkorange", legend=None)
+                df.plot(kind="kde", ax=ax_new, color="darkorange", legend=None, ind=ind)
                 # ax_new.get_legend().remove()
                 ax_new.set_yticks([])  # 删除y轴刻度
                 ax_new.set_ylabel(None)
-
-            if "xlim" in kwargs:
-                ax.set_xlim(kwargs["xlim"][j][0], kwargs["xlim"][j][1])  # 设置x轴显示limit
 
             # ax.set_title(title)
             # ax.set_xlabel(xlabel)
@@ -909,9 +873,9 @@ class PlotHist(GridFigure):
             if show_metrics:
                 median = np.median(df.values)  # 计算中位数
                 mean = np.mean(df.values)  # 计算平均数
-                if self.text_diff is not None:
-                    median_diff = self.text_diff[j]["中位数"]  # 计算对比中位数
-                    mean_diff = self.text_diff[j]["平均数"]  # 计算对比平均数
+                # if self.text_diff is not None:
+                #     median_diff = self.text_diff[j]["中位数"]  # 计算对比中位数
+                #     mean_diff = self.text_diff[j]["平均数"]  # 计算对比平均数
 
                 if median > mean:
                     yindex_median = 0.95
@@ -928,8 +892,7 @@ class PlotHist(GridFigure):
                 ax.text(
                     median,
                     ax.get_ylim()[1] * yindex_median,
-                    "中位数：%s(%s)"
-                    % ("{:.0f}".format(median), "{:+.0f}".format(median_diff)),
+                    f"中位数：{self.fmt[j].format(median)}",
                     ha=pos_median,
                     color="crimson",
                     fontsize=self.fontsize,
@@ -939,7 +902,7 @@ class PlotHist(GridFigure):
                 ax.text(
                     mean,
                     ax.get_ylim()[1] * yindex_mean,
-                    "平均数：%s(%s)" % ("{:.1f}".format(mean), "{:+.1f}".format(mean_diff)),
+                    f"平均数：{self.fmt[j].format(mean)}",
                     ha=pos_mean,
                     color="purple",
                     fontsize=self.fontsize,
@@ -949,9 +912,6 @@ class PlotHist(GridFigure):
             ax.get_yaxis().set_ticks([])
 
             # 轴标题
-            # 命名xlabel
-            if "xlabel" in kwargs:
-                ax.set_xlabel(kwargs["xlabel"], fontsize=self.fontsize)
             ax.set_ylabel("频次", fontsize=self.fontsize)
 
         return self.save()
