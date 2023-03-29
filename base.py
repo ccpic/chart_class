@@ -21,8 +21,8 @@ from adjustText import adjust_text
 from itertools import cycle
 
 
-mpl.rcParams["font.sans-serif"] = ["SimHei"]
-mpl.rcParams["font.serif"] = ["SimHei"]
+mpl.rcParams["font.sans-serif"] = ["Microsoft YaHei"]
+mpl.rcParams["font.serif"] = ["Microsoft YaHei"]
 mpl.rcParams["axes.unicode_minus"] = False
 mpl.rcParams.update({"font.size": 16})
 mpl.rcParams["hatch.linewidth"] = 0.5
@@ -674,10 +674,10 @@ class GridFigure(Figure):
                 ax.yaxis.set_ticks_position("left")
                 ax.xaxis.set_ticks_position("bottom")
 
-            # # x轴显示lim
-            # if "xlim" in self.style:
-            #     ax.set_xlim(self.style["xlim"][i][0], self.style["xlim"][i][1])
-
+            # x轴显示lim
+            if "xlim" in self.style:
+                ax.set_xlim(self.style["xlim"][i][0], self.style["xlim"][i][1])
+                
             # y轴显示lim，如果有多个y轴需要注意传参的个数
             if "ylim" in self.style:
                 ax.set_ylim(self.style["ylim"][i][0], self.style["ylim"][i][1])
@@ -687,6 +687,7 @@ class GridFigure(Figure):
                     pass
                 if ax2 is not None:
                     ax2.set_ylim(self.style["ylim"][i][0], self.style["ylim"][i][1])
+                    
             if "same_ylim" in self.style and self.style["same_ylim"]:
                 ylim_min, ylim_max = ax.get_ylim()
                 if i == 0:
@@ -700,6 +701,7 @@ class GridFigure(Figure):
                         ax.set_ylim(top=ylim_range[1])
                     else:
                         ylim_range = [ylim_range[0], ylim_max]
+                        
             if "same_xlim" in self.style and self.style["same_xlim"]:
                 xlim_min, xlim_max = ax.get_xlim()
                 if i == 0:
@@ -709,6 +711,7 @@ class GridFigure(Figure):
                         xlim_range = [xlim_min, xlim_range[1]]
                     if xlim_max > xlim_range[1]:
                         xlim_range = [xlim_range[0], xlim_max]
+                        
             # # 次坐标y轴显示lim
             # if "y2lim" in self.style:
             #     ax2 = ax.get_shared_x_axes().get_siblings(ax)[0]
