@@ -1,4 +1,5 @@
 from base import *
+from color import COLOR_DICT, COLOR_LIST
 from wordcloud import WordCloud
 
 
