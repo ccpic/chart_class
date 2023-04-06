@@ -8,7 +8,7 @@ import os
 from numpy.core.arrayprint import str_format
 from numpy.lib.function_base import iterable
 import pandas as pd
-from typing import Union, List
+from typing import Any, Callable, Dict, List, Tuple, Union
 import matplotlib.font_manager as fm
 import matplotlib as mpl
 import seaborn as sns
@@ -29,8 +29,9 @@ mpl.rcParams["hatch.linewidth"] = 0.5
 mpl.rcParams["hatch.color"] = "grey"
 
 # sns.set_theme(style="whitegrid")
-MYFONT = fm.FontProperties(fname="C:/Windows/Fonts/Microsoft YaHei.ttf")
+MYFONT = fm.FontProperties(fname="C:/Windows/Fonts/SimHei.ttf")
 NUM_FONT = {"fontname": "Calibri"}
+
 
 class UnequalDataGridError(Exception):
     def __init__(self, message):
@@ -60,7 +61,7 @@ def check_data_with_axes(data: list, axes: axes):
 
 class GridFigure(Figure):
     """
-    一个matplotlib图表基本类，主要实现:
+    一个matplotlib图表类，用以简化原始matplotlib及应用符合自己日常习惯的一些设置:
     数据预处理，
     grid,
     宽高设置，
@@ -71,14 +72,14 @@ class GridFigure(Figure):
 
     def __init__(
         self,
-        data,  # 原始数
-        savepath: str = "./plots/",  # 保存位置
+        data: Union[list, tuple, pd.DataFrame, pd.Series],  # 原始数
+        savepath: str = "/plots/",  # 保存位置
         width: int = 15,  # 宽
         height: int = 6,  # 高
         fontsize: int = 14,  # 字体大小
         gs: GridSpec = None,  # GridSpec
-        fmt: list = [",.0f"],  # 每个grid的数字格式
-        style: dict = None,  # 风格字典
+        fmt: str = "{:,.0f}",  # 基本数字格式
+        style: Dict[str, Any] = {},  # 风格字典
         *args,
         **kwargs,
     ):
@@ -88,7 +89,7 @@ class GridFigure(Figure):
         self.height = height
         self.fontsize = fontsize
         self.gs = gs
-        self.fmt = ["{:%s}" % f for f in fmt]
+        self.fmt = fmt
         self.style = style
 
         # 所有数据处理成列表格式
@@ -106,9 +107,6 @@ class GridFigure(Figure):
 
         # 检查grid大小和数据是否匹配
         check_data_with_axes(self.data, self.axes)
-
-        # 检查grid大小与数字格式是否匹配
-        check_data_with_axes(self.fmt, self.axes)
 
     def set_default_style(self):
         # print(self.gs.nrows*self.gs.ncols, len(self.axes))
@@ -261,16 +259,18 @@ class GridFigure(Figure):
                 ax.set_xlim(ylim_range[0], ylim_range[1])
 
     def save(self):
-
         # 设置一些基本格式
         self.set_default_style()
 
+        script_dir = os.path.dirname(__file__)
+        plot_dir = f"{script_dir}{self.savepath}"
+
         # 保存
-        if os.path.exists(self.savepath) is False:
-            os.makedirs(self.savepath)
+        if os.path.exists(plot_dir) is False:
+            os.makedirs(plot_dir)
 
         path = "%s%s.png" % (
-            self.savepath,
+            plot_dir,
             "test"
             if "title" not in self.style
             else self.style["title"].replace("/", "_"),

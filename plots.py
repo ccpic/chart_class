@@ -142,7 +142,7 @@ class PlotBubble(GridFigure):
 
                     # 误差估计
                     resid = y - y_model  # 残差
-                    s_err = np.sqrt(np.sum(resid ** 2) / dof)  # 标准误差
+                    s_err = np.sqrt(np.sum(resid**2) / dof)  # 标准误差
 
                     # 拟合CI和PI
                     x2 = np.linspace(np.min(x), np.max(x), 100)
@@ -308,7 +308,7 @@ class PlotBoxWithDots(GridFigure):
                         ax.text(
                             posx,
                             l[xtick],
-                            self.fmt[j].format(l[xtick]),
+                            self.fmt.format(l[xtick]),
                             horizontalalignment="left",
                             verticalalignment="center",
                             size=self.fontsize,
@@ -357,7 +357,7 @@ class PlotWordCloud(GridFigure):
             if mask_shape == "circle":
                 # 产生一个以(150,150)为圆心,半径为130的圆形mask
                 x, y = np.ogrid[:600, :600]
-                mask = (x - 300) ** 2 + (y - 300) ** 2 > 260 ** 2
+                mask = (x - 300) ** 2 + (y - 300) ** 2 > 260**2
                 mask = 255 * mask.astype(int)
                 wordcloud = WordCloud(
                     width=800,
@@ -432,7 +432,7 @@ class PlotLine(GridFigure):
                                 t = plt.text(
                                     idx,
                                     df.iloc[k, i],
-                                    self.fmt[j].format(df.iloc[k, i]),
+                                    self.fmt.format(df.iloc[k, i]),
                                     ha="right" if k == 0 else "left",
                                     va="center",
                                     size=self.fontsize,
@@ -446,7 +446,7 @@ class PlotLine(GridFigure):
                             t = plt.text(
                                 idx,
                                 df.iloc[k, i],
-                                self.fmt[j].format(df.iloc[k, i]),
+                                self.fmt.format(df.iloc[k, i]),
                                 ha="center",
                                 va="center",
                                 size=self.fontsize,
@@ -461,7 +461,7 @@ class PlotLine(GridFigure):
 
                 # y轴标签格式
                 ax.yaxis.set_major_formatter(
-                    FuncFormatter(lambda y, _: self.fmt[j].format(y))
+                    FuncFormatter(lambda y, _: self.fmt.format(y))
                 )
 
                 # Shrink current axis by 20% and put a legend to the right of the current axis
@@ -488,8 +488,8 @@ class PlotStackedBar(GridFigure):
         height: int = 6,  # 高
         fontsize: int = 14,  # 字体大小
         gs: GridSpec = None,  # GridSpec
-        fmt: list = [",.0f"],  # 每个grid的数字格式
-        style: dict = {"title": "test"},  # 风格字典
+        fmt: str = "{:,.0f}",  # 基本数字格式
+        style: dict = {},  # 风格字典
         data_line=None,  # 折线图数据
         fmt_line=None,  # 折线图格式
         *args,
@@ -641,7 +641,7 @@ class PlotStackedBar(GridFigure):
                             ax.text(
                                 pos_x,
                                 pos_y,
-                                self.fmt[j].format(v),
+                                self.fmt.format(v),
                                 color=fontcolor,
                                 va=va,
                                 ha="center",
@@ -689,7 +689,7 @@ class PlotStackedBar(GridFigure):
                         ax.text(
                             x=p,
                             y=v,
-                            s=self.fmt[j].format(float(v)),
+                            s=self.fmt.format(float(v)),
                             fontsize=self.fontsize,
                             ha="center",
                             va="bottom",
@@ -709,13 +709,12 @@ class PlotStackedBar(GridFigure):
 
             # y轴标签格式
             ax.yaxis.set_major_formatter(
-                FuncFormatter(lambda y, _: self.fmt[j].format(y))
+                FuncFormatter(lambda y, _: self.fmt.format(y))
             )
 
             ax.axhline(0, color="black", linewidth=0.5)  # y轴为0的横线
 
             if self.data_line is not None:
-
                 # 增加次坐标轴
                 ax2 = ax.twinx()
 
@@ -834,7 +833,6 @@ class PlotHist(GridFigure):
 
             # 添加百分位信息
             if show_tiles:
-
                 # 计算百分位数据
                 percentiles = []
                 for i in range(tiles):
@@ -893,7 +891,7 @@ class PlotHist(GridFigure):
                 ax.text(
                     median,
                     ax.get_ylim()[1] * yindex_median,
-                    f"中位数：{self.fmt[j].format(median)}",
+                    f"中位数：{self.fmt.format(median)}",
                     ha=pos_median,
                     color="crimson",
                     fontsize=self.fontsize,
@@ -903,7 +901,7 @@ class PlotHist(GridFigure):
                 ax.text(
                     mean,
                     ax.get_ylim()[1] * yindex_mean,
-                    f"平均数：{self.fmt[j].format(mean)}",
+                    f"平均数：{self.fmt.format(mean)}",
                     ha=pos_mean,
                     color="purple",
                     fontsize=self.fontsize,
@@ -992,7 +990,7 @@ class PlotStripDot(GridFigure):
                 ax.text(
                     df.iloc[i - 1, 1] + text_gap,
                     i,
-                    self.fmt[j].format(df.iloc[i - 1, 1]),
+                    self.fmt.format(df.iloc[i - 1, 1]),
                     ha="left",
                     va="center",
                     color=color[j],
@@ -1022,7 +1020,6 @@ class PlotStripDot(GridFigure):
             if self.text_diff is not None:
                 if self.text_diff[j] is not None and self.text_diff[j].empty is False:
                     for i in index_range:
-
                         idx = df.index[i - 1]
                         try:
                             v_diff = self.text_diff[j].loc[idx].values[0]
@@ -1147,7 +1144,7 @@ class PlotBarLine(GridFigure):
                         ax.text(
                             index,
                             bottom + df.loc[index, col] / 2,
-                            self.fmt[j].format(df.loc[index, col]),
+                            self.fmt.format(df.loc[index, col]),
                             color="white",
                             va="center",
                             ha="center",
@@ -1356,3 +1353,10 @@ class PlotStackedBarPlus(GridFigure):
             ax.get_yaxis().set_ticks([])
 
         return self.save()
+
+
+if __name__ == "__main__":
+    plot_data = pd.DataFrame({"a": [1, 2, 3], "b": [3, 5, 4], "z": [1, 1, 1]})
+    print(plot_data)
+    p = PlotStackedBar(data=plot_data)
+    p.plot(show_total_label=True)
