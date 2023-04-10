@@ -1,51 +1,36 @@
 import pandas as pd
 from typing import Any, Callable, Dict, List, Tuple, Union
 
-class DfAnalyzer(pd.DataFrame):
-    @property
-    def _constructor(self):
-        return DfAnalyzer._internal_constructor(self.__class__)
 
-    class _internal_constructor(object):
-        def __init__(self, cls):
-            self.cls = cls
-
-        def __call__(self, *args, **kwargs):
-            kwargs["name"] = None
-            # kwargs["date_column"] = None
-            return self.cls(*args, **kwargs)
-
-        def _from_axes(self, *args, **kwargs):
-            return self.cls._from_axes(*args, **kwargs)
-
+class DfAnalyzer:
     def __init__(
         self,
         data: pd.DataFrame,
         name: str,
         date_column: str = None,
         sorter: Dict[str, list] = {},
-        savepath: str = "./plots/",
-        index=None,
-        columns=None,
-        dtype=None,
-        copy=True,
+        save_path: str = "/plots/",
     ):
-        super(DfAnalyzer, self).__init__(
-            data=data, index=index, columns=columns, dtype=dtype, copy=copy
-        )
+        """一个自定义类用来分析pandas dataframe
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            原始数
+        name : str
+            数据集名称，可用在后续绘图的标题等处
+        date_column : str, optional
+            时间戳字段名称（如有）, by default None
+        sorter : Dict[str, list], optional
+            排序字典，key为要排序的字段名，value为排序顺序, by default {}
+        save_path : str, optional
+            导出数据或生成图片的文件路径, by default "/plots/"
+        """
         self.data = data
         self.name = name
         self.date_column = date_column
         self.sorter = sorter
-        self.savepath = savepath
-
-    # # 根据列名和列值做数据筛选
-    # def filtered(self, filter: dict = None):
-    #     if filter is not None:
-    #         # https: // stackoverflow.com / questions / 38137821 / filter - dataframe - using - dictionary
-    #         return self[self.isin(filter).sum(1) == len(filter.keys())]
-    #     else:
-    #         return self
+        self.save_path = save_path
 
     # 透视
     def get_pivot(
@@ -61,9 +46,8 @@ class DfAnalyzer(pd.DataFrame):
         fillna: bool = True,
         **kwargs,
     ) -> pd.DataFrame:
-
         pivoted = pd.pivot_table(
-            self.query(query_str),
+            self.data.query(query_str),
             values=values,
             index=index,
             columns=columns,
@@ -113,9 +97,13 @@ class DfAnalyzer(pd.DataFrame):
         #     pivoted.columns = pd.to_datetime(pivoted.columns, format='%Y-%m')
 
         return pivoted
-    
+
 
 if __name__ == "__main__":
     df = pd.DataFrame({"a": [1, 1, 3], "b": [3, 5, 4], "z": [1, 1, 1]})
-    a = DfAnalyzer(df,"test")
-    print(a.get_pivot(index="a",))
+    a = DfAnalyzer(df, "test")
+    print(
+        a.get_pivot(
+            index="a",
+        )
+    )
