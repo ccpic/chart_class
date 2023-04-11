@@ -2,11 +2,34 @@ import pandas as pd
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from dateutil.parser import parse
 
 try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
+
+
+class DateFormatError(Exception):
+    def __init__(self, message: str):
+        """构造日期格式错误类，接收一个message参数，用于设置错误信息
+
+        Parameters
+        ----------
+        message : str
+            异常错误信息
+        """
+        self.message = message
+
+    def __str__(self) -> str:
+        """重写__str__方法，返回错误信息
+
+        Returns
+        -------
+        str
+            返回错误信息字符串
+        """
+        return repr(self.message)
 
 
 class DateRange:
@@ -193,7 +216,7 @@ class DfAnalyzer:
         name : str
             数据集名称，可用在后续绘图的标题等处
         date_column : Optional[str], optional
-            时间戳字段名称（如有）, by default None
+            指定时间戳字段名称（如有）, by default None
         sorter : Dict[str, list], optional
             排序字典，key为要排序的字段名，value为排序顺序, by default {}
         save_path : str, optional
@@ -202,6 +225,16 @@ class DfAnalyzer:
         self.data = data
         self.name = name
         self.date_column = date_column
+
+        if self.date_column is not None:
+            try:
+                self.date = pd.to_datetime(
+                    self.data[self.date_column]
+                ).max()  # 如有时间戳字段，尝试寻找最后一期时间
+                self.date_range = DateRange(self.date)
+            except:
+                raise DateFormatError("时间戳字段解析失败")
+
         self.sorter = sorter
         self.save_path = save_path
 
@@ -310,7 +343,6 @@ class DfAnalyzer:
 
 
 if __name__ == "__main__":
-    d = DateRange(datetime(year=2023, month=5, day=21))
-    print(d.mon(yoy_period=True, last_period=True))
-    # df = pd.read_excel("阿里出库.xlsx", engine="openpyxl")
-    # print(df.dtypes)
+    df = pd.read_excel("data.xlsx", engine="openpyxl")
+    a = DfAnalyzer(data=df, name="test", date_column="Date")
+    print(a.date_range.mat())
