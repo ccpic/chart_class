@@ -1,10 +1,178 @@
 import pandas as pd
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
+
+
+class DateRange:
+    def __init__(self, date: datetime):
+        self.date = date
+        """通过一个目标日期，生成对应该日期的MAT, MQT, YTD时间戳
+
+        Parameters
+        ----------
+        date: datetime
+            目标时间, 所有后续计算都围绕这个时间
+        """
+
+    def mat(
+        self,
+        freq: Literal["MS", "3MS", "Q", "D"] = "MS",  # 这里要用M而不是MS因为是month start
+        strftime: str = "%Y-%m",
+        yoy_period: bool = False,
+    ) -> List[str]:
+        """返回一个滚动年的时间戳字符串列表
+
+        Parameters
+        ----------
+        freq : Literal["MS", "3MS", "Q", "D"], optional
+            时间间距, by default "MS"
+            "MS": by月
+            "3MS": by3个月
+            "Q": by自然季，月份只会出现3,6,9,12
+            "D": by天
+        strftime: str, optional
+            时间戳字符串的格式, by default "%Y-%m"
+        yoy_period: bool, optional
+            是否同比, by default False
+        Returns
+        -------
+        List[str]
+            返回滚动年的时间戳字符串列表
+        """
+
+        mat_begin = self.date + relativedelta(months=-11)
+
+        offset = relativedelta(years=-1) if yoy_period else relativedelta(years=0)
+
+        mat = pd.date_range(
+            start=mat_begin + offset,
+            end=self.date + offset,
+            freq=freq,
+        )
+
+        return mat.strftime(strftime).to_list()
+
+    def ytd(
+        self,
+        freq: Literal["MS", "3MS", "Q", "D"] = "MS",  # 这里要用M而不是MS因为是month start
+        strftime: str = "%Y-%m",
+        yoy_period: bool = False,
+    ) -> List[str]:
+        """返回一个YTD(年至今)的时间戳字符串列表
+
+        Parameters
+        ----------
+        freq : Literal["MS", "3MS", "Q", "D"], optional
+            时间间距, by default "MS"
+            "MS": by月
+            "3MS": by3个月
+            "Q": by自然季，月份只会出现3,6,9,12
+            "D": by天
+        strftime: str, optional
+            时间戳字符串的格式, by default "%Y-%m"
+        yoy_period: bool, optional
+            是否同比, by default False
+        Returns
+        -------
+        List[str]
+            返回YTD(年至今)的时间戳字符串列表
+        """
+
+        ytd_begin = self.date.replace(month=1)
+
+        offset = relativedelta(years=-1) if yoy_period else relativedelta(years=0)
+
+        ytd = pd.date_range(
+            start=ytd_begin + offset,
+            end=self.date + offset,
+            freq=freq,
+        )
+
+        return ytd.strftime(strftime).to_list()
+
+    def mqt(
+        self,
+        freq: Literal["MS", "D"] = "MS",  # 这里要用M而不是MS因为是month start
+        strftime: str = "%Y-%m",
+        yoy_period: bool = False,
+        last_period: bool = False,
+    ) -> List[str]:
+        """返回一个滚动季的时间戳字符串列表
+
+        Parameters
+        ----------
+        freq : Literal["MS", "D"], optional
+            时间间距, by default "MS"
+            "MS": by月
+            "D": by天
+        strftime: str, optional
+            时间戳字符串的格式, by default "%Y-%m"
+        yoy_period: bool, optional
+            是否同比, by default False
+        last_period: bool, optional
+            是否环比, by default False
+        Returns
+        -------
+        List[str]
+            返回滚动季的时间戳字符串列表
+        """
+
+        mqt_begin = self.date + relativedelta(months=-2)
+
+        offset1 = relativedelta(years=-1) if yoy_period else relativedelta(years=0)
+        offset2 = relativedelta(months=-3) if last_period else relativedelta(months=0)
+
+        mqt = pd.date_range(
+            start=mqt_begin + offset1 + offset2,
+            end=self.date + offset1 + offset2,
+            freq=freq,
+        )
+
+        return mqt.strftime(strftime).to_list()
+
+    def mon(
+        self,
+        freq: Literal["MS", "D"] = "MS",
+        strftime: str = "%Y-%m",
+        yoy_period: bool = False,
+        last_period: bool = False,
+    ) -> List[str]:
+        """返回一个单月的时间戳字符串列表
+
+        Parameters
+        ----------
+        freq : Literal["MS", "3MS", "Q", "D"], optional
+            时间间距, by default "MS"
+            "MS": by月
+            "3MS": by3个月
+            "Q": by自然季，月份只会出现3,6,9,12
+            "D": by天
+        strftime: str, optional
+            时间戳字符串的格式, by default "%Y-%m"
+        yoy_period: bool, optional
+            是否同比, by default False
+        Returns
+        -------
+        List[str]
+            返回YTD(年至今)的时间戳字符串列表
+        """
+
+        offset1 = relativedelta(years=-1) if yoy_period else relativedelta(years=0)
+        offset2 = relativedelta(months=-1) if last_period else relativedelta(months=0)
+
+        mon = pd.date_range(
+            start=self.date.replace(day=1) + offset1 + offset2,
+            end=self.date + offset1 + offset2,
+            freq=freq,
+        )
+
+        return mon.strftime(strftime).to_list()
 
 
 class DfAnalyzer:
@@ -142,11 +310,7 @@ class DfAnalyzer:
 
 
 if __name__ == "__main__":
-    df = pd.read_excel("data.xlsx", engine="openpyxl")
-
-    a = DfAnalyzer(df, name="test", date_column="Date")
-    print(
-        a.get_pivot(
-            index="Date", values="数值", query_str="药品名称=='阿柏西普眼内注射溶液'", sort_values=None
-        )
-    )
+    d = DateRange(datetime(year=2023, month=5, day=21))
+    print(d.mon(yoy_period=True, last_period=True))
+    # df = pd.read_excel("阿里出库.xlsx", engine="openpyxl")
+    # print(df.dtypes)
