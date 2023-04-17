@@ -592,12 +592,13 @@ class PlotStackedBar(GridFigure):
                     # bar宽度
                     bar_width = 0
                     if stacked:
-                        if isinstance(
-                            df.index, pd.DatetimeIndex
-                        ):  # 如果x轴是日期，宽度是以“天”为单位的
-                            bar_width = 20
-                        else:
-                            bar_width = 0.5
+                        bar_width = 0.5
+                        # if isinstance(
+                        #     df.index, pd.DatetimeIndex
+                        # ):  # 如果x轴是日期，宽度是以“天”为单位的
+                        #     bar_width = 20
+                        # else:
+                        #     bar_width = 0.5
                     else:
                         bar_width = 0.8 / df.shape[1]
 
@@ -616,6 +617,7 @@ class PlotStackedBar(GridFigure):
                         bottom=bottom,
                         label=col,
                     )
+
                     if show_label is True:
                         if stacked is False or df.shape[1] == 1:  # 非堆叠图或只有一列数的情况（非堆叠）
                             # 根据数据判断标签是否需要微调
@@ -637,7 +639,7 @@ class PlotStackedBar(GridFigure):
                             va = "center"
                             fontcolor = "white"
 
-                        if abs(v) >= threshold:
+                        if abs(v / ax.get_ylim()[1]) >= threshold:
                             ax.text(
                                 pos_x,
                                 pos_y,
@@ -704,13 +706,11 @@ class PlotStackedBar(GridFigure):
             else:
                 plt.xticks(np.arange(df.shape[0]), df.index)
 
-            # # x轴标签
-            # ax.get_xaxis().set_ticks(range(0, len(df.index)), labels=df.index)
+            # x轴标签
+            ax.get_xaxis().set_ticks(range(0, len(df.index)), labels=df.index)
 
             # y轴标签格式
-            ax.yaxis.set_major_formatter(
-                FuncFormatter(lambda y, _: self.fmt.format(y))
-            )
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: self.fmt.format(y)))
 
             ax.axhline(0, color="black", linewidth=0.5)  # y轴为0的横线
 
