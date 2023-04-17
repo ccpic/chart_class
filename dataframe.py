@@ -472,5 +472,15 @@ if __name__ == "__main__":
         .div(100000000)
     )
     print(pivoted)
-    f = PlotStackedBar(data=pivoted, style={"xlabel_rotation": 90})
+    f = PlotStackedBar(
+        data=pivoted,
+        style={
+            "title": "Test",
+            "xticklabel_rotation": 90,
+            "remove_yticks": True,
+            "xlabel": "年份",
+            "ylabel": "金额",
+        },
+    )
+    f.style.set_title(title="陈诚")
     f.plot(show_total_label=True)
