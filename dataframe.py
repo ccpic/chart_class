@@ -1,3 +1,4 @@
+from __future__ import annotations
 import pandas as pd
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 from datetime import datetime
@@ -5,6 +6,8 @@ from dateutil.relativedelta import relativedelta
 from dateutil.parser import parse
 from plots import PlotStackedBar
 import copy
+import matplotlib.dates as mdates
+
 
 try:
     from typing import Literal
@@ -230,13 +233,14 @@ class DfAnalyzer:
 
         if self.date_column is not None:
             try:
-                self.date = pd.to_datetime(
+                self.data[self.date_column] = pd.to_datetime(
                     self.data[self.date_column]
-                ).max()  # 如有时间戳字段，尝试寻找最后一期时间
-                self._freq = pd.infer_freq(
-                    pd.to_datetime(self.data[self.date_column]).unique()
-                )  # 自动判断时间戳字段的频率间隔是多少
+                )  # 尝试将时间戳字段转换为datetime格式
+                self.date = self.data[self.date_column].max()  # 如有时间戳字段，尝试寻找最后一期时间
+                self._freq = pd.infer_freq(self.data[self.date_column].unique())
+                # 自动判断时间戳字段的频率间隔是多少
                 self.date_range = DateRange(self.date)
+
             except:
                 raise DateError("时间戳字段解析失败")
 
@@ -263,6 +267,7 @@ class DfAnalyzer:
         sort_asc: bool = False,
         dropna: bool = True,
         fillna: Optional[Union[int, float, str]] = 0,
+        strftime: str = "%Y-%m",
     ) -> pd.DataFrame:
         """生成一个数据透视表，比直接用pd.pivot_table更适合日常场景
 
@@ -290,12 +295,15 @@ class DfAnalyzer:
             是否删除所有都是缺失值的整行或整列, by default True
         fillna : Optional[Union[int, float, str]] , optional
             缺失值替换, by default 0
+        strftime: str, optional
+            如果index是日期格式，则转换为字符串的格式, by default "%Y-%m"
 
         Returns
         -------
         pd.DataFrame
             返回一个数据透视后的pandas df
         """
+        # 将日期列转换为Pandas日期时间类型，并设置为索引
 
         _df = pd.pivot_table(
             self.data.query(query_str),
@@ -306,10 +314,15 @@ class DfAnalyzer:
         )
         # pivot table对象转为默认df
         _df = pd.DataFrame(_df.to_records())
+
         try:
             _df.set_index(index, inplace=True)
         except KeyError:  # 当index=None时，捕捉错误并set_index("index"字符串)
             _df.set_index("index", inplace=True)
+
+        # 如果index是日期格式，则根据格式转换为字符串
+        if index == self.date_column:
+            _df.index = _df.index.strftime(strftime)
 
         if sort_values == "rows_by_last_col":
             _df = _df.sort_values(by=_df.columns[-1], ascending=sort_asc)
@@ -356,7 +369,7 @@ class DfAnalyzer:
         ],
         cols_grouper: Union[List[str], str],
         cols_amount: Union[List[str], str],
-    ) -> pd.DataFrame:
+    ) -> DfAnalyzer:
         """如有时间戳字段，将self.data转换为别的时间模式，原始数据可以为季度或月度数据
 
         Parameters
@@ -388,11 +401,9 @@ class DfAnalyzer:
         new_obj = copy.copy(self)
         _df = self.data.copy()
 
-        # 将日期列转换为Pandas日期时间类型，并设置为索引
-        _df[self.date_column] = pd.to_datetime(_df[self.date_column])
         _df.set_index(self.date_column, inplace=True)
 
-        if period in ["MAT, MQT"]:
+        if period in ["MAT", "MQT"]:
             # 根据时间戳间隔和转换目标，确定滚动周期，如本身数据如为QS(Quarter Start)，想转换为MAT数据，则滚动周期为4
             if self._freq[:2] == "QS":
                 if period == "MAT":
@@ -404,7 +415,7 @@ class DfAnalyzer:
                     rolling_window = 12
                 elif period == "MQT":
                     rolling_window = 3
-
+    
             # 按影响rolling计算的字段分组，并计算每个日期的滚动总计
             grouped = _df.groupby(cols_grouper)
             rolling = (
@@ -440,7 +451,7 @@ class DfAnalyzer:
             _df = _df.merge(
                 right=grouped, how="right", on=cols_grouper + [self.date_column]
             )
-
+        _df.to_excel("test.xlsx")
         # 解决merge后重复列都保留并自动重命名的问题
         if isinstance(cols_amount, str):
             cols_amount = [cols_amount]
@@ -460,13 +471,16 @@ if __name__ == "__main__":
     df = pd.read_excel("data.xlsx", engine="openpyxl")
     a = DfAnalyzer(data=df, name="test", date_column="Date")
     a = a.transform(
-        period="YEAR",
+        period="MAT",
         cols_grouper=["分子+年份+降幅", "CORPORATION", "PACKAGE", "数值类型"],
         cols_amount="数值",
     )
     pivoted = (
         a.get_pivot(
-            index=a.date_column, columns="谈判年份", query_str="数值类型=='金额'", values="数值"
+            index=a.date_column,
+            columns="谈判年份",
+            query_str="数值类型=='金额'",
+            values="数值",
         )
         .sort_index()
         .div(100000000)
@@ -477,10 +491,10 @@ if __name__ == "__main__":
         style={
             "title": "Test",
             "xticklabel_rotation": 90,
-            "remove_yticks": True,
             "xlabel": "年份",
             "ylabel": "金额",
+            # "hide_top_right_spines": True,
         },
     )
-    f.style.set_title(title="陈诚")
+    f.style.title(title="陈诚")
     f.plot(show_total_label=True)

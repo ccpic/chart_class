@@ -616,6 +616,7 @@ class PlotStackedBar(GridFigure):
                         color=color,
                         bottom=bottom,
                         label=col,
+                        zorder=3,
                     )
 
                     if show_label is True:
@@ -701,10 +702,13 @@ class PlotStackedBar(GridFigure):
                 # ax.set_position([box.x0, box.y0, box.width, box.height * 1.1])
 
             # 如果是非堆叠图要手动指定x轴ticks
+            # 解析日期字符串并将其转换为 Matplotlib 内部日期格式
             if stacked is False:
-                plt.xticks(np.arange(df.shape[0]) + bar_width / df.shape[1], df.index)
+                ax.set_xticks(
+                    np.arange(df.shape[0]) + bar_width / df.shape[1], df.index
+                )
             else:
-                plt.xticks(np.arange(df.shape[0]), df.index)
+                ax.set_xticks(np.arange(df.shape[0]), df.index)
 
             # x轴标签
             ax.get_xaxis().set_ticks(range(0, len(df.index)), labels=df.index)

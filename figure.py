@@ -12,7 +12,7 @@ from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 import matplotlib.font_manager as fm
 import matplotlib as mpl
 import seaborn as sns
-from matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import FuncFormatter, StrMethodFormatter
 import textwrap
 import math
 import matplotlib.dates as mdates
@@ -33,7 +33,7 @@ mpl.rcParams.update({"font.size": 16})
 mpl.rcParams["hatch.linewidth"] = 0.5
 mpl.rcParams["hatch.color"] = "grey"
 
-# sns.set_theme(style="whitegrid")
+# sns.theme(style="whitegrid")
 MYFONT = fm.FontProperties(fname="C:/Windows/Fonts/SimHei.ttf")
 NUM_FONT = {"fontname": "Calibri"}
 
@@ -106,9 +106,9 @@ class GridFigure(Figure):
         # Grid
         if gs is not None:
             for axes in gs:
-                ax = self.add_subplot(axes)
+                self.add_subplot(axes)
         else:
-            ax = self.add_subplot(111)
+            self.add_subplot(111)
 
         # 检查grid大小和数据是否匹配
         check_data_with_axes(self.data, self.axes)
@@ -119,58 +119,52 @@ class GridFigure(Figure):
         def __init__(self, figure, **kwargs) -> None:
             self._figure = figure
 
-            """整体画布的一些风格"""
-            self._title = kwargs.get("title")  # 总标题
-            self._title_fontsize = (
-                kwargs.get("title_fontsize") or figure.fontsize * 1.5
-            )  # 总标题字体大小
-            self._ytitle = kwargs.get("yitle")  # y轴总标题
-            self._ytitle_fontsize = (
-                kwargs.get("ytitle_fontsize") or figure.fontsize * 1.5
-            )  # y轴总标题字体大小
+            """默认风格字典"""
+            d_style = {
+                # 整体画布的一些风格
+                "title": None,  # 总标题
+                "title_fontsize": figure.fontsize * 1.5,  # 总标题字体大小
+                "ytitle": None,  # y轴总标题
+                "ytitle_fontsize": figure.fontsize * 1.5,  # y轴总标题字体大小
+                # GridSpec子图的一些风格
+                "gs_titles": None,  # GridSpec标题
+                "gs_titles_fontsize": figure.fontsize,  # GridSpec标题字体大小
+                "major_grid": None,  # 主网格线
+                "minor_grid": None,  # 次网格线
+                "hide_top_right_spines": False,  # 是否隐藏上/右边框
+                "last_xticks_only": False,  # 多个子图情况下只显示最下方图片的x轴ticks
+                "first_yticks_only": False,  # 多个子图情况下只显示最左侧图片的y轴ticks
+                "same_xlim": False,  # 多个子图是否x轴边界一致
+                "same_ylim": False,  # 多个子图是否y轴边界一致
+                # 坐标轴相关的风格
+                "xlabel": None,  # x轴标题
+                "xlabel_fontsize": figure.fontsize,  # x轴标题字体大小
+                "ylabel": None,  # y轴标题
+                "ylabel_fontsize": figure.fontsize,  # y轴标题字体大小
+                "xlim": None,  # x轴边界(最小值, 最大值)
+                "ylim": None,  # y轴边界(最小值, 最大值)
+                "y2lim": None,  # y轴次坐标轴边界(最小值, 最大值)
+                # 刻度相关的风格
+                "xticklabel_fontsize": figure.fontsize,  # x轴刻度标签字体大小
+                "yticklabel_fontsize": figure.fontsize,  # y轴刻度标签字体大小
+                "xticklabel_rotation": None,  # x抽刻度标签旋转角度
+                "yticklabel_rotation": None,  # y抽刻度标签旋转角度
+                "remove_xticks": False,  # 是否移除x轴刻度
+                "remove_yticks": False,  # 是否移除y轴刻度
+            }
 
-            """GridSpec画布的一些风格"""
-            self._gs_titles = kwargs.get("gs_titles")  # GridSpec标题
-            self._gs_titles_fontsize = (
-                kwargs.get("gs_titles_fontsize") or figure.fontsize
-            )  # GridSpec标题字体大小
-            self._hide_top_right_spines = kwargs.get("hide_top_right_spines")  # 隐藏上/右边框
-            self._last_xticks_only = kwargs.get(
-                "last_xticks_only"
-            )  # 多个子图情况下只显示最下方图片的x轴ticks
-            self._first_yticks_only = kwargs.get(
-                "first_yticks_only"
-            )  # 多个子图情况下只显示最左侧图片的y轴ticks
-
-            """坐标轴相关的风格"""
-            self._xlabel = kwargs.get("xlabel")  # x轴标题
-            self._xlabel_fontsize = (
-                kwargs.get("xlabel_fontsize") or figure.fontsize
-            )  # x轴标题字体大小
-            self._ylabel = kwargs.get("ylabel")  # y轴标题
-            self._ylabel_fontsize = (
-                kwargs.get("ylabel_fontsize") or figure.fontsize
-            )  # x轴标题字体大小
-
-            """刻度相关的风格"""
-            self._xticklabel_fontsize = (
-                kwargs.get("xticklabel_fontsize") or figure.fontsize
-            )  # x轴刻度标签字体大小
-            self._yticklabel_fontsize = (
-                kwargs.get("yticklabel_fontsize") or figure.fontsize
-            )  # y轴刻度标签字体大小
-            self._xticklabel_rotation = kwargs.get("xticklabel_rotation")  # x抽刻度旋转角度
-            self._yticklabel_rotation = kwargs.get("yticklabel_rotation")  # y抽刻度旋转角度
-            self._remove_xticks = kwargs.get("remove_xticks")  # 移除x轴刻度
-            self._remove_yticks = kwargs.get("remove_yticks")  # 移除y轴刻度
+            """根据初始化参数更新默认风格字典，并循环生成类属性"""
+            d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
+            for key, value in d_style.items():
+                self.__setattr__(f"_{key}", value)
 
             """初始化自动执行一遍风格设置"""
-            self.set_title(self._title, self._title_fontsize)
-            self.set_ytitle(self._ytitle, self._ytitle_fontsize)
-            self.set_gstitles(self._gs_titles, self._gs_titles_fontsize)
+            self.title(self._title, self._title_fontsize)
+            self.ytitle(self._ytitle, self._ytitle_fontsize)
+            self.gs_titles(self._gs_titles, self._gs_titles_fontsize)
             self.xlabel(self._xlabel, self._xlabel_fontsize)
             self.ylabel(self._ylabel, self._ylabel_fontsize)
-            self.set_tick_params(
+            self.tick_params(
                 self._xticklabel_fontsize,
                 self._yticklabel_fontsize,
                 self._xticklabel_rotation,
@@ -186,28 +180,42 @@ class GridFigure(Figure):
                 self.last_xticks_only()
             if self._first_yticks_only:
                 self.first_yticks_only()
+            if self._xlim is not None:
+                self.xlim(self._xlim)
+            if self._ylim is not None:
+                self.ylim(self._ylim)
+            if self._y2lim is not None:
+                self.y2lim(self._y2lim)
+            if self._same_xlim:
+                self.same_xlim()
+            if self._same_ylim:
+                self.same_ylim()
+            if self._major_grid is not None:
+                self.major_grid(**self._major_grid)
+            if self._minor_grid is not None:
+                self.minor_grid(**self._minor_grid)
 
-        def set_title(
+        def title(
             self, title: Optional[str] = None, fontsize: Optional[float] = None
         ) -> None:
             self._figure.suptitle(title, fontsize=fontsize)
 
-        def set_ytitle(
+        def ytitle(
             self, title: Optional[str] = None, fontsize: Optional[float] = None
         ) -> None:
             self._figure.supylabel(title, fontsize=fontsize)
 
-        def set_gstitles(
+        def gs_titles(
             self, titles: Optional[List[str]], fontsize: Optional[float] = None
         ) -> None:
             if titles is not None:
                 for i, _ax in enumerate(self._figure.axes):
                     try:
-                        _ax.set_title(titles[i], fontsize=fontsize)
+                        _ax.title(titles[i], fontsize=fontsize)
                     except:
                         continue
 
-        def set_tick_params(
+        def tick_params(
             self,
             xticklabel_fontsize: Optional[float] = None,
             yticklabel_fontsize: Optional[float] = None,
@@ -263,176 +271,84 @@ class GridFigure(Figure):
                 if (i % self.gs.ncols) != 0:
                     _ax.get_yaxis().set_visible(False)
 
-    def set_default_style(self) -> None:
-        pass
-        # d_style = {
-        #     "title": None,  # 总标题
-        #     "title_fontsize": self.fontsize * 1.5,  # 总标题字体大小
-        #     "ytitle": None,  # y轴总标题
-        #     "ytitle_fontsize": self.fontsize * 1.5,  # y轴总标题字体大小
-        #     "xticklabel_fontsize": self.fontsize,  # x轴刻度标签字体大小
-        #     "yticklabel_fontsize": self.fontsize,  # y轴刻度标签字体大小
-        # }
+        def xlim(self, xlim: Tuple[Tuple[float, float]]) -> None:
+            for i, _ax in enumerate(self._figure.axes):
+                _ax.set_xlim(xlim[i][0], xlim[i][1])
 
-        # d_style.update(self.style)
-        # print(d_style)
-        # """整个Figure部分"""
-        # # 总标题
-        # if d_style.get("title") is not None:
-        #     self.suptitle(self.style["title"], fontsize=d_style["title_fontsize"])
+        def ylim(self, ylim: Tuple[Tuple[float, float]]) -> None:
+            for i, _ax in enumerate(self._figure.axes):
+                _ax.set_ylim(ylim[i][0], ylim[i][1])
 
-        # # y轴总标题
-        # if d_style.get("ytitle") is not None:
-        #     self.supylabel(self.style["ytitle"], fontsize=d_style["ytitle_fontsize"])
+        def y2lim(self, y2lim: Tuple[Tuple[float, float]]) -> None:
+            for i, _ax in enumerate(self._figure.axes):
+                _ax2 = _ax.get_shared_x_axes().get_siblings(_ax)[0]
+                _ax2.set_ylim(y2lim[i][0], y2lim[i][1])
 
-        # """每个ax部分"""
-        # ylim_range = []
-        # xlim_range = []
-        # for i, ax in enumerate(self.axes):
-        #     ax.tick_params(
-        #         axis="x", labelsize=d_style["xticklabel_fontsize"]
-        #     )  # 设置x轴刻度标签字体大小
-        #     ax.tick_params(
-        #         axis="y", labelsize=d_style["yticklabel_fontsize"]
-        #     )  # 设置y轴刻度标签字体大小
+        def same_xlim(self) -> None:
+            for i, _ax in enumerate(self._figure.axes):
+                xlim_min, xlim_max = _ax.get_xlim()
+                if i == 0:
+                    xlim_range = [xlim_min, xlim_max]
+                else:
+                    if xlim_min < xlim_range[0]:
+                        xlim_range = [xlim_min, xlim_range[1]]
+                    if xlim_max > xlim_range[1]:
+                        xlim_range = [xlim_range[0], xlim_max]
+                _ax.set_xlim(xlim_range[0], xlim_range[1])
 
-        #     # y轴标签
-        #     # yticklabels = [
-        #     #     label.get_text().split("（")[0] for label in ax.get_yticklabels()
-        #     # ]  # 去除y轴标签括号内内容
-        #     # ax.set_yticklabels(yticklabels)
+        def same_ylim(self) -> None:
+            for i, _ax in enumerate(self._figure.axes):
+                ylim_min, ylim_max = _ax.get_ylim()
+                if i == 0:
+                    ylim_range = [ylim_min, ylim_max]
+                else:
+                    if ylim_min < ylim_range[0]:
+                        ylim_range = [ylim_min, ylim_range[1]]
+                    if ylim_max > ylim_range[1]:
+                        ylim_range = [ylim_range[0], ylim_max]
+                _ax.ylim(ylim_range[0], ylim_range[1])
 
-        #     # 添加grid标题
-        #     if "gs_title" in self.style:
-        #         # check_data_with_axes(self.style["gs_title"], self.axes)
-        #         try:
-        #             ax.set_title(self.style["gs_title"][i], fontsize=self.fontsize)
-        #         except:
-        #             continue
-        #         # box = ax.get_position()
-        #         # ax.set_position([box.x0, box.y0, box.width, box.height * 0.95])
+        def major_grid(self, **kwargs) -> None:
+            d_grid = {
+                "color": "grey",
+                "axis": "both",
+                "linestyle": ":",
+                "linewidth": 0.3,
+                "zorder": 0,
+            }
+            d_grid = {k: kwargs[k] if k in kwargs else v for k, v in d_grid.items()}
 
-        #     # 旋转x轴标签
-        #     if "xlabel_rotation" in self.style:
-        #         ax.tick_params(axis="x", labelrotation=self.style["xlabel_rotation"])
+            for i, _ax in enumerate(self._figure.axes):
+                _ax.grid(
+                    which="major",
+                    color=d_grid["color"],
+                    axis=d_grid["axis"],
+                    linestyle=d_grid["linestyle"],
+                    linewidth=d_grid["linewidth"],
+                    zorder=d_grid["zorder"],
+                )
 
-        #     # 旋转y轴标签
-        #     if "ylabel_rotation" in self.style:
-        #         ax.tick_params(axis="y", labelrotation=self.style["ylabel_rotation"])
-
-        #         # 去除x轴ticks
-        #     if "remove_xticks" in self.style and self.style["remove_xticks"]:
-        #         ax.get_xaxis().set_ticks([])
-
-        #         # 去除y轴ticks
-        #     if "remove_yticks" in self.style and self.style["remove_yticks"]:
-        #         ax.get_yaxis().set_ticks([])
-
-        #     # 添加x轴标签
-        #     if "xlabel" in self.style:
-        #         ax.set_xlabel(self.style["xlabel"], fontsize=self.fontsize)
-
-        #     # 添加y轴标签
-        #     if "ylabel" in self.style:
-        #         ax.set_ylabel(self.style["ylabel"], fontsize=self.fontsize)
-
-        #         # 多个子图情况下只显示最下方图片的x轴label
-        #     if "last_xticks_only" in self.style:
-        #         if (
-        #             self.style["last_xticks_only"]
-        #             and (i % self.gs.nrows) != self.gs.nrows - 1
-        #         ):
-        #             ax.get_xaxis().set_visible(False)
-
-        #         # 多个子图情况下只显示最左边图片的x轴label
-        #     if "first_yticks_only" in self.style:
-        #         if self.style["first_yticks_only"] and (i % self.gs.ncols) != 0:
-        #             ax.get_xaxis().set_visible(False)
-
-        #         # 隐藏上/右边框
-        #     if (
-        #         "hide_top_right_spines" in self.style
-        #         and self.style["hide_top_right_spines"]
-        #     ):
-        #         ax.spines["right"].set_visible(False)
-        #         ax.spines["top"].set_visible(False)
-        #         ax.yaxis.set_ticks_position("left")
-        #         ax.xaxis.set_ticks_position("bottom")
-
-        #     # x轴显示lim
-        #     if "xlim" in self.style:
-        #         ax.set_xlim(self.style["xlim"][i][0], self.style["xlim"][i][1])
-
-        #     # y轴显示lim，如果有多个y轴需要注意传参的个数
-        #     if "ylim" in self.style:
-        #         ax.set_ylim(self.style["ylim"][i][0], self.style["ylim"][i][1])
-        #         try:
-        #             ax2 = ax.get_shared_x_axes().get_siblings(ax)[0]
-        #         except:
-        #             pass
-        #         if ax2 is not None:
-        #             ax2.set_ylim(self.style["ylim"][i][0], self.style["ylim"][i][1])
-
-        #     if "same_ylim" in self.style and self.style["same_ylim"]:
-        #         ylim_min, ylim_max = ax.get_ylim()
-        #         if i == 0:
-        #             ylim_range = [ylim_min, ylim_max]
-        #         else:
-        #             if ylim_min > ylim_range[0]:
-        #                 ax.set_ylim(bottom=ylim_range[0])
-        #             else:
-        #                 ylim_range = [ylim_min, ylim_range[1]]
-        #             if ylim_max < ylim_range[1]:
-        #                 ax.set_ylim(top=ylim_range[1])
-        #             else:
-        #                 ylim_range = [ylim_range[0], ylim_max]
-
-        #     if "same_xlim" in self.style and self.style["same_xlim"]:
-        #         xlim_min, xlim_max = ax.get_xlim()
-        #         if i == 0:
-        #             xlim_range = [xlim_min, xlim_max]
-        #         else:
-        #             if xlim_min < xlim_range[0]:
-        #                 xlim_range = [xlim_min, xlim_range[1]]
-        #             if xlim_max > xlim_range[1]:
-        #                 xlim_range = [xlim_range[0], xlim_max]
-
-        #     # # 次坐标y轴显示lim
-        #     # if "y2lim" in self.style:
-        #     #     ax2 = ax.get_shared_x_axes().get_siblings(ax)[0]
-        #     #     ax2.set_ylim(self.style["y2lim"][i][0], self.style["y2lim"][i][1])
-
-        #     # 主网格线
-        #     if "major_grid" in self.style:
-        #         ax.grid(
-        #             which="major",
-        #             color=self.style["major_grid"],
-        #             axis="both",
-        #             linestyle=":",
-        #             linewidth=0.3,
-        #         )
-
-        #     # 次网格线
-        #     if "minor_grid" in self.style:
-        #         plt.minorticks_on()
-        #         ax.grid(
-        #             which="minor",
-        #             color=self.style["minor_grid"],
-        #             axis="both",
-        #             linestyle=":",
-        #             linewidth=0.2,
-        #         )
-        # if "same_xlim" in self.style and self.style["same_xlim"]:
-        #     for ax in self.axes:
-        #         ax.set_xlim(xlim_range[0], xlim_range[1])
-        # if "same_ylim" in self.style and self.style["same_ylim"]:
-        #     for ax in self.axes:
-        #         ax.set_xlim(ylim_range[0], ylim_range[1])
+        def minor_grid(self, **kwargs) -> None:
+            d_grid = {
+                "color": "grey",
+                "axis": "both",
+                "linestyle": ":",
+                "linewidth": 0.3,
+                "zorder": 0,
+            }
+            d_grid = {k: kwargs[k] if k in kwargs else v for k, v in d_grid.items()}
+            for i, _ax in enumerate(self._figure.axes):
+                _ax.minorticks_on()
+                _ax.grid(
+                    which="both",
+                    color=d_grid["color"],
+                    axis=d_grid["axis"],
+                    linestyle=d_grid["linestyle"],
+                    linewidth=d_grid["linewidth"],
+                    zorder=d_grid["zorder"],
+                )
 
     def save(self):
-        # 设置一些基本格式
-        self.set_default_style()
-
         script_dir = os.path.dirname(__file__)
         plot_dir = f"{script_dir}{self.savepath}"
 
