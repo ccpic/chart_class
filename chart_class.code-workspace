@@ -6,6 +6,11 @@
     ],
     "settings": {
         "git.ignoreLimitWarning": true,
-        "workbench.colorTheme": "Visual Studio Dark"
+        "workbench.colorTheme": "Default Dark+ Experimental",
+        "[python]": {
+            "editor.defaultFormatter": "ms-python.black-formatter"
+        },
+        "python.formatting.provider": "none",
+        "python.analysis.extraPaths": ["common", "main"]
     }
 }

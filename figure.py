@@ -2,23 +2,14 @@ from re import T
 from matplotlib import axes
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-import numpy as np
 from matplotlib.gridspec import GridSpec
 import os
 from numpy.core.arrayprint import str_format
 from numpy.lib.function_base import iterable
 import pandas as pd
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional
-import matplotlib.font_manager as fm
 import matplotlib as mpl
-import seaborn as sns
-from matplotlib.ticker import FuncFormatter, StrMethodFormatter
-import textwrap
-import math
-import matplotlib.dates as mdates
-import scipy.stats as stats
-from adjustText import adjust_text
-from itertools import cycle
+from plots import AxPlotStackedBar
 
 try:
     from typing import Literal
@@ -33,41 +24,10 @@ mpl.rcParams.update({"font.size": 16})
 mpl.rcParams["hatch.linewidth"] = 0.5
 mpl.rcParams["hatch.color"] = "grey"
 
-# sns.theme(style="whitegrid")
-MYFONT = fm.FontProperties(fname="C:/Windows/Fonts/SimHei.ttf")
-NUM_FONT = {"fontname": "Calibri"}
-
-
-class UnequalDataGridError(Exception):
-    def __init__(self, message):
-        super().__init__(message)
-
-
-def data_to_list(data):
-    if isinstance(data, dict):
-        return [v for k, v in data.items()]
-    elif isinstance(data, pd.DataFrame):
-        return [data]
-    elif isinstance(data, pd.Series):
-        return [data.to_frame()]
-    elif isinstance(data, tuple):
-        return list(data)
-    elif isinstance(data, list):
-        return data
-    else:
-        return data
-
-
-def check_data_with_axes(data: list, axes: axes):
-    if len(data) > len(axes):
-        message = f"Got {len(data)} pieces of data, while {len(axes)} axes existed."
-        raise UnequalDataGridError(message)
-
 
 class GridFigure(Figure):
     """
-    一个matplotlib图表类，用以简化原始matplotlib及应用符合自己日常习惯的一些设置:
-    数据预处理，
+    一个matplotlib画布类，用以简化原始matplotlib及应用符合自己日常习惯的一些设置:
     grid,
     宽高设置，
     字体大小，
@@ -77,44 +37,57 @@ class GridFigure(Figure):
 
     def __init__(
         self,
-        data: Union[list, tuple, pd.DataFrame, pd.Series],  # 原始数
+        nrows: int = 1,
+        ncols: int = 1,
+        width_ratios: List[float] = None,
+        height_ratios: List[float] = None,
         savepath: str = "/plots/",  # 保存位置
         width: int = 15,  # 宽
         height: int = 6,  # 高
         fontsize: int = 14,  # 字体大小
-        gs: Optional[GridSpec] = None,  # GridSpec
         fmt: str = "{:,.0f}",  # 基本数字格式
         style: Dict[str, Any] = {},  # 风格字典
         *args,
         **kwargs,
-    ):
+    ) -> None:
+        """_summary_
+
+        Parameters
+        ----------
+        savepath : str, optional
+            _description_, by default "/plots/"
+        """
         super().__init__(*args, **kwargs)
+
+        # 根据nrows, ncols, width_ratios和height_ratios返回一个GridSpec
+        self.nrows = nrows
+        self.ncols = ncols
+        width_ratios = [1] * ncols if width_ratios is None else width_ratios
+        height_ratios = [1] * nrows if height_ratios is None else height_ratios
+        
+        self.gridspec = GridSpec(
+            nrows=nrows,
+            ncols=ncols,
+            width_ratios=width_ratios,
+            height_ratios=height_ratios,
+        )
+        
         self.savepath = savepath
         self.width = width
         self.height = height
         self.fontsize = fontsize
-        self.gs = gs
         self.fmt = fmt
         self._style = style
-
-        # 所有数据处理成列表格式
-        self.data = data_to_list(data)
 
         # 宽高
         self.set_size_inches(self.width, self.height)
 
         # Grid
-        if gs is not None:
-            for axes in gs:
+        if self.gridspec is not None:
+            for axes in self.gridspec:
                 self.add_subplot(axes)
         else:
             self.add_subplot(111)
-
-        # 检查grid大小和数据是否匹配
-        check_data_with_axes(self.data, self.axes)
-
-        # 应用风格
-        self.style = self.Style(self, **style)
 
     class Style:
         def __init__(self, figure, **kwargs) -> None:
@@ -276,14 +249,12 @@ class GridFigure(Figure):
                 )  # 设置y轴刻度标签字体大小
 
         def remove_xticks(self) -> None:
-            """移除x轴刻度
-            """
+            """移除x轴刻度"""
             for i, _ax in enumerate(self._figure.axes):
                 _ax.get_xaxis().set_ticks([])
 
         def remove_yticks(self) -> None:
-            """移除y轴刻度
-            """
+            """移除y轴刻度"""
             for i, _ax in enumerate(self._figure.axes):
                 _ax.get_yaxis().set_ticks([])
 
@@ -318,8 +289,7 @@ class GridFigure(Figure):
                 _ax.set_ylabel(label, fontsize=fontsize)
 
         def hide_top_right_spines(self) -> None:
-            """隐藏上/右边框，可以解决一些图表标签与边框重叠的问题
-            """
+            """隐藏上/右边框，可以解决一些图表标签与边框重叠的问题"""
             for i, _ax in enumerate(self._figure.axes):
                 _ax.spines["right"].set_visible(False)
                 _ax.spines["top"].set_visible(False)
@@ -327,17 +297,15 @@ class GridFigure(Figure):
                 _ax.xaxis.set_ticks_position("bottom")
 
         def last_xticks_only(self) -> None:
-            """多个子图时只显示最下方的x轴刻度
-            """
+            """多个子图时只显示最下方的x轴刻度"""
             for i, _ax in enumerate(self._figure.axes):
-                if (i % self._figure.gs.nrows) != self._figure.gs.nrows - 1:
+                if i < len(self._figure.axes) -self._figure.ncols:
                     _ax.get_xaxis().set_visible(False)
 
         def first_yticks_only(self) -> None:
-            """多个子图时只显示最左方的y轴刻度
-            """
+            """多个子图时只显示最左方的y轴刻度"""
             for i, _ax in enumerate(self._figure.axes):
-                if (i % self.gs.ncols) != 0:
+                if (i % self._figure.ncols) != 0:
                     _ax.get_yaxis().set_visible(False)
 
         def xlim(self, xlim: Tuple[Tuple[float, float]]) -> None:
@@ -375,8 +343,7 @@ class GridFigure(Figure):
                 _ax2.set_ylim(y2lim[i][0], y2lim[i][1])
 
         def same_xlim(self) -> None:
-            """多个子图时保持x轴边界一致
-            """
+            """多个子图时保持x轴边界一致"""
             for i, _ax in enumerate(self._figure.axes):
                 xlim_min, xlim_max = _ax.get_xlim()
                 if i == 0:
@@ -389,8 +356,7 @@ class GridFigure(Figure):
                 _ax.set_xlim(xlim_range[0], xlim_range[1])
 
         def same_ylim(self) -> None:
-            """多个子图时保持y轴边界一致
-            """
+            """多个子图时保持y轴边界一致"""
             for i, _ax in enumerate(self._figure.axes):
                 ylim_min, ylim_max = _ax.get_ylim()
                 if i == 0:
@@ -403,14 +369,13 @@ class GridFigure(Figure):
                 _ax.ylim(ylim_range[0], ylim_range[1])
 
         def major_grid(self, **kwargs) -> None:
-            """显示主网格线
-            """
+            """显示主网格线"""
             d_grid = {
                 "color": "grey",
                 "axis": "both",
                 "linestyle": ":",
                 "linewidth": 0.3,
-                "zorder": 0, # 图层
+                "zorder": 0,  # 图层
             }
             d_grid = {k: kwargs[k] if k in kwargs else v for k, v in d_grid.items()}
 
@@ -425,18 +390,17 @@ class GridFigure(Figure):
                 )
 
         def minor_grid(self, **kwargs) -> None:
-            """显示次网格线，比主网格线更密集
-            """
+            """显示次网格线，比主网格线更密集"""
             d_grid = {
                 "color": "grey",
                 "axis": "both",
                 "linestyle": ":",
                 "linewidth": 0.3,
-                "zorder": 0, # 图层
+                "zorder": 0,  # 图层
             }
             d_grid = {k: kwargs[k] if k in kwargs else v for k, v in d_grid.items()}
             for i, _ax in enumerate(self._figure.axes):
-                _ax.minorticks_on() # 注意该语句，只显示major_grid不需要
+                _ax.minorticks_on()  # 注意该语句，只显示major_grid不需要
                 _ax.grid(
                     which="both",
                     color=d_grid["color"],
@@ -446,9 +410,13 @@ class GridFigure(Figure):
                     zorder=d_grid["zorder"],
                 )
 
+    def plot(self, data, ax_index: int = 0):
+        ax = self.axes[ax_index]
+        AxPlotStackedBar(data=data, ax=ax).plot()
+
     def save(self) -> None:
-        """保存图片
-        """
+        self.style = self.Style(self, **self._style)  # 应用风格
+        """保存图片"""
         script_dir = os.path.dirname(__file__)
         plot_dir = f"{script_dir}{self.savepath}"
 

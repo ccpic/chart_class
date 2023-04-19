@@ -4,10 +4,11 @@ from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from dateutil.parser import parse
-from plots import PlotStackedBar
+from figure import GridFigure
+from plots import AxPlotStackedBar
 import copy
 import matplotlib.dates as mdates
-
+from matplotlib.gridspec import GridSpec
 
 try:
     from typing import Literal
@@ -415,7 +416,7 @@ class DfAnalyzer:
                     rolling_window = 12
                 elif period == "MQT":
                     rolling_window = 3
-    
+
             # 按影响rolling计算的字段分组，并计算每个日期的滚动总计
             grouped = _df.groupby(cols_grouper)
             rolling = (
@@ -486,18 +487,39 @@ if __name__ == "__main__":
         .div(100000000)
     )
     print(pivoted)
-    f = PlotStackedBar(
-        data=pivoted,
-        width=17,
-        height=6,
+    # f = PlotStackedBar(
+    #     data=pivoted,
+    #     width=17,
+    #     height=6,
+    #     style={
+    #         "title": "Test",
+    #         "xticklabel_rotation": 90,
+    #         # "xlabel": "年份",
+    #         "ylabel": "金额",
+    #         # "hide_top_right_spines": True,
+    #         "major_grid":{"linewidth":1}
+    #     },
+    # )
+    # f.style.title(title="陈诚")
+    # f.plot(show_total_label=True)
+    f = GridFigure(
+        ncols=3,
+        nrows=2,
+        width_ratios=[2,1,1],
+        fontsize=9,
         style={
             "title": "Test",
             "xticklabel_rotation": 90,
+            "last_xticks_only":True,
+            "first_yticks_only":True,
             # "xlabel": "年份",
             "ylabel": "金额",
             # "hide_top_right_spines": True,
-            "major_grid":{"linewidth":1}
         },
     )
-    f.style.title(title="陈诚")
-    f.plot(show_total_label=True)
+    f.plot(data=pivoted)
+    # for i in range(3):
+    #     f.plot(data=pivoted, ax_index=i)
+    
+    f.save()
+    
