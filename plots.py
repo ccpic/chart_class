@@ -649,6 +649,7 @@ class PlotStackedBar(GridFigure):
                                 va=va,
                                 ha="center",
                                 fontsize=self.fontsize,
+                                zorder=5,
                                 **NUM_FONT,
                             )
                     if v >= 0:
@@ -682,6 +683,7 @@ class PlotStackedBar(GridFigure):
                                 color=color,
                                 fontsize=self.fontsize,
                                 bbox=bbox_props,
+                                zorder=5,
                             )
                             bottom_gr += df.iloc[k - 1, i] + df.iloc[k, i]
 
@@ -696,6 +698,7 @@ class PlotStackedBar(GridFigure):
                             fontsize=self.fontsize,
                             ha="center",
                             va="bottom",
+                            zorder=5,
                         )
 
                 # box = ax.get_position()

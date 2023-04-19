@@ -451,7 +451,7 @@ class DfAnalyzer:
             _df = _df.merge(
                 right=grouped, how="right", on=cols_grouper + [self.date_column]
             )
-        _df.to_excel("test.xlsx")
+
         # 解决merge后重复列都保留并自动重命名的问题
         if isinstance(cols_amount, str):
             cols_amount = [cols_amount]
@@ -488,12 +488,15 @@ if __name__ == "__main__":
     print(pivoted)
     f = PlotStackedBar(
         data=pivoted,
+        width=17,
+        height=6,
         style={
             "title": "Test",
             "xticklabel_rotation": 90,
-            "xlabel": "年份",
+            # "xlabel": "年份",
             "ylabel": "金额",
             # "hide_top_right_spines": True,
+            "major_grid":{"linewidth":1}
         },
     )
     f.style.title(title="陈诚")
