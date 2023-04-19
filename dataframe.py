@@ -518,8 +518,8 @@ if __name__ == "__main__":
         },
     )
     f.plot(data=pivoted)
-    # for i in range(3):
-    #     f.plot(data=pivoted, ax_index=i)
+    for i in range(6):
+        f.plot(data=pivoted, ax_index=i)
     
     f.save()
     

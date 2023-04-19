@@ -412,7 +412,7 @@ class GridFigure(Figure):
 
     def plot(self, data, ax_index: int = 0):
         ax = self.axes[ax_index]
-        AxPlotStackedBar(data=data, ax=ax).plot()
+        AxPlotStackedBar(data=data, ax=ax, fontsize=self.fontsize).plot()
 
     def save(self) -> None:
         self.style = self.Style(self, **self._style)  # 应用风格

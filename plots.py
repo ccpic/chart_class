@@ -18,6 +18,55 @@ import scipy.stats as stats
 MYFONT = fm.FontProperties(fname="C:/Windows/Fonts/SimHei.ttf")
 NUM_FONT = {"fontname": "Calibri"}
 
+
+class Plot:
+    def __init__(
+        self,
+        data,  # 原始数
+        ax = None,
+        fontsize: int = 14,  # 字体大小
+        fmt: str = "{:,.0f}",  # 基本数字格式
+        *args,
+        **kwargs,
+    ):
+        self.data = data
+        self.ax = ax or plt.gca()
+        self.fontsize= fontsize
+        self.fmt = fmt
+
+    def legend(self):
+        # 图例
+        box = self.ax.get_position()
+        # ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+        handles, labels = self.ax.get_legend_handles_labels()
+        if self.data_line is not None:
+            ax2 = self.ax.get_shared_x_axes().get_siblings(self.ax)[0]
+            handles2, labels2 = ax2.get_legend_handles_labels()
+            by_label = dict(
+                zip(
+                    labels[::-1] + labels2[::-1],
+                    handles[::-1] + handles2[::-1],
+                )
+            )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
+        else:
+            by_label = dict(
+                zip(
+                    labels[::-1],
+                    handles[::-1],
+                )
+            )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
+        self.ax.legend(
+            by_label.values(),
+            by_label.keys(),
+            loc="center left",
+            ncol=1,
+            bbox_to_anchor=(1, 0.5),
+            labelspacing=1,
+            frameon=False,
+            prop={"family": "Microsoft YaHei", "size": self.fontsize},
+        )
+
 # # 继承基本类, 气泡图
 # class PlotBubble(GridFigure):
 #     def plot(
@@ -819,7 +868,7 @@ NUM_FONT = {"fontname": "Calibri"}
 #         return self.save()
 
 # 继承基本类，堆积柱状对比图类
-class AxPlotStackedBar:
+class AxPlotStackedBar(Plot):
     def __init__(
         self,
         data,  # 原始数
@@ -833,12 +882,7 @@ class AxPlotStackedBar:
         *args,
         **kwargs,
     ):
-        self.data = data
-        self.ax = ax or plt.gca()
-        self.width = width
-        self.height = height
-        self.fontsize= fontsize
-        self.fmt = fmt
+        super().__init__(data=data,ax=ax,width=width,height=height,fontsize=fontsize,fmt=fmt, *args,**kwargs)
         self.data_line = data_line
         self.fmt_line = fmt_line
         
@@ -1091,37 +1135,10 @@ class AxPlotStackedBar:
             # # x轴标签
             # ax2.get_xaxis().set_ticks(range(0, len(df.index)), labels=df.index)
 
-        # 图例
+        #图例
         if show_legend:
-            box = self.ax.get_position()
-            # ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+            self.legend()
 
-            handles, labels = self.ax.get_legend_handles_labels()
-            if self.data_line is not None:
-                handles2, labels2 = ax2.get_legend_handles_labels()
-                by_label = dict(
-                    zip(
-                        labels[::-1] + labels2[::-1],
-                        handles[::-1] + handles2[::-1],
-                    )
-                )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
-            else:
-                by_label = dict(
-                    zip(
-                        labels[::-1],
-                        handles[::-1],
-                    )
-                )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
-            self.ax.legend(
-                by_label.values(),
-                by_label.keys(),
-                loc="center left",
-                ncol=1,
-                bbox_to_anchor=(1, 0.5),
-                labelspacing=1,
-                frameon=False,
-                prop={"family": "SimHei", "size": self.fontsize},
-            )
 
 # # 继承基本类，Histgram分布图类
 # class PlotHist(GridFigure):
