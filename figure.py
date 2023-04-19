@@ -82,7 +82,7 @@ class GridFigure(Figure):
         width: int = 15,  # 宽
         height: int = 6,  # 高
         fontsize: int = 14,  # 字体大小
-        gs: GridSpec = None,  # GridSpec
+        gs: Optional[GridSpec] = None,  # GridSpec
         fmt: str = "{:,.0f}",  # 基本数字格式
         style: Dict[str, Any] = {},  # 风格字典
         *args,
@@ -113,6 +113,7 @@ class GridFigure(Figure):
         # 检查grid大小和数据是否匹配
         check_data_with_axes(self.data, self.axes)
 
+        # 应用风格
         self.style = self.Style(self, **style)
 
     class Style:
@@ -198,16 +199,43 @@ class GridFigure(Figure):
         def title(
             self, title: Optional[str] = None, fontsize: Optional[float] = None
         ) -> None:
+            """添加整个画布的标题
+
+            Parameters
+            ----------
+            title : Optional[str], optional
+                标题文字内容, by default None
+            fontsize : Optional[float], optional
+                标题字体大小, by default None
+            """
             self._figure.suptitle(title, fontsize=fontsize)
 
         def ytitle(
             self, title: Optional[str] = None, fontsize: Optional[float] = None
         ) -> None:
+            """添加整个画布的y轴标题
+
+            Parameters
+            ----------
+            title : Optional[str], optional
+                标题文字内容, by default None
+            fontsize : Optional[float], optional
+                标题字体大小, by default None
+            """
             self._figure.supylabel(title, fontsize=fontsize)
 
         def gs_titles(
             self, titles: Optional[List[str]], fontsize: Optional[float] = None
         ) -> None:
+            """给每个GridSpec子图添加标题
+
+            Parameters
+            ----------
+            titles : Optional[List[str]]
+                包含各个子图标题内容的列表
+            fontsize : Optional[float], optional
+                子图标题字体大小, by default None
+            """
             if titles is not None:
                 for i, _ax in enumerate(self._figure.axes):
                     try:
@@ -222,6 +250,19 @@ class GridFigure(Figure):
             xticklabel_rotation: Optional[float] = None,
             yticklabel_rotation: Optional[float] = None,
         ) -> None:
+            """设置刻度标签样式
+
+            Parameters
+            ----------
+            xticklabel_fontsize : Optional[float], optional
+                x轴刻度标签字体大小, by default None
+            yticklabel_fontsize : Optional[float], optional
+                y轴刻度标签字体大小, by default None
+            xticklabel_rotation : Optional[float], optional
+                x轴刻度标签旋转角度, by default None
+            yticklabel_rotation : Optional[float], optional
+                y轴刻度标签旋转角度, by default None
+            """
             for i, _ax in enumerate(self._figure.axes):
                 _ax.tick_params(
                     axis="x",
@@ -235,26 +276,50 @@ class GridFigure(Figure):
                 )  # 设置y轴刻度标签字体大小
 
         def remove_xticks(self) -> None:
+            """移除x轴刻度
+            """
             for i, _ax in enumerate(self._figure.axes):
                 _ax.get_xaxis().set_ticks([])
 
         def remove_yticks(self) -> None:
+            """移除y轴刻度
+            """
             for i, _ax in enumerate(self._figure.axes):
                 _ax.get_yaxis().set_ticks([])
 
         def xlabel(
             self, label: Optional[str] = None, fontsize: Optional[float] = None
         ) -> None:
+            """设置x轴标题
+
+            Parameters
+            ----------
+            label : Optional[str], optional
+                x轴标题内容, by default None
+            fontsize : Optional[float], optional
+                x轴标题字体大小, by default None
+            """
             for i, _ax in enumerate(self._figure.axes):
                 _ax.set_xlabel(label, fontsize=fontsize)
 
         def ylabel(
             self, label: Optional[str] = None, fontsize: Optional[float] = None
         ) -> None:
+            """设置y轴标题
+
+            Parameters
+            ----------
+            label : Optional[str], optional
+                y轴标题内容, by default None
+            fontsize : Optional[float], optional
+                y轴标题字体大小, by default None
+            """
             for i, _ax in enumerate(self._figure.axes):
                 _ax.set_ylabel(label, fontsize=fontsize)
 
         def hide_top_right_spines(self) -> None:
+            """隐藏上/右边框，可以解决一些图表标签与边框重叠的问题
+            """
             for i, _ax in enumerate(self._figure.axes):
                 _ax.spines["right"].set_visible(False)
                 _ax.spines["top"].set_visible(False)
@@ -262,29 +327,56 @@ class GridFigure(Figure):
                 _ax.xaxis.set_ticks_position("bottom")
 
         def last_xticks_only(self) -> None:
+            """多个子图时只显示最下方的x轴刻度
+            """
             for i, _ax in enumerate(self._figure.axes):
                 if (i % self._figure.gs.nrows) != self._figure.gs.nrows - 1:
                     _ax.get_xaxis().set_visible(False)
 
         def first_yticks_only(self) -> None:
+            """多个子图时只显示最左方的y轴刻度
+            """
             for i, _ax in enumerate(self._figure.axes):
                 if (i % self.gs.ncols) != 0:
                     _ax.get_yaxis().set_visible(False)
 
         def xlim(self, xlim: Tuple[Tuple[float, float]]) -> None:
+            """设置x轴的边界
+
+            Parameters
+            ----------
+            xlim : Tuple[Tuple[float, float]]
+                包含x轴下界和上界的tuple
+            """
             for i, _ax in enumerate(self._figure.axes):
                 _ax.set_xlim(xlim[i][0], xlim[i][1])
 
         def ylim(self, ylim: Tuple[Tuple[float, float]]) -> None:
+            """设置y轴的边界
+
+            Parameters
+            ----------
+            ylim : Tuple[Tuple[float, float]]
+                包含y轴下界和上界的tuple
+            """
             for i, _ax in enumerate(self._figure.axes):
                 _ax.set_ylim(ylim[i][0], ylim[i][1])
 
         def y2lim(self, y2lim: Tuple[Tuple[float, float]]) -> None:
+            """设置y轴次坐标轴的边界
+
+            Parameters
+            ----------
+            y2lim : Tuple[Tuple[float, float]]
+                包含y轴次坐标轴下界和上界的tuple
+            """
             for i, _ax in enumerate(self._figure.axes):
                 _ax2 = _ax.get_shared_x_axes().get_siblings(_ax)[0]
                 _ax2.set_ylim(y2lim[i][0], y2lim[i][1])
 
         def same_xlim(self) -> None:
+            """多个子图时保持x轴边界一致
+            """
             for i, _ax in enumerate(self._figure.axes):
                 xlim_min, xlim_max = _ax.get_xlim()
                 if i == 0:
@@ -297,6 +389,8 @@ class GridFigure(Figure):
                 _ax.set_xlim(xlim_range[0], xlim_range[1])
 
         def same_ylim(self) -> None:
+            """多个子图时保持y轴边界一致
+            """
             for i, _ax in enumerate(self._figure.axes):
                 ylim_min, ylim_max = _ax.get_ylim()
                 if i == 0:
@@ -309,12 +403,14 @@ class GridFigure(Figure):
                 _ax.ylim(ylim_range[0], ylim_range[1])
 
         def major_grid(self, **kwargs) -> None:
+            """显示主网格线
+            """
             d_grid = {
                 "color": "grey",
                 "axis": "both",
                 "linestyle": ":",
                 "linewidth": 0.3,
-                "zorder": 0,
+                "zorder": 0, # 图层
             }
             d_grid = {k: kwargs[k] if k in kwargs else v for k, v in d_grid.items()}
 
@@ -329,16 +425,18 @@ class GridFigure(Figure):
                 )
 
         def minor_grid(self, **kwargs) -> None:
+            """显示次网格线，比主网格线更密集
+            """
             d_grid = {
                 "color": "grey",
                 "axis": "both",
                 "linestyle": ":",
                 "linewidth": 0.3,
-                "zorder": 0,
+                "zorder": 0, # 图层
             }
             d_grid = {k: kwargs[k] if k in kwargs else v for k, v in d_grid.items()}
             for i, _ax in enumerate(self._figure.axes):
-                _ax.minorticks_on()
+                _ax.minorticks_on() # 注意该语句，只显示major_grid不需要
                 _ax.grid(
                     which="both",
                     color=d_grid["color"],
@@ -348,7 +446,9 @@ class GridFigure(Figure):
                     zorder=d_grid["zorder"],
                 )
 
-    def save(self):
+    def save(self) -> None:
+        """保存图片
+        """
         script_dir = os.path.dirname(__file__)
         plot_dir = f"{script_dir}{self.savepath}"
 
