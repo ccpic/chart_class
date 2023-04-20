@@ -5,10 +5,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from dateutil.parser import parse
 from figure import GridFigure
-from plots import AxPlotStackedBar
 import copy
-import matplotlib.dates as mdates
-from matplotlib.gridspec import GridSpec
 
 try:
     from typing import Literal
@@ -505,21 +502,22 @@ if __name__ == "__main__":
     f = GridFigure(
         ncols=3,
         nrows=2,
-        width_ratios=[2,1,1],
+        width_ratios=[2, 1, 1],
         fontsize=9,
         style={
             "title": "Test",
-            "xticklabel_rotation": 90,
-            "last_xticks_only":True,
-            "first_yticks_only":True,
-            # "xlabel": "年份",
-            "ylabel": "金额",
-            # "hide_top_right_spines": True,
+            "last_xticks_only": True,
+            "first_yticks_only": True,
         },
     )
-    f.plot(data=pivoted)
     for i in range(6):
-        f.plot(data=pivoted, ax_index=i)
-    
+        p = f.plot(
+            data=pivoted,
+            ax_index=i,
+            style={
+                "title": i,
+                "xticklabel_rotation": 90,
+                "ylabel": "金额",
+            },
+        )
     f.save()
-    

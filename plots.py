@@ -13,6 +13,10 @@ from adjustText import adjust_text
 from itertools import cycle
 import scipy.stats as stats
 
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 # sns.theme(style="whitegrid")
 MYFONT = fm.FontProperties(fname="C:/Windows/Fonts/SimHei.ttf")
@@ -23,24 +27,260 @@ class Plot:
     def __init__(
         self,
         data,  # 原始数
-        ax = None,
+        ax=None,
         fontsize: int = 14,  # 字体大小
         fmt: str = "{:,.0f}",  # 基本数字格式
+        style: Dict[str, Any] = {},  # 风格字典
         *args,
         **kwargs,
     ):
         self.data = data
         self.ax = ax or plt.gca()
-        self.fontsize= fontsize
+        self.fontsize = fontsize
         self.fmt = fmt
+        self._style = style
+        self.style = self.Style(self, **style)
 
-    def legend(self):
-        # 图例
-        box = self.ax.get_position()
+    class Style:
+        def __init__(self, plot, **kwargs) -> None:
+            self._plot = plot
+
+            """默认风格字典"""
+            d_style = {
+                # 图表的一些风格
+                "title": None,  # 图表标题
+                "title_fontsize": plot.fontsize,  # 图表标题字体大小
+                "major_grid": None,  # 主网格线
+                "minor_grid": None,  # 次网格线
+                "hide_top_right_spines": False,  # 是否隐藏上/右边框
+                # 坐标轴相关的风格
+                "xlabel": None,  # x轴标题
+                "xlabel_fontsize": plot.fontsize,  # x轴标题字体大小
+                "ylabel": None,  # y轴标题
+                "ylabel_fontsize": plot.fontsize,  # y轴标题字体大小
+                "xlim": None,  # x轴边界(最小值, 最大值)
+                "ylim": None,  # y轴边界(最小值, 最大值)
+                "y2lim": None,  # y轴次坐标轴边界(最小值, 最大值)
+                # 刻度相关的风格
+                "xticklabel_fontsize": plot.fontsize,  # x轴刻度标签字体大小
+                "yticklabel_fontsize": plot.fontsize,  # y轴刻度标签字体大小
+                "xticklabel_rotation": None,  # x抽刻度标签旋转角度
+                "yticklabel_rotation": None,  # y抽刻度标签旋转角度
+                "remove_xticks": False,  # 是否移除x轴刻度
+                "remove_yticks": False,  # 是否移除y轴刻度
+                # 图例
+                "show_legend": False,  # 是否展示ax图例
+                "legend_loc": "center left",  # 图例位置
+                "legend_ncol": 1,  # 图例列数
+            }
+
+            """根据初始化参数更新默认风格字典，并循环生成类属性"""
+            d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
+            for key, value in d_style.items():
+                self.__setattr__(f"_{key}", value)
+
+            """初始化自动执行一遍风格设置"""
+            self.title(self._title, self._title_fontsize)
+            self.xlabel(self._xlabel, self._xlabel_fontsize)
+            self.ylabel(self._ylabel, self._ylabel_fontsize)
+            self.tick_params(
+                self._xticklabel_fontsize,
+                self._yticklabel_fontsize,
+                self._xticklabel_rotation,
+                self._yticklabel_rotation,
+            )
+            if self._remove_xticks:
+                self.remove_xticks()
+            if self._remove_yticks:
+                self.remove_yticks()
+            if self._hide_top_right_spines:
+                self.hide_top_right_spines()
+            if self._xlim is not None:
+                self.xlim(self._xlim)
+            if self._ylim is not None:
+                self.ylim(self._ylim)
+            if self._y2lim is not None:
+                self.y2lim(self._y2lim)
+            if self._major_grid is not None:
+                self.major_grid(**self._major_grid)
+            if self._minor_grid is not None:
+                self.minor_grid(**self._minor_grid)
+
+        def title(
+            self, title: Optional[str] = None, fontsize: Optional[float] = None
+        ) -> None:
+            """添加图表的标题
+
+            Parameters
+            ----------
+            title : Optional[str], optional
+                标题文字内容, by default None
+            fontsize : Optional[float], optional
+                标题字体大小, by default None
+            """
+            self._plot.ax.set_title(title, fontsize=fontsize)
+
+        def tick_params(
+            self,
+            xticklabel_fontsize: Optional[float] = None,
+            yticklabel_fontsize: Optional[float] = None,
+            xticklabel_rotation: Optional[float] = None,
+            yticklabel_rotation: Optional[float] = None,
+        ) -> None:
+            """设置刻度标签样式
+
+            Parameters
+            ----------
+            xticklabel_fontsize : Optional[float], optional
+                x轴刻度标签字体大小, by default None
+            yticklabel_fontsize : Optional[float], optional
+                y轴刻度标签字体大小, by default None
+            xticklabel_rotation : Optional[float], optional
+                x轴刻度标签旋转角度, by default None
+            yticklabel_rotation : Optional[float], optional
+                y轴刻度标签旋转角度, by default None
+            """
+            self._plot.ax.tick_params(
+                axis="x",
+                labelsize=xticklabel_fontsize,
+                labelrotation=xticklabel_rotation,
+            )  # 设置x轴刻度标签字体大小
+            self._plot.ax.tick_params(
+                axis="y",
+                labelsize=yticklabel_fontsize,
+                labelrotation=yticklabel_rotation,
+            )  # 设置y轴刻度标签字体大小
+
+        def remove_xticks(self) -> None:
+            """移除x轴刻度"""
+            self._plot.ax.get_xaxis().set_ticks([])
+
+        def remove_yticks(self) -> None:
+            """移除y轴刻度"""
+            self._plot.ax.get_yaxis().set_ticks([])
+
+        def xlabel(
+            self, label: Optional[str] = None, fontsize: Optional[float] = None
+        ) -> None:
+            """设置x轴标题
+
+            Parameters
+            ----------
+            label : Optional[str], optional
+                x轴标题内容, by default None
+            fontsize : Optional[float], optional
+                x轴标题字体大小, by default None
+            """
+            self._plot.ax.set_xlabel(label, fontsize=fontsize)
+
+        def ylabel(
+            self, label: Optional[str] = None, fontsize: Optional[float] = None
+        ) -> None:
+            """设置y轴标题
+
+            Parameters
+            ----------
+            label : Optional[str], optional
+                y轴标题内容, by default None
+            fontsize : Optional[float], optional
+                y轴标题字体大小, by default None
+            """
+            self._plot.ax.set_ylabel(label, fontsize=fontsize)
+
+        def hide_top_right_spines(self) -> None:
+            """隐藏上/右边框，可以解决一些图表标签与边框重叠的问题"""
+            self._plot.ax.spines["right"].set_visible(False)
+            self._plot.ax.spines["top"].set_visible(False)
+            self._plot.ax.yaxis.set_ticks_position("left")
+            self._plot.ax.xaxis.set_ticks_position("bottom")
+
+        def xlim(self, xlim: Tuple[Tuple[float, float]]) -> None:
+            """设置x轴的边界
+
+            Parameters
+            ----------
+            xlim : Tuple[Tuple[float, float]]
+                包含x轴下界和上界的tuple
+            """
+            self._plot.ax.set_xlim(xlim[0], xlim[1])
+
+        def ylim(self, ylim: Tuple[Tuple[float, float]]) -> None:
+            """设置y轴的边界
+
+            Parameters
+            ----------
+            ylim : Tuple[Tuple[float, float]]
+                包含y轴下界和上界的tuple
+            """
+            self._plot.ax.set_ylim(ylim[0], ylim[1])
+
+        def y2lim(self, y2lim: Tuple[Tuple[float, float]]) -> None:
+            """设置y轴次坐标轴的边界
+
+            Parameters
+            ----------
+            y2lim : Tuple[Tuple[float, float]]
+                包含y轴次坐标轴下界和上界的tuple
+            """
+            _ax2 = self._plot.ax.get_shared_x_axes().get_siblings(self._plot.ax)[0]
+            _ax2.set_ylim(y2lim[0], y2lim[1])
+
+        def major_grid(self, **kwargs) -> None:
+            """显示主网格线"""
+            d_grid = {
+                "color": "grey",
+                "axis": "both",
+                "linestyle": ":",
+                "linewidth": 0.3,
+                "zorder": 0,  # 图层
+            }
+            d_grid = {k: kwargs[k] if k in kwargs else v for k, v in d_grid.items()}
+
+            self._plot.ax.grid(
+                which="major",
+                color=d_grid["color"],
+                axis=d_grid["axis"],
+                linestyle=d_grid["linestyle"],
+                linewidth=d_grid["linewidth"],
+                zorder=d_grid["zorder"],
+            )
+
+        def minor_grid(self, **kwargs) -> None:
+            """显示次网格线，比主网格线更密集"""
+            d_grid = {
+                "color": "grey",
+                "axis": "both",
+                "linestyle": ":",
+                "linewidth": 0.3,
+                "zorder": 0,  # 图层
+            }
+            d_grid = {k: kwargs[k] if k in kwargs else v for k, v in d_grid.items()}
+
+            self._plot.ax.minorticks_on()  # 注意该语句，只显示major_grid不需要
+            self._plot.ax.grid(
+                which="both",
+                color=d_grid["color"],
+                axis=d_grid["axis"],
+                linestyle=d_grid["linestyle"],
+                linewidth=d_grid["linewidth"],
+                zorder=d_grid["zorder"],
+            )
+
+    def legend(
+        self, loc: Literal["center left", "lower center"] = "center left", ncol: int = 1
+    ):
+        """生成ax图例
+
+        Args:
+            loc (Literal["center left", "lower center"], optional): 图例位置. Defaults to "center left".
+            ncol (int, optional): 图例列数. Defaults to 1.
+        """
+        # 添加图例后原ax是否缩放
+        # box = self.ax.get_position()
         # ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
         handles, labels = self.ax.get_legend_handles_labels()
-        if self.data_line is not None:
+        try:
             ax2 = self.ax.get_shared_x_axes().get_siblings(self.ax)[0]
             handles2, labels2 = ax2.get_legend_handles_labels()
             by_label = dict(
@@ -49,7 +289,7 @@ class Plot:
                     handles[::-1] + handles2[::-1],
                 )
             )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
-        else:
+        except:
             by_label = dict(
                 zip(
                     labels[::-1],
@@ -59,13 +299,14 @@ class Plot:
         self.ax.legend(
             by_label.values(),
             by_label.keys(),
-            loc="center left",
-            ncol=1,
-            bbox_to_anchor=(1, 0.5),
+            loc=loc,
+            ncol=ncol,
+            bbox_to_anchor=(0.95, 0.5) if loc == "center left" else (0.5, 1),
             labelspacing=1,
             frameon=False,
             prop={"family": "Microsoft YaHei", "size": self.fontsize},
         )
+
 
 # # 继承基本类, 气泡图
 # class PlotBubble(GridFigure):
@@ -867,12 +1108,13 @@ class Plot:
 
 #         return self.save()
 
+
 # 继承基本类，堆积柱状对比图类
-class AxPlotStackedBar(Plot):
+class PlotStackedBar(Plot):
     def __init__(
         self,
         data,  # 原始数
-        ax = None,
+        ax=None,
         width: int = 15,  # 宽
         height: int = 6,  # 高
         fontsize: int = 14,  # 字体大小
@@ -882,10 +1124,19 @@ class AxPlotStackedBar(Plot):
         *args,
         **kwargs,
     ):
-        super().__init__(data=data,ax=ax,width=width,height=height,fontsize=fontsize,fmt=fmt, *args,**kwargs)
         self.data_line = data_line
         self.fmt_line = fmt_line
-        
+        super().__init__(
+            data=data,
+            ax=ax,
+            width=width,
+            height=height,
+            fontsize=fontsize,
+            fmt=fmt,
+            *args,
+            **kwargs,
+        )
+
     def plot(
         self,
         stacked: bool = True,
@@ -893,10 +1144,9 @@ class AxPlotStackedBar(Plot):
         show_total_label: bool = False,
         add_gr_text: bool = False,
         threshold: float = 0.02,
-        show_legend: bool = True,
         *args,
         **kwargs,
-    ) -> str:
+    ):
         """继承基本类，绘制堆积柱状图
 
         Parameters
@@ -911,8 +1161,6 @@ class AxPlotStackedBar(Plot):
             是否显示增长率数字, by default False
         threshold : float, optional
             显示数字标签的阈值，系列占堆积之和的比例大于此值才显示, by default 0.02
-        show_legend : bool, optional
-            是否显示图例, by default True
 
         Returns
         -------
@@ -1037,11 +1285,7 @@ class AxPlotStackedBar(Plot):
                             "{:+.1%}".format(df_gr.iloc[k, i]),
                             xy=(
                                 0.5,
-                                (
-                                    bottom_gr
-                                    + df.iloc[k - 1, i] / 2
-                                    + df.iloc[k, i] / 2
-                                )
+                                (bottom_gr + df.iloc[k - 1, i] / 2 + df.iloc[k, i] / 2)
                                 / 2,
                             ),
                             ha="center",
@@ -1083,7 +1327,9 @@ class AxPlotStackedBar(Plot):
         self.ax.get_xaxis().set_ticks(range(0, len(df.index)), labels=df.index)
 
         # y轴标签格式
-        self.ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: self.fmt.format(y)))
+        self.ax.yaxis.set_major_formatter(
+            FuncFormatter(lambda y, _: self.fmt.format(y))
+        )
 
         self.ax.axhline(0, color="black", linewidth=0.5)  # y轴为0的横线
 
@@ -1135,9 +1381,14 @@ class AxPlotStackedBar(Plot):
             # # x轴标签
             # ax2.get_xaxis().set_ticks(range(0, len(df.index)), labels=df.index)
 
-        #图例
-        if show_legend:
-            self.legend()
+        # 是否展示图例，必须在绘图完成以后
+        if self.style._show_legend:
+            self.legend(
+                self.style._legend_loc,
+                self.style._legend_ncol,
+            )
+
+        return self
 
 
 # # 继承基本类，Histgram分布图类
@@ -1698,8 +1949,7 @@ class AxPlotStackedBar(Plot):
 #         return self.save()
 
 
-# if __name__ == "__main__":
-#     plot_data = pd.DataFrame({"a": [1, 2, 3], "b": [3, 5, 4], "z": [1, 1, 1]})
-#     print(plot_data)
-#     p = PlotStackedBar(data=plot_data)
-#     p.plot(show_total_label=True)
+if __name__ == "__main__":
+    plot_data = pd.DataFrame({"a": [1, 2, 3], "b": [3, 5, 4], "z": [1, 1, 1]})
+    p = PlotStackedBar(data=plot_data, data_line=plot_data)
+    print(p.data_line)
