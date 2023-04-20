@@ -502,12 +502,10 @@ if __name__ == "__main__":
     f = GridFigure(
         ncols=3,
         nrows=2,
-        width_ratios=[2, 1, 1],
-        fontsize=9,
+        fontsize=10,
         style={
-            "title": "Test",
-            "last_xticks_only": True,
-            "first_yticks_only": True,
+            "title": "123",
+            "label_outer": True,
         },
     )
     for i in range(6):
@@ -517,7 +515,10 @@ if __name__ == "__main__":
             style={
                 "title": i,
                 "xticklabel_rotation": 90,
-                "ylabel": "金额",
+                "ylabel": "test",
+                "xticks_interval": 4,
+                "xticks_length": 10,
+                "major_grid": {"color": "grey"},
             },
         )
     f.save()

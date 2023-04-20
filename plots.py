@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import pandas as pd
-from matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import FuncFormatter, MultipleLocator
 import math
 from adjustText import adjust_text
 from itertools import cycle
@@ -39,7 +39,6 @@ class Plot:
         self.fontsize = fontsize
         self.fmt = fmt
         self._style = style
-        self.style = self.Style(self, **style)
 
     class Style:
         def __init__(self, plot, **kwargs) -> None:
@@ -68,6 +67,10 @@ class Plot:
                 "yticklabel_rotation": None,  # y抽刻度标签旋转角度
                 "remove_xticks": False,  # 是否移除x轴刻度
                 "remove_yticks": False,  # 是否移除y轴刻度
+                "xticks_interval": None,  # x轴刻度间隔
+                "yticks_interval": None,  # y轴刻度间隔
+                "xticks_length": 0, # x轴刻度长度
+                "yticks_length": 0, # y轴刻度长度
                 # 图例
                 "show_legend": False,  # 是否展示ax图例
                 "legend_loc": "center left",  # 图例位置
@@ -88,7 +91,13 @@ class Plot:
                 self._yticklabel_fontsize,
                 self._xticklabel_rotation,
                 self._yticklabel_rotation,
+                self._xticks_length,
+                self._yticks_length,
             )
+            if self._xticks_interval is not None:
+                self.xticks_interval(self._xticks_interval)
+            if self._yticks_interval is not None:
+                self.yticks_interval(self._yticks_interval)
             if self._remove_xticks:
                 self.remove_xticks()
             if self._remove_yticks:
@@ -105,6 +114,8 @@ class Plot:
                 self.major_grid(**self._major_grid)
             if self._minor_grid is not None:
                 self.minor_grid(**self._minor_grid)
+            if self._show_legend:
+                self.legend(self._legend_loc, self._legend_ncol)
 
         def title(
             self, title: Optional[str] = None, fontsize: Optional[float] = None
@@ -126,6 +137,8 @@ class Plot:
             yticklabel_fontsize: Optional[float] = None,
             xticklabel_rotation: Optional[float] = None,
             yticklabel_rotation: Optional[float] = None,
+            xticks_length: float = 0,
+            yticks_length: float = 0,
         ) -> None:
             """设置刻度标签样式
 
@@ -144,12 +157,14 @@ class Plot:
                 axis="x",
                 labelsize=xticklabel_fontsize,
                 labelrotation=xticklabel_rotation,
-            )  # 设置x轴刻度标签字体大小
+                length = xticks_length
+            ) 
             self._plot.ax.tick_params(
                 axis="y",
                 labelsize=yticklabel_fontsize,
                 labelrotation=yticklabel_rotation,
-            )  # 设置y轴刻度标签字体大小
+                length = yticks_length
+            ) 
 
         def remove_xticks(self) -> None:
             """移除x轴刻度"""
@@ -158,6 +173,22 @@ class Plot:
         def remove_yticks(self) -> None:
             """移除y轴刻度"""
             self._plot.ax.get_yaxis().set_ticks([])
+
+        def xticks_interval(self, interval: float) -> None:
+            """设置x轴刻度间隔
+
+            Args:
+                interval (float): 刻度间隔
+            """
+            self._plot.ax.xaxis.set_major_locator(MultipleLocator(interval))
+
+        def yticks_interval(self, interval: float) -> None:
+            """设置y轴刻度间隔
+
+            Args:
+                interval (float,): 刻度间隔
+            """
+            self._plot.ax.yaxis.set_major_locator(MultipleLocator(interval))
 
         def xlabel(
             self, label: Optional[str] = None, fontsize: Optional[float] = None
@@ -266,46 +297,59 @@ class Plot:
                 zorder=d_grid["zorder"],
             )
 
-    def legend(
-        self, loc: Literal["center left", "lower center"] = "center left", ncol: int = 1
-    ):
-        """生成ax图例
+        def legend(
+            self,
+            loc: Literal["center left", "lower center"] = "center left",
+            ncol: int = 1,
+        ):
+            """生成ax图例
 
-        Args:
-            loc (Literal["center left", "lower center"], optional): 图例位置. Defaults to "center left".
-            ncol (int, optional): 图例列数. Defaults to 1.
+            Args:
+                loc (Literal["center left", "lower center"], optional): 图例位置. Defaults to "center left".
+                ncol (int, optional): 图例列数. Defaults to 1.
+            """
+            # 添加图例后原ax是否缩放
+            # box = self.ax.get_position()
+            # ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+            handles, labels = self._plot.ax.get_legend_handles_labels()
+            try:
+                ax2 = self._plot.ax.get_shared_x_axes().get_siblings(self._plot.ax)[0]
+                handles2, labels2 = ax2.get_legend_handles_labels()
+                by_label = dict(
+                    zip(
+                        labels[::-1] + labels2[::-1],
+                        handles[::-1] + handles2[::-1],
+                    )
+                )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
+            except:
+                by_label = dict(
+                    zip(
+                        labels[::-1],
+                        handles[::-1],
+                    )
+                )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
+            self._plot.ax.legend(
+                by_label.values(),
+                by_label.keys(),
+                loc=loc,
+                ncol=ncol,
+                bbox_to_anchor=(1, 0.5) if loc == "center left" else (0.5, 1),
+                labelspacing=1,
+                frameon=False,
+                prop={"family": "Microsoft YaHei", "size": self._plot.fontsize},
+            )
+
+    def apply_style(self):
+        """应用风格，不适合在初始化应用，因为有些风格要在绘图后才生效
+
+        Returns:
+            self: 返回实例
         """
-        # 添加图例后原ax是否缩放
-        # box = self.ax.get_position()
-        # ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        # 不适合在初始化应用，因为有些风格要在绘图后才生效
+        self.style = self.Style(self, **self._style)
 
-        handles, labels = self.ax.get_legend_handles_labels()
-        try:
-            ax2 = self.ax.get_shared_x_axes().get_siblings(self.ax)[0]
-            handles2, labels2 = ax2.get_legend_handles_labels()
-            by_label = dict(
-                zip(
-                    labels[::-1] + labels2[::-1],
-                    handles[::-1] + handles2[::-1],
-                )
-            )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
-        except:
-            by_label = dict(
-                zip(
-                    labels[::-1],
-                    handles[::-1],
-                )
-            )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
-        self.ax.legend(
-            by_label.values(),
-            by_label.keys(),
-            loc=loc,
-            ncol=ncol,
-            bbox_to_anchor=(0.95, 0.5) if loc == "center left" else (0.5, 1),
-            labelspacing=1,
-            frameon=False,
-            prop={"family": "Microsoft YaHei", "size": self.fontsize},
-        )
+        return self
 
 
 # # 继承基本类, 气泡图
@@ -1119,6 +1163,7 @@ class PlotStackedBar(Plot):
         height: int = 6,  # 高
         fontsize: int = 14,  # 字体大小
         fmt: str = "{:,.0f}",  # 基本数字格式
+        # 以下为PlotStackedBar特有参数
         data_line=None,  # 折线图数据
         fmt_line="{:,.0%}",  # 折线图格式
         *args,
@@ -1380,13 +1425,6 @@ class PlotStackedBar(Plot):
 
             # # x轴标签
             # ax2.get_xaxis().set_ticks(range(0, len(df.index)), labels=df.index)
-
-        # 是否展示图例，必须在绘图完成以后
-        if self.style._show_legend:
-            self.legend(
-                self.style._legend_loc,
-                self.style._legend_ncol,
-            )
 
         return self
 

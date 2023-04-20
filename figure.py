@@ -37,8 +37,8 @@ class GridFigure(Figure):
         ncols: int = 1,
         width_ratios: Optional[List[float]] = None,
         height_ratios: Optional[List[float]] = None,
-        wspace: float = 0,
-        hspace: float = 0,
+        wspace: float = 0.1,
+        hspace: float = 0.1,
         savepath: str = "/plots/",  # 保存位置
         width: int = 15,  # 宽
         height: int = 6,  # 高
@@ -50,7 +50,7 @@ class GridFigure(Figure):
     ) -> None:
         super().__init__(*args, **kwargs)
 
-        # 根据nrows, ncols, width_ratios和height_ratios返回一个GridSpec
+        # 根据nrows, ncols, width_ratios和height_ratios, wspace, hspace返回一个GridSpec
         self.nrows = nrows
         self.ncols = ncols
         width_ratios = [1] * ncols if width_ratios is None else width_ratios
@@ -94,8 +94,7 @@ class GridFigure(Figure):
                 "ytitle": None,  # y轴总标题
                 "ytitle_fontsize": figure.fontsize * 1.5,  # y轴总标题字体大小
                 # GridSpec子图的一些风格
-                "last_xticks_only": False,  # 多个子图情况下只显示最下方图片的x轴ticks
-                "first_yticks_only": False,  # 多个子图情况下只显示最左侧图片的y轴ticks
+                "label_outer": False,
                 "same_xlim": False,  # 多个子图是否x轴边界一致
                 "same_ylim": False,  # 多个子图是否y轴边界一致
                 # 图例
@@ -112,16 +111,14 @@ class GridFigure(Figure):
             """初始化自动执行一遍风格设置"""
             self.title(self._title, self._title_fontsize)
             self.ytitle(self._ytitle, self._ytitle_fontsize)
-            if self._last_xticks_only:
-                self.last_xticks_only()
-            if self._first_yticks_only:
-                self.first_yticks_only()
             if self._same_xlim:
                 self.same_xlim()
             if self._same_ylim:
                 self.same_ylim()
             if self._show_legend:
                 self.fig_legend(self._legend_loc, self._legend_ncol)
+            if self._label_outer:
+                self.label_outer()
 
         def title(
             self, title: Optional[str] = None, fontsize: Optional[float] = None
@@ -176,23 +173,11 @@ class GridFigure(Figure):
                 labels=labels,
                 loc=loc,
                 ncol=ncol,
-                bbox_to_anchor=(0.95, 0.5) if loc == "center left" else (0.5, 1),
+                bbox_to_anchor=(0.9, 0.5) if loc == "center left" else (0.5, 1),
                 labelspacing=1,
                 frameon=False,
                 prop={"family": "Microsoft YaHei", "size": self._figure.fontsize},
             )
-
-        def last_xticks_only(self) -> None:
-            """多个子图时只显示最下方的x轴刻度"""
-            for i, _ax in enumerate(self._figure.axes):
-                if i < len(self._figure.axes) - self._figure.ncols:
-                    _ax.get_xaxis().set_visible(False)
-
-        def first_yticks_only(self) -> None:
-            """多个子图时只显示最左方的y轴刻度"""
-            for i, _ax in enumerate(self._figure.axes):
-                if (i % self._figure.ncols) != 0:
-                    _ax.get_yaxis().set_visible(False)
 
         def same_xlim(self) -> None:
             """多个子图时保持x轴边界一致"""
@@ -220,6 +205,11 @@ class GridFigure(Figure):
                         ylim_range = [ylim_range[0], ylim_max]
                 _ax.ylim(ylim_range[0], ylim_range[1])
 
+        def label_outer(self) -> None:
+            """多个子图时只显示最下方x轴和最左边y轴的刻度标签"""
+            for i, _ax in enumerate(self._figure.axes):
+                _ax.label_outer()
+        
     def plot(
         self,
         data: pd.DataFrame,
@@ -233,7 +223,7 @@ class GridFigure(Figure):
             ax=ax,
             fontsize=self.fontsize if fontsize is None else fontsize,
             style=style,
-        ).plot()
+        ).plot().apply_style()
 
     def save(self) -> None:
         self.style = self.Style(self, **self._style)  # 应用风格
