@@ -5,7 +5,7 @@ from matplotlib.gridspec import GridSpec
 import os
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 import matplotlib as mpl
-from plots import PlotStackedBar
+from plots import PlotBar
 import pandas as pd
 
 try:
@@ -209,21 +209,52 @@ class GridFigure(Figure):
             """多个子图时只显示最下方x轴和最左边y轴的刻度标签"""
             for i, _ax in enumerate(self._figure.axes):
                 _ax.label_outer()
-        
-    def plot(
+
+    def plot_bar(
         self,
         data: pd.DataFrame,
+        fmt: str = "{:,.0f}",
         ax_index: int = 0,
         fontsize: Optional[float] = None,
         style: Dict[str, any] = {},
-    ):
+        data_line: Optional[pd.DataFrame] = None,
+        fmt_line: Optional[str] = "{:+,.0%}",
+        **kwargs,
+    ) -> mpl.axes.Axes:
+        """在当前画布的指定ax绘制柱状图
+
+        Args:
+            data (pd.DataFrame): 绘图主数据
+            fmt (str): 主数据格式，用于显示标签等的默认格式. Defaults to "{:,.0f}"
+            ax_index (int, optional): ax索引. Defaults to 0.
+            fontsize (Optional[float], optional): 绘图字号. Defaults to None.
+            style (Dict[str, any], optional): 风格字典. Defaults to {}.
+            data_line (Optional[pd.DataFrame], optional): 次坐标轴折线图数据. Defaults to None.
+            fmt_line (Optional[str], optional): 次坐标轴折线图数据格式. Defaults to "{:+,.0%}".
+
+        **kwargs:
+            stacked (bool, optional): 是否堆积. Defaults to True.
+            show_label (bool, optional): 是否显示数字标签. Defaults to True.
+            show_total_label (bool, optional): 是否在最上方显示堆积之和数字标签. Defaults to False.
+            add_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
+            threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
+
+        Returns:
+            mpl.axes.Axes: 返回ax
+        """
         ax = self.axes[ax_index]
-        return PlotStackedBar(
+
+        PlotBar(
             data=data,
+            fmt=fmt,
             ax=ax,
             fontsize=self.fontsize if fontsize is None else fontsize,
             style=style,
-        ).plot().apply_style()
+            data_line=data_line,
+            fmt_line=fmt_line,
+        ).plot(**kwargs).apply_style()
+
+        return ax
 
     def save(self) -> None:
         self.style = self.Style(self, **self._style)  # 应用风格

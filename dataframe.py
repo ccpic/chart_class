@@ -509,7 +509,7 @@ if __name__ == "__main__":
         },
     )
     for i in range(6):
-        p = f.plot(
+        p = f.plot_bar(
             data=pivoted,
             ax_index=i,
             style={
@@ -517,8 +517,9 @@ if __name__ == "__main__":
                 "xticklabel_rotation": 90,
                 "ylabel": "test",
                 "xticks_interval": 4,
-                "xticks_length": 10,
                 "major_grid": {"color": "grey"},
             },
+            show_label=False,
+            show_total_label=True,
         )
     f.save()

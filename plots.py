@@ -1154,7 +1154,7 @@ class Plot:
 
 
 # 继承基本类，堆积柱状对比图类
-class PlotStackedBar(Plot):
+class PlotBar(Plot):
     def __init__(
         self,
         data,  # 原始数
@@ -1192,25 +1192,17 @@ class PlotStackedBar(Plot):
         *args,
         **kwargs,
     ):
-        """继承基本类，绘制堆积柱状图
+        """继承基本Plot类，绘制柱状图
 
-        Parameters
-        ----------
-        stacked : bool, optional
-            是否堆积, by default True
-        show_label : bool, optional
-            是否显示数字标签, by default True
-        show_total_label : bool, optional
-            是否在最上方显示堆积之和数字标签, by default False
-        add_gr_text : bool, optional
-            是否显示增长率数字, by default False
-        threshold : float, optional
-            显示数字标签的阈值，系列占堆积之和的比例大于此值才显示, by default 0.02
+        Args:
+            stacked (bool, optional): 是否堆积. Defaults to True.
+            show_label (bool, optional): 是否显示数字标签. Defaults to True.
+            show_total_label (bool, optional): 是否在最上方显示堆积之和数字标签. Defaults to False.
+            add_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
+            threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
 
-        Returns
-        -------
-        str
-            返回绘图保存的路径
+        Returns:
+            self: 返回自身plot实例
         """
         df = self.data
         df_gr = self.data.pct_change(axis=1)
@@ -1989,5 +1981,5 @@ class PlotStackedBar(Plot):
 
 if __name__ == "__main__":
     plot_data = pd.DataFrame({"a": [1, 2, 3], "b": [3, 5, 4], "z": [1, 1, 1]})
-    p = PlotStackedBar(data=plot_data, data_line=plot_data)
+    p = PlotBar(data=plot_data, data_line=plot_data)
     print(p.data_line)
