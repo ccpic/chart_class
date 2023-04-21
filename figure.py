@@ -235,6 +235,7 @@ class GridFigure(Figure):
         **kwargs:
             stacked (bool, optional): 是否堆积. Defaults to True.
             show_label (bool, optional): 是否显示数字标签. Defaults to True.
+            show_total_bar (bool, optional): 是否显示一个总体表现外框. Defaults to False.
             show_total_label (bool, optional): 是否在最上方显示堆积之和数字标签. Defaults to False.
             add_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
             threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.

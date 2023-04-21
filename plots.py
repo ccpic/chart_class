@@ -20,7 +20,6 @@ except ImportError:
 
 # sns.theme(style="whitegrid")
 MYFONT = fm.FontProperties(fname="C:/Windows/Fonts/SimHei.ttf")
-NUM_FONT = {"fontname": "Calibri"}
 
 
 class Plot:
@@ -69,8 +68,8 @@ class Plot:
                 "remove_yticks": False,  # 是否移除y轴刻度
                 "xticks_interval": None,  # x轴刻度间隔
                 "yticks_interval": None,  # y轴刻度间隔
-                "xticks_length": 0, # x轴刻度长度
-                "yticks_length": 0, # y轴刻度长度
+                "xticks_length": 0,  # x轴刻度长度
+                "yticks_length": 0,  # y轴刻度长度
                 # 图例
                 "show_legend": False,  # 是否展示ax图例
                 "legend_loc": "center left",  # 图例位置
@@ -157,14 +156,14 @@ class Plot:
                 axis="x",
                 labelsize=xticklabel_fontsize,
                 labelrotation=xticklabel_rotation,
-                length = xticks_length
-            ) 
+                length=xticks_length,
+            )
             self._plot.ax.tick_params(
                 axis="y",
                 labelsize=yticklabel_fontsize,
                 labelrotation=yticklabel_rotation,
-                length = yticks_length
-            ) 
+                length=yticks_length,
+            )
 
         def remove_xticks(self) -> None:
             """移除x轴刻度"""
@@ -1186,6 +1185,7 @@ class PlotBar(Plot):
         self,
         stacked: bool = True,
         show_label: bool = True,
+        show_total_bar: bool = False,
         show_total_label: bool = False,
         add_gr_text: bool = False,
         threshold: float = 0.02,
@@ -1197,6 +1197,7 @@ class PlotBar(Plot):
         Args:
             stacked (bool, optional): 是否堆积. Defaults to True.
             show_label (bool, optional): 是否显示数字标签. Defaults to True.
+            show_total_bar (bool, optional): 是否显示一个总体表现外框. Defaults to False.
             show_total_label (bool, optional): 是否在最上方显示堆积之和数字标签. Defaults to False.
             add_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
             threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
@@ -1205,7 +1206,7 @@ class PlotBar(Plot):
             self: 返回自身plot实例
         """
         df = self.data
-        df_gr = self.data.pct_change(axis=1)
+        df_gr = self.data.pct_change(axis=0)
         if self.data_line is not None:
             df_line = self.data_line
 
@@ -1214,7 +1215,7 @@ class PlotBar(Plot):
             bottom_pos = 0
             bottom_neg = 0
             bottom_gr = 0
-            bbox_props = None
+
             max_v = df.values.max()
             min_v = df.values.min()
             ITER_COLORS = cycle(COLOR_LIST)
@@ -1260,7 +1261,7 @@ class PlotBar(Plot):
                     pos_x = k + bar_width * i
 
                 # 绘制bar图
-                bar = self.ax.bar(
+                self.ax.bar(
                     pos_x,
                     v,
                     width=bar_width,
@@ -1269,6 +1270,29 @@ class PlotBar(Plot):
                     label=col,
                     zorder=3,
                 )
+                # 绘制总体表现外框
+                if show_total_bar:
+                    self.ax.bar(
+                        df.index,
+                        df.sum(axis=1) * 1.03,
+                        width=0.6,
+                        linewidth=1,
+                        linestyle="--",
+                        facecolor=(1, 0, 0, 0.0),
+                        edgecolor=(0, 0, 0, 1),
+                    )
+
+                    # 因为多了总体表现外框，移除右、上边框
+                    self._style["hide_top_right_spines"] = True
+
+                    # for index in df.index:
+                    #     ax.text(
+                    #         index,
+                    #         df.loc[index, :].sum() * (H_INDEX + 0.02),
+                    #         "{:,.0f}".format(df.loc[index, :].sum()),
+                    #         ha="center",
+                    #         fontsize=self.fontsize,
+                    #     )
 
                 if show_label is True:
                     if stacked is False or df.shape[1] == 1:  # 非堆叠图或只有一列数的情况（非堆叠）
@@ -1301,7 +1325,6 @@ class PlotBar(Plot):
                             ha="center",
                             fontsize=self.fontsize,
                             zorder=5,
-                            **NUM_FONT,
                         )
                 if v >= 0:
                     bottom_pos += v
@@ -1318,21 +1341,34 @@ class PlotBar(Plot):
                 if add_gr_text:
                     if k > 0:
                         # 各系列增长率标注
-                        self.ax.annotate(
-                            "{:+.1%}".format(df_gr.iloc[k, i]),
-                            xy=(
-                                0.5,
-                                (bottom_gr + df.iloc[k - 1, i] / 2 + df.iloc[k, i] / 2)
-                                / 2,
-                            ),
+                        self.ax.text(
+                            x=k - 0.5,
+                            y=(bottom_gr + df.iloc[k - 1, i] / 2 + df.iloc[k, i] / 2)
+                            / 2,
+                            s="{:+.1%}".format(df_gr.iloc[k, i]),
                             ha="center",
                             va="center",
                             color=color,
                             fontsize=self.fontsize,
-                            bbox=bbox_props,
                             zorder=5,
                         )
                         bottom_gr += df.iloc[k - 1, i] + df.iloc[k, i]
+
+                        # 绘制总体增长率
+                        if show_total_label:
+                            gr = df.iloc[k, :].sum() / df.iloc[k - 1, :].sum() - 1
+
+                            self.ax.text(
+                                x=k - 0.5,
+                                y=(df.iloc[k, :].sum() + df.iloc[k - 1, :].sum())
+                                / 2
+                                * 1.05,
+                                s="{:+.1%}".format(gr),
+                                ha="center",
+                                va="bottom",
+                                color="black",
+                                fontsize=self.fontsize,
+                            )
 
             # 在柱状图顶端添加total值
             if show_total_label:
@@ -1340,7 +1376,7 @@ class PlotBar(Plot):
                 for p, v in enumerate(total.values):
                     self.ax.text(
                         x=p,
-                        y=v,
+                        y=v * 1.05 if show_total_bar else v,  # 如果绘制整体外框则优化total值文本的位置
                         s=self.fmt.format(float(v)),
                         fontsize=self.fontsize,
                         ha="center",
