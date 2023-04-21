@@ -6,6 +6,7 @@ from dateutil.relativedelta import relativedelta
 from dateutil.parser import parse
 from figure import GridFigure
 import copy
+import matplotlib.pyplot as plt
 
 try:
     from typing import Literal
@@ -476,13 +477,13 @@ if __name__ == "__main__":
     pivoted = (
         a.get_pivot(
             index=a.date_column,
-            columns="谈判年份",
+            columns="药品名称",
             query_str="数值类型=='金额'",
             values="数值",
         )
         .sort_index()
         .div(100000000)
-    ).iloc[-4:]
+    )
     print(pivoted)
     # f = PlotStackedBar(
     #     data=pivoted,
@@ -499,24 +500,37 @@ if __name__ == "__main__":
     # )
     # f.style.title(title="陈诚")
     # f.plot(show_total_label=True)
-    f = GridFigure(
+    # f = GridFigure(
+    #     ncols=2,
+    #     fontsize=11,
+    #     style={
+    #         "title": "123",
+    #         "label_outer": True,
+    #     },
+    # )
+    # f.plot_bubble(
+    #     data=pivoted,
+    #     ax_index=0,
+    #     style={
+    #         "ylabel": "test",
+    #         "show_legend": False,
+    #     },
+    #     label_limit=205
+    # )
+    # f.save()
+    fig1 = plt.figure(FigureClass=GridFigure,         ncols=2,
         fontsize=11,
         style={
             "title": "123",
             "label_outer": True,
-        },
-    )
-    f.plot_bar(
+        },)
+    fig1.plot_bubble(
         data=pivoted,
         ax_index=0,
         style={
-            "xticklabel_rotation": 0,
             "ylabel": "test",
+            "show_legend": False,
         },
-        show_label=True,
-        label_formatter="{abs} ({share})",
-        show_total_label=True,
-        show_total_bar=True,
-        add_gr_text=True,
+        label_limit=205
     )
-    f.save()
+    fig1.save()

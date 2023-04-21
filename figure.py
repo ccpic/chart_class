@@ -5,7 +5,7 @@ from matplotlib.gridspec import GridSpec
 import os
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 import matplotlib as mpl
-from plots import PlotBar
+from plots import PlotBar, PlotBubble
 import pandas as pd
 
 try:
@@ -16,7 +16,7 @@ except ImportError:
 mpl.rcParams["font.sans-serif"] = ["Microsoft YaHei"]
 mpl.rcParams["font.serif"] = ["Microsoft YaHei"]
 mpl.rcParams["axes.unicode_minus"] = False
-mpl.rcParams.update({"font.size": 16})
+mpl.rcParams["font.size"]: 16
 mpl.rcParams["hatch.linewidth"] = 0.5
 mpl.rcParams["hatch.color"] = "grey"
 
@@ -49,7 +49,7 @@ class GridFigure(Figure):
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
-
+        
         # 根据nrows, ncols, width_ratios和height_ratios, wspace, hspace返回一个GridSpec
         self.nrows = nrows
         self.ncols = ncols
@@ -210,6 +210,40 @@ class GridFigure(Figure):
             for i, _ax in enumerate(self._figure.axes):
                 _ax.label_outer()
 
+    def plot_bubble(
+        self,
+        data: pd.DataFrame,
+        fmt: str = "{:,.0f}",
+        ax_index: int = 0,
+        fontsize: Optional[float] = None,
+        style: Dict[str, any] = {},
+        **kwargs,
+    ) -> mpl.axes.Axes:
+        """在当前画布的指定ax绘制柱状图
+
+        Args:
+            data (pd.DataFrame): 绘图主数据
+            fmt (str): 主数据格式，用于显示标签等的默认格式. Defaults to "{:,.0f}"
+            ax_index (int, optional): ax索引. Defaults to 0.
+            fontsize (Optional[float], optional): 绘图字号. Defaults to None.
+            style (Dict[str, any], optional): 风格字典. Defaults to {}.
+            ax = self.axes[ax_index]
+
+        Returns:
+            mpl.axes.Axes: 返回ax
+        """
+        ax = self.axes[ax_index] or plt.gca()
+
+        PlotBubble(
+            data=data,
+            fmt=fmt,
+            ax=ax,
+            fontsize=self.fontsize if fontsize is None else fontsize,
+            style=style,
+        ).plot(**kwargs).apply_style()
+
+        return ax
+
     def plot_bar(
         self,
         data: pd.DataFrame,
@@ -244,7 +278,7 @@ class GridFigure(Figure):
         Returns:
             mpl.axes.Axes: 返回ax
         """
-        ax = self.axes[ax_index]
+        ax = self.axes[ax_index] or plt.gca()
 
         PlotBar(
             data=data,

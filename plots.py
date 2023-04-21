@@ -348,198 +348,196 @@ class Plot:
         return self
 
 
-# # 继承基本类, 气泡图
-# class PlotBubble(GridFigure):
-#     def plot(
-#         self,
-#         x_fmt: str = "{:.0%}",
-#         y_fmt: str = "{:+.0%}",
-#         x_avg: float = None,
-#         y_avg: float = None,
-#         label_limit: int = 15,
-#         bubble_scale: float = 1,
-#         show_reg=False,
-#         corr: Union[None, float] = None,
-#     ) -> str:
-#         """继承基本类，绘制散点图
-#         Parameters
-#         ----------
-#         x_fmt : str, optional
-#             x轴数值格式字符串, by default "{:.0%}"
-#         y_fmt : str, optional
-#             y轴数值格式字符串, by default "{:+.0%}"
-#         x_avg : float, optional
-#             x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线, by default None
-#         y_avg : float, optional
-#             y轴平均值或其他分隔值，如提供则绘制y轴分隔竖线, by default None
-#         label_limit : int, optional
-#             限制显示标签的个数, by default 15
-#         bubble_scale : float, optional
-#             气泡大小系数, by default 1
-#         show_reg : bool, optional
-#             是否显示x,y的拟合趋势及置信区间, by default False
-#         corr : float, optional
-#             相关系数, by default False
-#         Returns
-#         -------
-#         str
-#             生成图片并返回保存路径
-#         """
-#         for j, ax in enumerate(self.axes):
-#             df = self.data[j]
-#             x = df.iloc[:, 0].tolist()
-#             y = df.iloc[:, 1].tolist()
-#             z = (df.iloc[:, 2] / df.iloc[:, 2].max() * 100) ** 1.8 * bubble_scale
-#             z = z.tolist()
-#             labels = df.index
+# 继承基本类, 气泡图
+class PlotBubble(Plot):
+    def plot(
+        self,
+        x_fmt: str = "{:.0%}",
+        y_fmt: str = "{:+.0%}",
+        x_avg: float = None,
+        y_avg: float = None,
+        label_limit: int = 15,
+        bubble_scale: float = 1,
+        show_reg=False,
+        corr: Union[None, float] = None,
+    ) -> str:
+        """继承基本类，绘制散点图
+        Parameters
+        ----------
+        x_fmt : str, optional
+            x轴数值格式字符串, by default "{:.0%}"
+        y_fmt : str, optional
+            y轴数值格式字符串, by default "{:+.0%}"
+        x_avg : float, optional
+            x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线, by default None
+        y_avg : float, optional
+            y轴平均值或其他分隔值，如提供则绘制y轴分隔竖线, by default None
+        label_limit : int, optional
+            限制显示标签的个数, by default 15
+        bubble_scale : float, optional
+            气泡大小系数, by default 1
+        show_reg : bool, optional
+            是否显示x,y的拟合趋势及置信区间, by default False
+        corr : float, optional
+            相关系数, by default False
+        Returns
+        -------
+        str
+            生成图片并返回保存路径
+        """
 
-#             # 确定颜色方案
-#             cmap = mpl.colors.ListedColormap(np.random.rand(256, 3))
-#             colors = iter(cmap(np.linspace(0, 1, len(x))))
+        df = self.data
+        x = df.iloc[:, 0].tolist()
+        y = df.iloc[:, 1].tolist()
+        z = (df.iloc[:, 2] / df.iloc[:, 2].max() * 100) ** 1.8 * bubble_scale
+        z = z.tolist()
+        labels = df.index
 
-#             # 绘制气泡
-#             for i in range(len(x)):
-#                 ax.scatter(
-#                     x[i], y[i], z[i], color=next(colors), alpha=0.6, edgecolors="black"
-#                 )
+        # 确定颜色方案
+        cmap = mpl.colors.ListedColormap(np.random.rand(256, 3))
+        colors = iter(cmap(np.linspace(0, 1, len(x))))
 
-#             # 添加系列标签，用adjust_text包保证标签互不重叠
+        # 绘制气泡
+        for i in range(len(x)):
+            self.ax.scatter(
+                x[i], y[i], z[i], color=next(colors), alpha=0.6, edgecolors="black"
+            )
 
-#             texts = [
-#                 plt.text(
-#                     x[i],
-#                     y[i],
-#                     labels[i],
-#                     ha="center",
-#                     va="center",
-#                     multialignment="center",
-#                     fontproperties=MYFONT,
-#                     fontsize=self.fontsize,
-#                 )
-#                 for i in range(len(labels[:label_limit]))
-#             ]
-#             adjust_text(
-#                 texts,
-#                 force_text=0.5,
-#                 arrowprops=dict(arrowstyle="->", color="black"),
-#             )
+        # 添加系列标签，用adjust_text包保证标签互不重叠
 
-#             # 设置坐标轴格式
-#             ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: x_fmt.format(x)))
-#             ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: y_fmt.format(y)))
+        texts = [
+            self.ax.text(
+                x[i],
+                y[i],
+                labels[i],
+                ha="center",
+                va="center",
+                multialignment="center",
+                fontsize=self.fontsize,
+            )
+            for i in range(len(labels[:label_limit]))
+        ]
+        
+        adjust_text(
+            texts,
+            ax=self.ax,
+            x=x,
+            y=y,
+            force_text=0.5,
+            arrowprops=dict(arrowstyle="->", color="black"),
+        )
 
-#             # 绘制平均线
-#             if x_avg is not None:
-#                 ax.axvline(x_avg, linestyle="--", linewidth=1, color="black")
-#                 plt.text(
-#                     x_avg,
-#                     ax.get_ylim()[1],
-#                     x_fmt.format(x_avg),
-#                     ha="left",
-#                     va="top",
-#                     color="black",
-#                     multialignment="center",
-#                     fontproperties=MYFONT,
-#                     fontsize=self.fontsize,
-#                 )
-#             if y_avg is not None:
-#                 ax.axhline(y_avg, linestyle="--", linewidth=1, color="black")
-#                 plt.text(
-#                     ax.get_xlim()[1],
-#                     y_avg,
-#                     y_fmt.format(y_avg),
-#                     ha="left",
-#                     va="center",
-#                     color="black",
-#                     multialignment="center",
-#                     fontproperties=MYFONT,
-#                     fontsize=self.fontsize,
-#                 )
+        # 设置坐标轴格式
+        self.ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: x_fmt.format(x)))
+        self.ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: y_fmt.format(y)))
 
-#             """以下部分绘制回归拟合曲线及CI和PI
-#             参考
-#             http://nbviewer.ipython.org/github/demotu/BMC/blob/master/notebooks/CurveFitting.ipynb
-#             https://stackoverflow.com/questions/27164114/show-confidence-limits-and-prediction-limits-in-scatter-plot
-#             """
-#             if show_reg:
-#                 n = len(x)  # 观察例数
-#                 if n > 2:  # 数据点必须大于cov矩阵的scale
-#                     p, cov = np.polyfit(
-#                         x, y, 1, cov=True
-#                     )  # 简单线性回归返回parameter和covariance
-#                     poly1d_fn = np.poly1d(p)  # 拟合方程
-#                     y_model = poly1d_fn(x)  # 拟合的y值
-#                     m = p.size  # 参数个数
+        # 绘制平均线
+        if x_avg is not None:
+            self.ax.axvline(x_avg, linestyle="--", linewidth=1, color="black")
+            self.ax.text(
+                x_avg,
+                self.ax.get_ylim()[1],
+                x_fmt.format(x_avg),
+                ha="left",
+                va="top",
+                color="black",
+                multialignment="center",
+                fontsize=self.fontsize,
+            )
+        if y_avg is not None:
+            self.ax.axhline(y_avg, linestyle="--", linewidth=1, color="black")
+            self.ax.text(
+                self.ax.get_xlim()[1],
+                y_avg,
+                y_fmt.format(y_avg),
+                ha="left",
+                va="center",
+                color="black",
+                multialignment="center",
+                fontsize=self.fontsize,
+            )
 
-#                     dof = n - m  # degrees of freedom
-#                     t = stats.t.ppf(0.975, dof)  # 显著性检验t值
+        """以下部分绘制回归拟合曲线及CI和PI
+        参考
+        http://nbviewer.ipython.org/github/demotu/BMC/blob/master/notebooks/CurveFitting.ipynb
+        https://stackoverflow.com/questions/27164114/show-confidence-limits-and-prediction-limits-in-scatter-plot
+        """
+        if show_reg:
+            n = len(x)  # 观察例数
+            if n > 2:  # 数据点必须大于cov矩阵的scale
+                p, cov = np.polyfit(x, y, 1, cov=True)  # 简单线性回归返回parameter和covariance
+                poly1d_fn = np.poly1d(p)  # 拟合方程
+                y_model = poly1d_fn(x)  # 拟合的y值
+                m = p.size  # 参数个数
 
-#                     # 拟合结果绘图
-#                     ax.plot(
-#                         x,
-#                         y_model,
-#                         "-",
-#                         color="0.1",
-#                         linewidth=1.5,
-#                         alpha=0.5,
-#                         label="Fit",
-#                     )
+                dof = n - m  # degrees of freedom
+                t = stats.t.ppf(0.975, dof)  # 显著性检验t值
 
-#                     # 误差估计
-#                     resid = y - y_model  # 残差
-#                     s_err = np.sqrt(np.sum(resid**2) / dof)  # 标准误差
+                # 拟合结果绘图
+                self.ax.plot(
+                    x,
+                    y_model,
+                    "-",
+                    color="0.1",
+                    linewidth=1.5,
+                    alpha=0.5,
+                    label="Fit",
+                )
 
-#                     # 拟合CI和PI
-#                     x2 = np.linspace(np.min(x), np.max(x), 100)
-#                     y2 = poly1d_fn(x2)
+                # 误差估计
+                resid = y - y_model  # 残差
+                s_err = np.sqrt(np.sum(resid**2) / dof)  # 标准误差
 
-#                     # CI计算和绘图
-#                     ci = (
-#                         t
-#                         * s_err
-#                         * np.sqrt(
-#                             1 / n
-#                             + (x2 - np.mean(x)) ** 2 / np.sum((x - np.mean(x)) ** 2)
-#                         )
-#                     )
-#                     ax.fill_between(
-#                         x2,
-#                         y2 + ci,
-#                         y2 - ci,
-#                         color="#b9cfe7",
-#                         edgecolor=["none"],
-#                         alpha=0.5,
-#                     )
+                # 拟合CI和PI
+                x2 = np.linspace(np.min(x), np.max(x), 100)
+                y2 = poly1d_fn(x2)
 
-#                     # Pi计算和绘图
-#                     pi = (
-#                         t
-#                         * s_err
-#                         * np.sqrt(
-#                             1
-#                             + 1 / n
-#                             + (x2 - np.mean(x)) ** 2 / np.sum((x - np.mean(x)) ** 2)
-#                         )
-#                     )
-#                     ax.fill_between(x2, y2 + pi, y2 - pi, color="None", linestyle="--")
-#                     ax.plot(
-#                         x2, y2 - pi, "--", color="0.5", label="95% Prediction Limits"
-#                     )
-#                     ax.plot(x2, y2 + pi, "--", color="0.5")
+                # CI计算和绘图
+                ci = (
+                    t
+                    * s_err
+                    * np.sqrt(
+                        1 / n + (x2 - np.mean(x)) ** 2 / np.sum((x - np.mean(x)) ** 2)
+                    )
+                )
+                self.ax.fill_between(
+                    x2,
+                    y2 + ci,
+                    y2 - ci,
+                    color="#b9cfe7",
+                    edgecolor=["none"],
+                    alpha=0.5,
+                )
 
-#                     # Add corr
-#             if corr is not None:
-#                 plt.text(
-#                     0.02,
-#                     0.96,
-#                     "x,y相关系数：" + str(corr),
-#                     horizontalalignment="left",
-#                     verticalalignment="center",
-#                     transform=ax.transAxes,
-#                     fontproperties=MYFONT,
-#                     fontsize=10,
-#                 )
-#         return self.save()
+                # Pi计算和绘图
+                pi = (
+                    t
+                    * s_err
+                    * np.sqrt(
+                        1
+                        + 1 / n
+                        + (x2 - np.mean(x)) ** 2 / np.sum((x - np.mean(x)) ** 2)
+                    )
+                )
+                self.ax.fill_between(x2, y2 + pi, y2 - pi, color="None", linestyle="--")
+                self.ax.plot(
+                    x2, y2 - pi, "--", color="0.5", label="95% Prediction Limits"
+                )
+                self.ax.plot(x2, y2 + pi, "--", color="0.5")
+
+        # Add corr
+        if corr is not None:
+            self.ax.text(
+                0.02,
+                0.96,
+                "x,y相关系数：" + str(corr),
+                horizontalalignment="left",
+                verticalalignment="center",
+                transform=self.ax.transAxes,
+                fontsize=10,
+            )
+
+        return self
 
 
 # class PlotBoxWithDots(GridFigure):
@@ -2026,7 +2024,22 @@ class PlotBar(Plot):
 
 
 if __name__ == "__main__":
-    df = pd.DataFrame(
-        {"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9]}, index=["a", "b", "c"]
-    )
-    print(df)
+    # df = pd.DataFrame(
+    #     {"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9]}, index=["a", "b", "c"]
+    # )
+    # print(df)
+    fig, axes = plt.subplots(1, 2, figsize=(8, 3))
+    # axes = axes.ravel()
+
+    for k, ax in enumerate(axes):
+        np.random.seed(0)
+        x, y = np.random.random((2,30))
+        ax.plot(x, y, 'bo')
+
+        texts = []
+        for i in range(len(x)):
+            t = ax.text(x[i], y[i], 'Text%s' %i, ha='center', va='center')
+            texts.append(t)
+        adjust_text(texts, ax=ax)
+        
+    fig.savefig("test.png")
