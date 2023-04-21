@@ -18,9 +18,6 @@ try:
 except ImportError:
     from typing_extensions import Literal
 
-# sns.theme(style="whitegrid")
-MYFONT = fm.FontProperties(fname="C:/Windows/Fonts/SimHei.ttf")
-
 
 class Plot:
     def __init__(
@@ -1185,6 +1182,7 @@ class PlotBar(Plot):
         self,
         stacked: bool = True,
         show_label: bool = True,
+        label_formatter: str = "{abs}",
         show_total_bar: bool = False,
         show_total_label: bool = False,
         add_gr_text: bool = False,
@@ -1197,6 +1195,7 @@ class PlotBar(Plot):
         Args:
             stacked (bool, optional): 是否堆积. Defaults to True.
             show_label (bool, optional): 是否显示数字标签. Defaults to True.
+            label_formatter (str, optional): 主标签的格式，支持通配符{abs},{share},{gr},{index},{col}. Defaults to "{abs}".
             show_total_bar (bool, optional): 是否显示一个总体表现外框. Defaults to False.
             show_total_label (bool, optional): 是否在最上方显示堆积之和数字标签. Defaults to False.
             add_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
@@ -1206,6 +1205,7 @@ class PlotBar(Plot):
             self: 返回自身plot实例
         """
         df = self.data
+        df_share = self.data.apply(lambda x: x / x.sum())
         df_gr = self.data.pct_change(axis=0)
         if self.data_line is not None:
             df_line = self.data_line
@@ -1220,15 +1220,19 @@ class PlotBar(Plot):
             min_v = df.values.min()
             ITER_COLORS = cycle(COLOR_LIST)
             for i, col in enumerate(df):
+                # 计算出的指标
                 v = df.loc[index, col]
-
-                if stacked:
-                    if v >= 0:
-                        bottom = bottom_pos
-                    else:
-                        bottom = bottom_neg
-                else:
-                    bottom = 0
+                share = df_share.loc[index, col]
+                gr = df_gr.loc[index, col]
+                total_gr = df.iloc[k, :].sum() / df.iloc[k - 1, :].sum() - 1
+                d_label = {
+                    "abs": kwargs.get("fmt_abs", self.fmt).format(v),
+                    "share": kwargs.get("fmt_share", "{:.1%}").format(share),
+                    "gr": kwargs.get("fmt_gr", "{:+.1%}").format(gr),
+                    "total_gr": kwargs.get("fmt_gr", "{:+.1%}").format(total_gr),
+                    "index": index,
+                    "col": col,
+                }
 
                 # 如果有指定颜色就颜色，否则按预设列表选取
                 if stacked:
@@ -1240,6 +1244,14 @@ class PlotBar(Plot):
                         color = next(ITER_COLORS)
                 else:
                     color = next(ITER_COLORS)
+
+                if stacked:
+                    if v >= 0:
+                        bottom = bottom_pos
+                    else:
+                        bottom = bottom_neg
+                else:
+                    bottom = 0
 
                 # bar宽度
                 bar_width = 0
@@ -1317,9 +1329,9 @@ class PlotBar(Plot):
 
                     if abs(v / self.ax.get_ylim()[1]) >= threshold:
                         self.ax.text(
-                            pos_x,
-                            pos_y,
-                            self.fmt.format(v),
+                            x=pos_x,
+                            y=pos_y,
+                            s=label_formatter.format(**d_label),
                             color=fontcolor,
                             va=va,
                             ha="center",
@@ -1345,7 +1357,7 @@ class PlotBar(Plot):
                             x=k - 0.5,
                             y=(bottom_gr + df.iloc[k - 1, i] / 2 + df.iloc[k, i] / 2)
                             / 2,
-                            s="{:+.1%}".format(df_gr.iloc[k, i]),
+                            s=d_label["gr"],
                             ha="center",
                             va="center",
                             color=color,
@@ -1356,14 +1368,12 @@ class PlotBar(Plot):
 
                         # 绘制总体增长率
                         if show_total_label:
-                            gr = df.iloc[k, :].sum() / df.iloc[k - 1, :].sum() - 1
-
                             self.ax.text(
                                 x=k - 0.5,
                                 y=(df.iloc[k, :].sum() + df.iloc[k - 1, :].sum())
                                 / 2
                                 * 1.05,
-                                s="{:+.1%}".format(gr),
+                                s=d_label["total_gr"],
                                 ha="center",
                                 va="bottom",
                                 color="black",
@@ -2016,6 +2026,7 @@ class PlotBar(Plot):
 
 
 if __name__ == "__main__":
-    plot_data = pd.DataFrame({"a": [1, 2, 3], "b": [3, 5, 4], "z": [1, 1, 1]})
-    p = PlotBar(data=plot_data, data_line=plot_data)
-    print(p.data_line)
+    df = pd.DataFrame(
+        {"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9]}, index=["a", "b", "c"]
+    )
+    print(df)

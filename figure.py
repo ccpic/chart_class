@@ -235,6 +235,7 @@ class GridFigure(Figure):
         **kwargs:
             stacked (bool, optional): 是否堆积. Defaults to True.
             show_label (bool, optional): 是否显示数字标签. Defaults to True.
+            label_formatter (str, optional): 主标签的格式，支持通配符{abs},{share},{gr},{index},{col}. Defaults to "{abs}".
             show_total_bar (bool, optional): 是否显示一个总体表现外框. Defaults to False.
             show_total_label (bool, optional): 是否在最上方显示堆积之和数字标签. Defaults to False.
             add_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.

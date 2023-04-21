@@ -482,7 +482,7 @@ if __name__ == "__main__":
         )
         .sort_index()
         .div(100000000)
-    ).iloc[-6:]
+    ).iloc[-4:]
     print(pivoted)
     # f = PlotStackedBar(
     #     data=pivoted,
@@ -500,7 +500,7 @@ if __name__ == "__main__":
     # f.style.title(title="陈诚")
     # f.plot(show_total_label=True)
     f = GridFigure(
-        fontsize=12,
+        fontsize=11,
         style={
             "title": "123",
             "label_outer": True,
@@ -514,6 +514,7 @@ if __name__ == "__main__":
             "ylabel": "test",
         },
         show_label=True,
+        label_formatter="{abs} ({share})",
         show_total_label=True,
         show_total_bar=True,
         add_gr_text=True,
