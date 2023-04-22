@@ -68,7 +68,7 @@ class Plot:
                 "xticks_length": 0,  # x轴刻度长度
                 "yticks_length": 0,  # y轴刻度长度
                 # 图例
-                "show_legend": False,  # 是否展示ax图例
+                "show_legend": True,  # 是否展示ax图例
                 "legend_loc": "center left",  # 图例位置
                 "legend_ncol": 1,  # 图例列数
             }
@@ -112,6 +112,7 @@ class Plot:
                 self.minor_grid(**self._minor_grid)
             if self._show_legend:
                 self.legend(self._legend_loc, self._legend_ncol)
+
 
         def title(
             self, title: Optional[str] = None, fontsize: Optional[float] = None

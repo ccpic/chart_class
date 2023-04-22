@@ -24,22 +24,36 @@ if __name__ == "__main__":
     )
     print(pivoted)
 
-    f = plt.figure(  # 必须使用plt.figure，如果直接使用类会有些奇怪的错误，比如adjust_text包的一些问题
+    f = plt.figure(  # 必须使用plt.figure，如果直接初始化类会有些奇怪的错误，比如adjust_text包的一些问题
         FigureClass=GridFigure,
         ncols=2,
         fontsize=11,
         style={
-            "title": "123",
-            "label_outer": True,
+            "title": "李四",
+            "label_outer": False,
         },
     )
     f.plot_bubble(
         data=pivoted,
         ax_index=0,
         style={
+            "title": "张三",
             "ylabel": "test",
+            "xlabel": "test",
             "show_legend": False,
         },
         label_limit=205,
+    )
+
+    f.plot_bar(
+        data=pivoted,
+        ax_index=1,
+        style={
+            "title": "王五",
+            "ylabel": "test",
+            "xlabel": "test",
+            "show_legend": False,
+            "xticklabel_rotation": 90,
+        },
     )
     f.save()

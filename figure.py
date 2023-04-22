@@ -98,7 +98,7 @@ class GridFigure(Figure):
                 "same_xlim": False,  # 多个子图是否x轴边界一致
                 "same_ylim": False,  # 多个子图是否y轴边界一致
                 # 图例
-                "show_legend": True,  # 是否展示画布图例
+                "show_legend": False,  # 是否展示画布图例
                 "legend_loc": "center left",  # 图例位置
                 "legend_ncol": 1,  # 图例列数
             }
