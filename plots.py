@@ -1,3 +1,4 @@
+from __future__ import annotations
 from color import COLOR_DICT, COLOR_LIST
 from wordcloud import WordCloud
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional
@@ -112,7 +113,6 @@ class Plot:
                 self.minor_grid(**self._minor_grid)
             if self._show_legend:
                 self.legend(self._legend_loc, self._legend_ncol)
-
 
         def title(
             self, title: Optional[str] = None, fontsize: Optional[float] = None
@@ -353,15 +353,18 @@ class Plot:
 class PlotBubble(Plot):
     def plot(
         self,
-        x_fmt: str = "{:.0%}",
-        y_fmt: str = "{:+.0%}",
-        x_avg: float = None,
-        y_avg: float = None,
+        x: Optional[str] = None,
+        y: Optional[str] = None,
+        z: Optional[str] = None,
+        hue: Optional[str] = None,
+        x_avg: Optional[float] = None,
+        y_avg: Optional[float] = None,
         label_limit: int = 15,
         bubble_scale: float = 1,
-        show_reg=False,
-        corr: Union[None, float] = None,
-    ) -> str:
+        show_reg: bool = False,
+        corr: Optional[float] = None,
+        **kwargs,
+    ) -> PlotBubble:
         """继承基本类，绘制散点图
         Parameters
         ----------
@@ -388,21 +391,40 @@ class PlotBubble(Plot):
         """
 
         df = self.data
-        x = df.iloc[:, 0].tolist()
-        y = df.iloc[:, 1].tolist()
-        z = (df.iloc[:, 2] / df.iloc[:, 2].max() * 100) ** 1.8 * bubble_scale
-        z = z.tolist()
+
         labels = df.index
+        # 如果不指定，则分别读取df第1-4列为x,y,z,hue
+        x = df.iloc[:, 0] if x is None else df.loc[:, x]
+        y = df.iloc[:, 1] if y is None else df.loc[:, y]
+        z = df.iloc[:, 2] if z is None else df.loc[:, z]
+        hue = df.iloc[:, 3] if hue is None else df.loc[:, hue]
+
+        # z列标准化并乘以系数以得到一般情况下都合适的气泡大小
+        z = (z - z.min()) / (z.max() - z.min())
+        z = (z * 100) ** 1.8 * bubble_scale
+
+        # 设置默认风格，并根据kwargs更新
+        d_style = {
+            "x_fmt": "{:,.0f}",
+            "y_fmt": "{:,.0f}",
+            "alpha": 0.6,
+        }
+        d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
 
         # 确定颜色方案
         cmap = mpl.colors.ListedColormap(np.random.rand(256, 3))
-        colors = iter(cmap(np.linspace(0, 1, len(x))))
+        colors = [cmap(i) for i in range(len(x))]
+        # colors = iter(cmap(np.linspace(0, 1, len(x))))
 
         # 绘制气泡
-        for i in range(len(x)):
-            self.ax.scatter(
-                x[i], y[i], z[i], color=next(colors), alpha=0.6, edgecolors="black"
-            )
+        self.ax.scatter(
+            x,
+            y,
+            z,
+            c=colors,
+            alpha=d_style.get("alpha"),
+            edgecolors="black",
+        )
 
         # 添加系列标签，用adjust_text包保证标签互不重叠
 
@@ -418,19 +440,22 @@ class PlotBubble(Plot):
             )
             for i in range(len(labels[:label_limit]))
         ]
-        
+
+        # 调整标签位置不重叠
         adjust_text(
             texts,
             ax=self.ax,
-            x=x,
-            y=y,
             force_text=0.5,
             arrowprops=dict(arrowstyle="->", color="black"),
         )
 
         # 设置坐标轴格式
-        self.ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: x_fmt.format(x)))
-        self.ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: y_fmt.format(y)))
+        self.ax.xaxis.set_major_formatter(
+            FuncFormatter(lambda x, _: d_style.get("x_fmt").format(x))
+        )
+        self.ax.yaxis.set_major_formatter(
+            FuncFormatter(lambda y, _: d_style.get("y_fmt").format(y))
+        )
 
         # 绘制平均线
         if x_avg is not None:
@@ -438,7 +463,7 @@ class PlotBubble(Plot):
             self.ax.text(
                 x_avg,
                 self.ax.get_ylim()[1],
-                x_fmt.format(x_avg),
+                d_style.get("x_fmt").format(x_avg),
                 ha="left",
                 va="top",
                 color="black",
@@ -450,7 +475,7 @@ class PlotBubble(Plot):
             self.ax.text(
                 self.ax.get_xlim()[1],
                 y_avg,
-                y_fmt.format(y_avg),
+                d_style.get("y_fmt").format(y_avg),
                 ha="left",
                 va="center",
                 color="black",
@@ -1188,7 +1213,7 @@ class PlotBar(Plot):
         threshold: float = 0.02,
         *args,
         **kwargs,
-    ):
+    ) -> PlotBar:
         """继承基本Plot类，绘制柱状图
 
         Args:
@@ -2034,13 +2059,13 @@ if __name__ == "__main__":
 
     for k, ax in enumerate(axes):
         np.random.seed(0)
-        x, y = np.random.random((2,30))
-        ax.plot(x, y, 'bo')
+        x, y = np.random.random((2, 30))
+        ax.plot(x, y, "bo")
 
         texts = []
         for i in range(len(x)):
-            t = ax.text(x[i], y[i], 'Text%s' %i, ha='center', va='center')
+            t = ax.text(x[i], y[i], "Text%s" % i, ha="center", va="center")
             texts.append(t)
         adjust_text(texts, ax=ax)
-        
+
     fig.savefig("test.png")

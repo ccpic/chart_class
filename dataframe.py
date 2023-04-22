@@ -485,52 +485,23 @@ if __name__ == "__main__":
         .div(100000000)
     )
     print(pivoted)
-    # f = PlotStackedBar(
-    #     data=pivoted,
-    #     width=17,
-    #     height=6,
-    #     style={
-    #         "title": "Test",
-    #         "xticklabel_rotation": 90,
-    #         # "xlabel": "年份",
-    #         "ylabel": "金额",
-    #         # "hide_top_right_spines": True,
-    #         "major_grid":{"linewidth":1}
-    #     },
-    # )
-    # f.style.title(title="陈诚")
-    # f.plot(show_total_label=True)
-    # f = GridFigure(
-    #     ncols=2,
-    #     fontsize=11,
-    #     style={
-    #         "title": "123",
-    #         "label_outer": True,
-    #     },
-    # )
-    # f.plot_bubble(
-    #     data=pivoted,
-    #     ax_index=0,
-    #     style={
-    #         "ylabel": "test",
-    #         "show_legend": False,
-    #     },
-    #     label_limit=205
-    # )
-    # f.save()
-    fig1 = plt.figure(FigureClass=GridFigure,         ncols=2,
+
+    f = plt.figure(
+        FigureClass=GridFigure,
+        ncols=2,
         fontsize=11,
         style={
             "title": "123",
             "label_outer": True,
-        },)
-    fig1.plot_bubble(
+        },
+    )
+    f.plot_bubble(
         data=pivoted,
         ax_index=0,
         style={
             "ylabel": "test",
             "show_legend": False,
         },
-        label_limit=205
+        label_limit=200,
     )
-    fig1.save()
+    f.save()
