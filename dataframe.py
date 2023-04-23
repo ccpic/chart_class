@@ -498,12 +498,12 @@ if __name__ == "__main__":
         FigureClass=GridFigure,
         ncols=2,
         wspace=0.3,
-        share_x=True,
-        share_y=True,
+        # sharex=True,
+        # sharey=True,
         fontsize=11,
         style={
             "title": "123",
-            "label_outer": True,
+            "label_outer": False,
         },
     )
 
@@ -516,14 +516,14 @@ if __name__ == "__main__":
         x="2022-12",
         y="2021-12",
         z="2022-12",
-        hue=None,
+        hue="2021-12",
         x_avg=4,
         y_avg=4,
         label_limit=0,
     )
     f.plot_bubble(
         data=pivoted.tail(10),
-        ax_index=0,
+        ax_index=1,
         style={
             "ylabel": "test",
         },
@@ -531,8 +531,6 @@ if __name__ == "__main__":
         y="2021-12",
         z="2022-12",
         hue="谈判年份",
-        x_avg=4,
-        y_avg=4,
         label_limit=0,
     )
 

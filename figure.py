@@ -351,8 +351,15 @@ class GridFigure(Figure):
 
         return ax
 
-    def save(self) -> None:
+    def save(self) -> str:
+        """保存图片
+
+        Returns:
+            str: 返回保存图片的路径
+        """        
         self.style.apply_style()  # 应用风格
+        self.gridspec.tight_layout(self) # 自动调整子图参数，使之填充整个图像区域，但有时不生效
+        
         """保存图片"""
         script_dir = os.path.dirname(__file__)
         plot_dir = f"{script_dir}{self.savepath}"
