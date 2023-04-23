@@ -18,15 +18,6 @@ except ImportError:
 mpl.rcParams["font.sans-serif"] = ["Microsoft YaHei"]
 mpl.rcParams["font.serif"] = ["Microsoft YaHei"]
 mpl.rcParams["axes.unicode_minus"] = False
-# mpl.rcParams["font.size"]: 16
-# mpl.rcParams["hatch.linewidth"] = 0.5
-# mpl.rcParams["hatch.color"] = "grey"
-
-
-"""
-一个matplotlib画布类，用以简化原始matplotlib及应用符合自己日常习惯的一些设置:
-
-"""
 
 
 class GridFigure(Figure):
@@ -51,7 +42,7 @@ class GridFigure(Figure):
         *args,
         **kwargs,
     ) -> None:
-        """_summary_
+        """一个matplotlib画布类，用以简化原始matplotlib及应用符合自己日常习惯的一些设置
 
         Args:
             nrows (int, optional): 子图行数. Defaults to 1.
@@ -71,9 +62,10 @@ class GridFigure(Figure):
             cmap_norm (mpl.colors.Colormap, optional): 连续的colormap，用于连续变量区分表现好坏. Defaults to plt.get_cmap("PiYG").
             style (Dict[str, Any], optional): 风格字典. Defaults to {}.
         """
+
         super().__init__(*args, **kwargs)
 
-        # 根据nrows, ncols, width_ratios和height_ratios, wspace, hspace返回一个GridSpec
+        # 根据nrows, ncols, width_ratios和height_ratios, wspace, hspace生成一个GridSpec
         self.nrows = nrows
         self.ncols = ncols
         width_ratios = [1] * ncols if width_ratios is None else width_ratios
@@ -109,8 +101,8 @@ class GridFigure(Figure):
                 else:
                     self.add_subplot(
                         axes,
-                        sharex=main_ax if sharex else None,
-                        sharey=main_ax if sharey else None,
+                        sharex=main_ax if sharex else None,  # 多个子图共享x轴
+                        sharey=main_ax if sharey else None,  # 多个子图共享y轴
                     )
         else:
             self.add_subplot(111)
@@ -122,6 +114,7 @@ class GridFigure(Figure):
             Args:
                 figure (mpl.figure.Figure): 所属的画布
             """
+
             self._figure = figure
 
             """默认风格字典"""
@@ -133,8 +126,6 @@ class GridFigure(Figure):
                 "ytitle_fontsize": figure.fontsize * 1.5,  # y轴总标题字体大小
                 # GridSpec子图的一些风格
                 "label_outer": False,
-                "same_xlim": False,  # 多个子图是否x轴边界一致
-                "same_ylim": False,  # 多个子图是否y轴边界一致
                 # 图例
                 "show_legend": False,  # 是否展示画布图例
                 "legend_loc": "center left",  # 图例位置
@@ -148,12 +139,9 @@ class GridFigure(Figure):
 
         def apply_style(self) -> None:
             """执行一遍风格设置，不能在初始化中进行，因为一些风格在画图后才生效"""
+
             self.title(self._title, self._title_fontsize)
             self.ytitle(self._ytitle, self._ytitle_fontsize)
-            if self._same_xlim:
-                self.same_xlim()
-            if self._same_ylim:
-                self.same_ylim()
             if self._show_legend:
                 self.fig_legend(self._legend_loc, self._legend_ncol)
             if self._label_outer:
@@ -171,6 +159,7 @@ class GridFigure(Figure):
             fontsize : Optional[float], optional
                 标题字体大小, by default None
             """
+
             self._figure.suptitle(title, fontsize=fontsize)
 
         def ytitle(
@@ -185,6 +174,7 @@ class GridFigure(Figure):
             fontsize : Optional[float], optional
                 标题字体大小, by default None
             """
+
             self._figure.supylabel(title, fontsize=fontsize)
 
         def fig_legend(
@@ -198,6 +188,7 @@ class GridFigure(Figure):
                 loc (Literal["center left", "lower center"], optional): 图例位置. Defaults to "center left".
                 ncol (int, optional): 图例列数. Defaults to 1.
             """
+
             # 删除已经存在的重复图例
             handles, labels = [], []
             for i, _ax in enumerate(self._figure.axes):
@@ -217,32 +208,6 @@ class GridFigure(Figure):
                 frameon=False,
                 prop={"family": "Microsoft YaHei", "size": self._figure.fontsize},
             )
-
-        def same_xlim(self) -> None:
-            """多个子图时保持x轴边界一致"""
-            for i, _ax in enumerate(self._figure.axes):
-                xlim_min, xlim_max = _ax.get_xlim()
-                if i == 0:
-                    xlim_range = [xlim_min, xlim_max]
-                else:
-                    if xlim_min < xlim_range[0]:
-                        xlim_range = [xlim_min, xlim_range[1]]
-                    if xlim_max > xlim_range[1]:
-                        xlim_range = [xlim_range[0], xlim_max]
-                _ax.set_xlim(xlim_range[0], xlim_range[1])
-
-        def same_ylim(self) -> None:
-            """多个子图时保持y轴边界一致"""
-            for i, _ax in enumerate(self._figure.axes):
-                ylim_min, ylim_max = _ax.get_ylim()
-                if i == 0:
-                    ylim_range = [ylim_min, ylim_max]
-                else:
-                    if ylim_min < ylim_range[0]:
-                        ylim_range = [ylim_min, ylim_range[1]]
-                    if ylim_max > ylim_range[1]:
-                        ylim_range = [ylim_range[0], ylim_max]
-                _ax.ylim(ylim_range[0], ylim_range[1])
 
         def label_outer(self) -> None:
             """多个子图时只显示最下方x轴和最左边y轴的刻度标签"""
@@ -291,7 +256,8 @@ class GridFigure(Figure):
         Returns:
             mpl.axes.Axes: 返回ax
         """
-        ax = self.axes[ax_index] or plt.gca()
+
+        ax = self.axes[ax_index]
 
         PlotBubble(
             data=data,
@@ -337,7 +303,8 @@ class GridFigure(Figure):
         Returns:
             mpl.axes.Axes: 返回ax
         """
-        ax = self.axes[ax_index] or plt.gca()
+
+        ax = self.axes[ax_index]
 
         PlotBar(
             data=data,
@@ -356,10 +323,11 @@ class GridFigure(Figure):
 
         Returns:
             str: 返回保存图片的路径
-        """        
-        self.style.apply_style()  # 应用风格
-        self.gridspec.tight_layout(self) # 自动调整子图参数，使之填充整个图像区域，但有时不生效
-        
+        """
+
+        self.style.apply_style()  # 应用风格，一些风格只能在绘图后生效
+        self.gridspec.tight_layout(self)  # 自动调整子图参数，使之填充整个图像区域，但有时不生效
+
         """保存图片"""
         script_dir = os.path.dirname(__file__)
         plot_dir = f"{script_dir}{self.savepath}"
