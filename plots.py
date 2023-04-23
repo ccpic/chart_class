@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 import matplotlib.font_manager as fm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import seaborn as sns
 import numpy as np
 import pandas as pd
@@ -36,6 +37,7 @@ class Plot:
         self.fontsize = fontsize
         self.fmt = fmt
         self._style = style
+        self.style = self.Style(self, **self._style)
 
     class Style:
         def __init__(self, plot, **kwargs) -> None:
@@ -79,7 +81,8 @@ class Plot:
             for key, value in d_style.items():
                 self.__setattr__(f"_{key}", value)
 
-            """初始化自动执行一遍风格设置"""
+        def apply_style(self):
+            """执行一遍风格设置，不能放在初始化阶段因为一些风格在绘图后才生效"""
             self.title(self._title, self._title_fontsize)
             self.xlabel(self._xlabel, self._xlabel_fontsize)
             self.ylabel(self._ylabel, self._ylabel_fontsize)
@@ -343,8 +346,8 @@ class Plot:
         Returns:
             self: 返回实例
         """
-        # 不适合在初始化应用，因为有些风格要在绘图后才生效
-        self.style = self.Style(self, **self._style)
+
+        self.style.apply_style()
 
         return self
 
@@ -397,7 +400,11 @@ class PlotBubble(Plot):
         x = df.iloc[:, 0] if x is None else df.loc[:, x]
         y = df.iloc[:, 1] if y is None else df.loc[:, y]
         z = df.iloc[:, 2] if z is None else df.loc[:, z]
-        hue = df.iloc[:, 3] if hue is None else df.loc[:, hue]
+        if hue is not None:
+            hue = df.loc[:, hue]
+        else:
+            if df.shape[1] >= 3:
+                hue = df.iloc[:, 3]
 
         # z列标准化并乘以系数以得到一般情况下都合适的气泡大小
         z = (z - z.min()) / (z.max() - z.min())
@@ -413,8 +420,40 @@ class PlotBubble(Plot):
 
         # 确定颜色方案
         cmap = mpl.colors.ListedColormap(np.random.rand(256, 3))
-        colors = [cmap(i) for i in range(len(x))]
-        # colors = iter(cmap(np.linspace(0, 1, len(x))))
+
+        if hue is not None:
+            levels, categories = pd.factorize(hue)
+            colors = [cmap(i) for i in levels]
+
+            # 涉及hue的散点图图例很特殊，按以下方法处理
+            if self.style._show_legend is True:
+                handles = [
+                    Line2D(
+                        [0],
+                        [0],
+                        marker="o",
+                        markerfacecolor=cmap(i),
+                        markersize=10,
+                        color="white",
+                        label=c,
+                    )
+                    for i, c in enumerate(categories)
+                ]
+                handles = sorted(handles, key=lambda h: h.get_label())
+                self.ax.legend(
+                    handles=handles,
+                    title=hue.name,
+                    loc=self.style._legend_loc,
+                    frameon=False,
+                    ncol=self.style._legend_ncol,
+                    bbox_to_anchor=(1, 0.5)
+                    if self.style._legend_loc == "center left"
+                    else (0.5, 1),
+                    prop={"family": "Microsoft YaHei", "size": self.fontsize},
+                )
+                self.style._show_legend = False  # 不再使用Plot类的通用方法生成图例
+        else:
+            colors = [cmap(i) for i in range(len(x))]
 
         # 绘制气泡
         self.ax.scatter(
@@ -426,8 +465,8 @@ class PlotBubble(Plot):
             edgecolors="black",
         )
 
-        # 添加系列标签，用adjust_text包保证标签互不重叠
-
+        # 添加系列标签
+        np.random.seed(0)
         texts = [
             self.ax.text(
                 x[i],
@@ -441,7 +480,7 @@ class PlotBubble(Plot):
             for i in range(len(labels[:label_limit]))
         ]
 
-        # 调整标签位置不重叠
+        # 用adjust_text包保证标签互不重叠
         adjust_text(
             texts,
             ax=self.ax,
@@ -1319,7 +1358,7 @@ class PlotBar(Plot):
                     )
 
                     # 因为多了总体表现外框，移除右、上边框
-                    self._style["hide_top_right_spines"] = True
+                    self._style._hide_top_right_spines = True
 
                     # for index in df.index:
                     #     ax.text(

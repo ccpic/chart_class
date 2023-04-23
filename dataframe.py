@@ -304,7 +304,7 @@ class DfAnalyzer:
         """
         # 将日期列转换为Pandas日期时间类型，并设置为索引
 
-        _df = pd.pivot_table(
+        df = pd.pivot_table(
             self.data.query(query_str),
             values=values,
             index=index,
@@ -312,51 +312,55 @@ class DfAnalyzer:
             aggfunc=aggfunc,
         )
         # pivot table对象转为默认df
-        _df = pd.DataFrame(_df.to_records())
+        df = pd.DataFrame(df.to_records())
 
         try:
-            _df.set_index(index, inplace=True)
+            df.set_index(index, inplace=True)
         except KeyError:  # 当index=None时，捕捉错误并set_index("index"字符串)
-            _df.set_index("index", inplace=True)
+            df.set_index("index", inplace=True)
 
         # 如果index是日期格式，则根据格式转换为字符串
         if index == self.date_column:
-            _df.index = _df.index.strftime(strftime)
+            df.index = df.index.strftime(strftime)
+
+        if columns == self.date_column:
+            df.columns = pd.to_datetime(df.columns)
+            df.columns = df.columns.strftime(strftime)
 
         if sort_values == "rows_by_last_col":
-            _df = _df.sort_values(by=_df.columns[-1], ascending=sort_asc)
+            df = df.sort_values(by=df.columns[-1], ascending=sort_asc)
         elif sort_values == "rows_by_first_col":
-            _df = _df.sort_values(by=_df.columns[0], ascending=sort_asc)
+            df = df.sort_values(by=df.columns[0], ascending=sort_asc)
         elif sort_values == "rows_by_cols_sum":
-            s = _df.sum(axis=1).sort_values(ascending=sort_asc)
-            _df = _df.loc[s.index, :]  # 行按照汇总总和大小排序
+            s = df.sum(axis=1).sort_values(ascending=sort_asc)
+            df = df.loc[s.index, :]  # 行按照汇总总和大小排序
         elif sort_values == "cols_by_rows_sum":
-            s = _df.sum(axis=0).sort_values(ascending=sort_asc)
-            _df = _df.loc[:, s.index]  # 列按照汇总总和大小排序
+            s = df.sum(axis=0).sort_values(ascending=sort_asc)
+            df = df.loc[:, s.index]  # 列按照汇总总和大小排序
 
         if type(columns) is not list:
             if columns in self.sorter:
-                _df = _df.reindex(columns=self.sorter[columns])
+                df = df.reindex(columns=self.sorter[columns])
 
         if type(index) is not list:
             if index in self.sorter:
-                _df = _df.reindex(self.sorter[index])  # 对于部分变量有固定排序
+                df = df.reindex(self.sorter[index])  # 对于部分变量有固定排序
 
         # 删除所有都是缺失值的整行或整列
         if dropna:
-            _df = _df.dropna(how="all")
-            _df = _df.dropna(axis=1, how="all")
+            df = df.dropna(how="all")
+            df = df.dropna(axis=1, how="all")
 
         # 缺失值替换
         if fillna is not None:
-            _df = _df.fillna(fillna)
+            df = df.fillna(fillna)
 
         if perc in [0, "index"]:
-            _df = _df.div(_df.sum(axis=1), axis=0)  # 计算行汇总的百分比
+            df = df.div(df.sum(axis=1), axis=0)  # 计算行汇总的百分比
         elif perc in [1, "columns"]:
-            _df = _df.div(_df.sum(axis=0), axis=1)  # 计算列汇总的百分比
+            df = df.div(df.sum(axis=0), axis=1)  # 计算列汇总的百分比
 
-        return _df
+        return df
 
     def transform(
         self,
@@ -398,9 +402,9 @@ class DfAnalyzer:
             raise DateError("没有设定时间戳字段")
 
         new_obj = copy.copy(self)
-        _df = self.data.copy()
+        df = self.data.copy()
 
-        _df.set_index(self.date_column, inplace=True)
+        df.set_index(self.date_column, inplace=True)
 
         if period in ["MAT", "MQT"]:
             # 根据时间戳间隔和转换目标，确定滚动周期，如本身数据如为QS(Quarter Start)，想转换为MAT数据，则滚动周期为4
@@ -416,15 +420,15 @@ class DfAnalyzer:
                     rolling_window = 3
 
             # 按影响rolling计算的字段分组，并计算每个日期的滚动总计
-            grouped = _df.groupby(cols_grouper)
+            grouped = df.groupby(cols_grouper)
             rolling = (
                 grouped[cols_amount].rolling(window=rolling_window, min_periods=1).sum()
             )
             rolling = rolling.reset_index()
 
             # 将rolling统计还原到原df
-            _df = _df.reset_index().rename(columns={"index": self.date_column})
-            _df = _df.merge(
+            df = df.reset_index().rename(columns={"index": self.date_column})
+            df = df.merge(
                 right=rolling, how="left", on=cols_grouper + [self.date_column]
             )
 
@@ -435,7 +439,7 @@ class DfAnalyzer:
                 resample_window = "Q"
 
             grouped = (
-                _df.groupby(cols_grouper)
+                df.groupby(cols_grouper)
                 .resample(resample_window)[cols_amount]
                 .agg("sum")
             )
@@ -446,22 +450,22 @@ class DfAnalyzer:
             )
 
             # 将resample统计还原到原df
-            _df = _df.reset_index().rename(columns={"index": self.date_column})
-            _df = _df.merge(
+            df = df.reset_index().rename(columns={"index": self.date_column})
+            df = df.merge(
                 right=grouped, how="right", on=cols_grouper + [self.date_column]
             )
 
         # 解决merge后重复列都保留并自动重命名的问题
         if isinstance(cols_amount, str):
             cols_amount = [cols_amount]
-        _df = _df.drop([s + "_x" for s in cols_amount], axis=1)
-        _df = _df.rename(
+        df = df.drop([s + "_x" for s in cols_amount], axis=1)
+        df = df.rename(
             columns=lambda x: x.replace("_y", "")
             if x in [s + "_y" for s in cols_amount]
             else x
         )
 
-        new_obj.data = _df
+        new_obj.data = df
 
         return new_obj
 
@@ -476,32 +480,40 @@ if __name__ == "__main__":
     )
     pivoted = (
         a.get_pivot(
-            index=a.date_column,
-            columns="药品名称",
+            index=["谈判年份", "药品名称"],
+            columns=a.date_column,
             query_str="数值类型=='金额'",
             values="数值",
         )
-        .sort_index()
         .div(100000000)
+        .reset_index()
+        .set_index("药品名称")
     )
     print(pivoted)
+    # pivoted = pivoted.merge(df[["药品名称", "谈判年份"]], how="left", on="药品名称")
+    # pivoted.set_index("药品名称")
+    # print(pivoted)
 
     f = plt.figure(
         FigureClass=GridFigure,
         ncols=2,
+        wspace=0.3,
         fontsize=11,
         style={
             "title": "123",
             "label_outer": True,
         },
     )
-    f.plot_bubble(
-        data=pivoted,
-        ax_index=0,
-        style={
-            "ylabel": "test",
-            "show_legend": False,
-        },
-        label_limit=200,
-    )
+    for i in range(2):
+        f.plot_bubble(
+            data=pivoted,
+            ax_index=i,
+            style={
+                "ylabel": "test",
+            },
+            x="2022-12",
+            y="2021-12",
+            z="2022-12",
+            hue="谈判年份"
+        )
     f.save()
