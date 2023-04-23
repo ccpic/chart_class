@@ -515,12 +515,13 @@ class PlotBubble(Plot):
         ]
 
         # 用adjust_text包保证标签互不重叠
-        adjust_text(
-            texts,
-            ax=self.ax,
-            force_text=0.5,
-            arrowprops=dict(arrowstyle="->", color="black"),
-        )
+        if label_limit > 1:
+            adjust_text(
+                texts,
+                ax=self.ax,
+                force_text=0.5,
+                arrowprops=dict(arrowstyle="->", color="black"),
+            )
 
         # 设置坐标轴格式
         self.ax.xaxis.set_major_formatter(

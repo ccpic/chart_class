@@ -38,6 +38,8 @@ class GridFigure(Figure):
         height_ratios: Optional[List[float]] = None,
         wspace: float = 0.1,
         hspace: float = 0.1,
+        sharex: bool = False,
+        sharey: bool = False,
         savepath: str = "/plots/",
         width: int = 15,
         height: int = 6,
@@ -58,6 +60,8 @@ class GridFigure(Figure):
             height_ratios (Optional[List[float]], optional): 子图高度比. Defaults to None.
             wspace (float, optional): 子图水平间距. Defaults to 0.1.
             hspace (float, optional): 子图垂直间距. Defaults to 0.1.
+            share_x (bool, optional): 子图是否共享x轴. Defaults to False.
+            share_y (bool, optional): 子图是否共享y轴. Defaults to False.
             savepath (str, optional): 绘图文件保存路径. Defaults to "/plots/".
             width (int, optional): 总宽度. Defaults to 15.
             height (int, optional): 总高度. Defaults to 6.
@@ -99,8 +103,15 @@ class GridFigure(Figure):
 
         # Grid
         if self.gridspec is not None:
-            for axes in self.gridspec:
-                self.add_subplot(axes)
+            for i, axes in enumerate(self.gridspec):
+                if i == 0:
+                    main_ax = self.add_subplot(axes)
+                else:
+                    self.add_subplot(
+                        axes,
+                        sharex=main_ax if sharex else None,
+                        sharey=main_ax if sharey else None,
+                    )
         else:
             self.add_subplot(111)
 

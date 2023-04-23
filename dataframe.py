@@ -496,8 +496,10 @@ if __name__ == "__main__":
 
     f = plt.figure(
         FigureClass=GridFigure,
-        ncols=1,
+        ncols=2,
         wspace=0.3,
+        share_x=True,
+        share_y=True,
         fontsize=11,
         style={
             "title": "123",
@@ -506,7 +508,7 @@ if __name__ == "__main__":
     )
 
     f.plot_bubble(
-        data=pivoted,
+        data=pivoted.head(10),
         ax_index=0,
         style={
             "ylabel": "test",
@@ -517,6 +519,21 @@ if __name__ == "__main__":
         hue=None,
         x_avg=4,
         y_avg=4,
+        label_limit=0,
+    )
+    f.plot_bubble(
+        data=pivoted.tail(10),
+        ax_index=0,
+        style={
+            "ylabel": "test",
+        },
+        x="2022-12",
+        y="2021-12",
+        z="2022-12",
+        hue="谈判年份",
+        x_avg=4,
+        y_avg=4,
+        label_limit=0,
     )
 
     # pivoted = (
