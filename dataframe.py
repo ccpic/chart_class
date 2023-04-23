@@ -496,7 +496,7 @@ if __name__ == "__main__":
 
     f = plt.figure(
         FigureClass=GridFigure,
-        ncols=2,
+        ncols=1,
         wspace=0.3,
         fontsize=11,
         style={
@@ -514,25 +514,25 @@ if __name__ == "__main__":
         x="2022-12",
         y="2021-12",
         z="2022-12",
-        hue="谈判年份",
+        hue=None,
         x_avg=4,
         y_avg=4,
     )
 
-    pivoted = (
-        a.get_pivot(
-            index=a.date_column,
-            columns="谈判年份",
-            query_str="数值类型=='金额'",
-            values="数值",
-        )
-        .sort_index()
-        .iloc[-4:, :]
-        .div(100000000)
-    )
-    print(pivoted)
-    f.plot_bar(
-        data=pivoted,
-        ax_index=1,
-    )
+    # pivoted = (
+    #     a.get_pivot(
+    #         index=a.date_column,
+    #         columns="谈判年份",
+    #         query_str="数值类型=='金额'",
+    #         values="数值",
+    #     )
+    #     .sort_index()
+    #     .iloc[-4:, :]
+    #     .div(100000000)
+    # )
+    # print(pivoted)
+    # f.plot_bar(
+    #     data=pivoted,
+    #     ax_index=1,
+    # )
     f.save()

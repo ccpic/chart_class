@@ -261,7 +261,7 @@ class GridFigure(Figure):
             x (Optional[str], optional): 指定x轴变量字段名，如为None，则x为data第1列. Defaults to None.
             y (Optional[str], optional): 指定y轴变量字段名，如为None，则x为data第2列. Defaults to None.
             z (Optional[str], optional): 指定气泡大小字段名，如为None，则气泡大小为data第3列. Defaults to None.
-            hue (Optional[str], optional): 指定气泡颜色字段名，如为None且data有第4列，则气泡颜色为第4列. Defaults to None.
+            hue (Optional[str], optional): 指定气泡颜色字段名. Defaults to None.
             x_avg (Optional[float], optional): x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线. Defaults to None.
             y_avg (Optional[float], optional): y轴平均值或其他分隔值，如提供则绘制y轴分隔水平线. Defaults to None.
             label_limit (int, optional): 限制显示标签的个数. Defaults to 15.

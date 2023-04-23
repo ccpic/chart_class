@@ -378,7 +378,7 @@ class PlotBubble(Plot):
             x (Optional[str], optional): 指定x轴变量字段名，如为None，则x为data第1列. Defaults to None.
             y (Optional[str], optional): 指定y轴变量字段名，如为None，则x为data第2列. Defaults to None.
             z (Optional[str], optional): 指定气泡大小字段名，如为None，则气泡大小为data第3列. Defaults to None.
-            hue (Optional[str], optional): 指定气泡颜色字段名，如为None且data有第4列，则气泡颜色为第4列. Defaults to None.
+            hue (Optional[str], optional): 指定气泡颜色字段名. Defaults to None.
             x_avg (Optional[float], optional): x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线. Defaults to None.
             y_avg (Optional[float], optional): y轴平均值或其他分隔值，如提供则绘制y轴分隔水平线. Defaults to None.
             label_limit (int, optional): 限制显示标签的个数. Defaults to 15.
@@ -408,9 +408,6 @@ class PlotBubble(Plot):
         z = df.iloc[:, 2] if z is None else df.loc[:, z]
         if hue is not None:
             hue = df.loc[:, hue]
-        else:
-            if df.shape[1] >= 3:
-                hue = df.iloc[:, 3]
 
         # z列标准化并乘以系数以得到一般情况下都合适的气泡大小
         z = (z - z.min()) / (z.max() - z.min())
@@ -564,7 +561,7 @@ class PlotBubble(Plot):
                 y_avg,
                 d_style.get("y_fmt").format(y_avg),
                 ha="right",
-                va="center",
+                va="top",
                 color=d_style.get("avg_color"),
                 multialignment="center",
                 fontsize=self.fontsize,
