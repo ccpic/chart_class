@@ -504,16 +504,35 @@ if __name__ == "__main__":
             "label_outer": True,
         },
     )
-    for i in range(2):
-        f.plot_bubble(
-            data=pivoted,
-            ax_index=i,
-            style={
-                "ylabel": "test",
-            },
-            x="2022-12",
-            y="2021-12",
-            z="2022-12",
-            hue="谈判年份"
+
+    f.plot_bubble(
+        data=pivoted,
+        ax_index=0,
+        style={
+            "ylabel": "test",
+        },
+        x="2022-12",
+        y="2021-12",
+        z="2022-12",
+        hue="谈判年份",
+        x_avg=4,
+        y_avg=4,
+    )
+
+    pivoted = (
+        a.get_pivot(
+            index=a.date_column,
+            columns="谈判年份",
+            query_str="数值类型=='金额'",
+            values="数值",
         )
+        .sort_index()
+        .iloc[-4:, :]
+        .div(100000000)
+    )
+    print(pivoted)
+    f.plot_bar(
+        data=pivoted,
+        ax_index=1,
+    )
     f.save()

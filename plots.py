@@ -1,5 +1,5 @@
 from __future__ import annotations
-from color import COLOR_DICT, COLOR_LIST
+from color import cmap_qual, COLOR_DICT
 from wordcloud import WordCloud
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 import matplotlib.font_manager as fm
@@ -14,11 +14,15 @@ import math
 from adjustText import adjust_text
 from itertools import cycle
 import scipy.stats as stats
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+import warnings
 
 try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
+
+RANDOM_CMAP = mpl.colors.ListedColormap(np.random.rand(256, 3))
 
 
 class Plot:
@@ -35,6 +39,7 @@ class Plot:
         self.data = data
         self.ax = ax or plt.gca()
         self.fontsize = fontsize
+        self.figure = self.ax.get_figure()
         self.fmt = fmt
         self._style = style
         self.style = self.Style(self, **self._style)
@@ -81,7 +86,7 @@ class Plot:
             for key, value in d_style.items():
                 self.__setattr__(f"_{key}", value)
 
-        def apply_style(self):
+        def apply_style(self) -> None:
             """执行一遍风格设置，不能放在初始化阶段因为一些风格在绘图后才生效"""
             self.title(self._title, self._title_fontsize)
             self.xlabel(self._xlabel, self._xlabel_fontsize)
@@ -335,7 +340,6 @@ class Plot:
                 loc=loc,
                 ncol=ncol,
                 bbox_to_anchor=(1, 0.5) if loc == "center left" else (0.5, 1),
-                labelspacing=1,
                 frameon=False,
                 prop={"family": "Microsoft YaHei", "size": self._plot.fontsize},
             )
@@ -369,29 +373,31 @@ class PlotBubble(Plot):
         **kwargs,
     ) -> PlotBubble:
         """继承基本类，绘制散点图
-        Parameters
-        ----------
-        x_fmt : str, optional
-            x轴数值格式字符串, by default "{:.0%}"
-        y_fmt : str, optional
-            y轴数值格式字符串, by default "{:+.0%}"
-        x_avg : float, optional
-            x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线, by default None
-        y_avg : float, optional
-            y轴平均值或其他分隔值，如提供则绘制y轴分隔竖线, by default None
-        label_limit : int, optional
-            限制显示标签的个数, by default 15
-        bubble_scale : float, optional
-            气泡大小系数, by default 1
-        show_reg : bool, optional
-            是否显示x,y的拟合趋势及置信区间, by default False
-        corr : float, optional
-            相关系数, by default False
-        Returns
-        -------
-        str
-            生成图片并返回保存路径
-        """
+
+        Args:
+            x (Optional[str], optional): 指定x轴变量字段名，如为None，则x为data第1列. Defaults to None.
+            y (Optional[str], optional): 指定y轴变量字段名，如为None，则x为data第2列. Defaults to None.
+            z (Optional[str], optional): 指定气泡大小字段名，如为None，则气泡大小为data第3列. Defaults to None.
+            hue (Optional[str], optional): 指定气泡颜色字段名，如为None且data有第4列，则气泡颜色为第4列. Defaults to None.
+            x_avg (Optional[float], optional): x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线. Defaults to None.
+            y_avg (Optional[float], optional): y轴平均值或其他分隔值，如提供则绘制y轴分隔水平线. Defaults to None.
+            label_limit (int, optional): 限制显示标签的个数. Defaults to 15.
+            bubble_scale (float, optional): 气泡大小系数. Defaults to 1.
+            show_reg (bool, optional): 是否显示x,y的拟合趋势及置信区间. Defaults to False.
+            corr (Optional[float], optional): 相关系数，如不为None，则显示在ax左上角. Defaults to None.
+
+        Kwargs:
+            x_fmt (str, optional): x轴显示数字格式，影响轴刻度标签及分隔线数据标签. Defaults to "{:,.0f}",
+            y_fmt (str, optional): y轴显示数字格式，影响轴刻度标签及分隔线数据标签. Defaults to "{:,.0f}",
+            alpha (float, optional): 气泡透明度. Defaults to 0.6,
+            edgecolor (str, optional): 气泡边框颜色. Defaults to "black",
+            avg_linestyle (str, optional): 分隔线样式. Defaults to ":",
+            avg_linewidth (float, optional): 分隔线宽度. Defaults to 1,
+            avg_color (str, optional): 分隔线及数据标签颜色. Defaults to "black",
+        
+        Returns:
+            PlotBubble: 返回自身实例
+        """        
 
         df = self.data
 
@@ -415,55 +421,86 @@ class PlotBubble(Plot):
             "x_fmt": "{:,.0f}",
             "y_fmt": "{:,.0f}",
             "alpha": 0.6,
+            "edgecolor": "black",
+            "avg_linestyle": ":",
+            "avg_linewidth": 1,
+            "avg_color": "black",
         }
         d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
 
         # 确定颜色方案
-        cmap = mpl.colors.ListedColormap(np.random.rand(256, 3))
-
-        if hue is not None:
-            levels, categories = pd.factorize(hue)
-            colors = [cmap(i) for i in levels]
-
-            # 涉及hue的散点图图例很特殊，按以下方法处理
-            if self.style._show_legend is True:
-                handles = [
-                    Line2D(
-                        [0],
-                        [0],
-                        marker="o",
-                        markerfacecolor=cmap(i),
-                        markersize=10,
-                        color="white",
-                        label=c,
-                    )
-                    for i, c in enumerate(categories)
-                ]
-                handles = sorted(handles, key=lambda h: h.get_label())
-                self.ax.legend(
-                    handles=handles,
-                    title=hue.name,
-                    loc=self.style._legend_loc,
-                    frameon=False,
-                    ncol=self.style._legend_ncol,
-                    bbox_to_anchor=(1, 0.5)
-                    if self.style._legend_loc == "center left"
-                    else (0.5, 1),
-                    prop={"family": "Microsoft YaHei", "size": self.fontsize},
-                )
-                self.style._show_legend = False  # 不再使用Plot类的通用方法生成图例
+        if hue is None:
+            cmap = RANDOM_CMAP
         else:
+            # 如果hue字段是numeric
+            if pd.api.types.is_numeric_dtype(hue.dtype):
+                cmap = self.figure.cmap_norm
+            # 如果hue字段是categorical
+            else:
+                cmap = self.figure.cmap_qual
+
+        # 根据hue列给bubble着色
+        if hue is not None:
+            # 如果hue字段是numeric
+            if pd.api.types.is_numeric_dtype(hue.dtype):
+                colors = hue
+            else:  # 如果hue字段是categorical
+                levels, categories = pd.factorize(hue)
+                colors = [cmap(i) for i in levels]
+                # 涉及hue的散点图图例很特殊，按以下方法处理
+                if self.style._show_legend is True:
+                    handles = [
+                        Line2D(
+                            [0],
+                            [0],
+                            marker="o",
+                            markerfacecolor=cmap(i),
+                            markersize=10,
+                            color="white",
+                            label=c,
+                        )
+                        for i, c in enumerate(categories)
+                    ]
+                    handles = sorted(handles, key=lambda h: h.get_label())
+                    self.ax.legend(
+                        handles=handles,
+                        title=hue.name,
+                        loc=self.style._legend_loc,
+                        frameon=False,
+                        ncol=self.style._legend_ncol,
+                        bbox_to_anchor=(1, 0.5)
+                        if self.style._legend_loc == "center left"
+                        else (0.5, 1),
+                        prop={"family": "Microsoft YaHei", "size": self.fontsize},
+                    )
+                    self.style._show_legend = False  # 不再使用Plot类的通用方法生成图例
+        else:  # 不指定hue，则随机着色
             colors = [cmap(i) for i in range(len(x))]
 
         # 绘制气泡
-        self.ax.scatter(
+        scatter = self.ax.scatter(
             x,
             y,
             z,
             c=colors,
+            cmap=cmap,
             alpha=d_style.get("alpha"),
-            edgecolors="black",
+            edgecolors=d_style.get("edgecolor"),
+            zorder=3,
         )
+
+        # 如果hue存在并且是连续变量，添加colorbar
+        if hue is not None:
+            if pd.api.types.is_numeric_dtype(hue.dtype):
+                divider = make_axes_locatable(self.ax)
+                cax = divider.append_axes("right", size="5%", pad=0.05)
+                cbar = self.figure.colorbar(scatter, cax=cax, orientation="vertical")
+                cbar.set_label(hue.name)
+                cbar.ax.set_zorder(0)
+                self.figure.style._label_outer = (
+                    False  # color是一个独立的ax，但是不支持label_outer()
+                )
+                warnings.warn("画布存在colorbar，label_outer风格不生效", UserWarning)
 
         # 添加系列标签
         np.random.seed(0)
@@ -498,28 +535,40 @@ class PlotBubble(Plot):
 
         # 绘制平均线
         if x_avg is not None:
-            self.ax.axvline(x_avg, linestyle="--", linewidth=1, color="black")
+            self.ax.axvline(
+                x_avg,
+                linestyle=d_style.get("avg_linestyle"),
+                linewidth=d_style.get("avg_linewidth"),
+                color=d_style.get("avg_color"),
+            )
             self.ax.text(
                 x_avg,
                 self.ax.get_ylim()[1],
                 d_style.get("x_fmt").format(x_avg),
                 ha="left",
                 va="top",
-                color="black",
+                color=d_style.get("avg_color"),
                 multialignment="center",
                 fontsize=self.fontsize,
+                zorder=1,
             )
         if y_avg is not None:
-            self.ax.axhline(y_avg, linestyle="--", linewidth=1, color="black")
+            self.ax.axhline(
+                y_avg,
+                linestyle=d_style.get("avg_linestyle"),
+                linewidth=d_style.get("avg_linewidth"),
+                color=d_style.get("avg_color"),
+            )
             self.ax.text(
                 self.ax.get_xlim()[1],
                 y_avg,
                 d_style.get("y_fmt").format(y_avg),
-                ha="left",
+                ha="right",
                 va="center",
-                color="black",
+                color=d_style.get("avg_color"),
                 multialignment="center",
                 fontsize=self.fontsize,
+                zorder=1,
             )
 
         """以下部分绘制回归拟合曲线及CI和PI
@@ -584,7 +633,9 @@ class PlotBubble(Plot):
                         + (x2 - np.mean(x)) ** 2 / np.sum((x - np.mean(x)) ** 2)
                     )
                 )
-                self.ax.fill_between(x2, y2 + pi, y2 - pi, color="None", linestyle="--")
+                self.ax.fill_between(
+                    x2, y2 + pi, y2 - pi, color="None", linestyle="--", linewidth=1
+                )
                 self.ax.plot(
                     x2, y2 - pi, "--", color="0.5", label="95% Prediction Limits"
                 )
@@ -1281,7 +1332,8 @@ class PlotBar(Plot):
 
             max_v = df.values.max()
             min_v = df.values.min()
-            ITER_COLORS = cycle(COLOR_LIST)
+
+            iter_colors = cycle(cmap_qual(i) for i in range(cmap_qual.N))
             for i, col in enumerate(df):
                 # 计算出的指标
                 v = df.loc[index, col]
@@ -1304,9 +1356,9 @@ class PlotBar(Plot):
                     elif index in COLOR_DICT.keys():
                         color = COLOR_DICT[index]
                     else:
-                        color = next(ITER_COLORS)
+                        color = next(iter_colors)
                 else:
-                    color = next(ITER_COLORS)
+                    color = next(iter_colors)
 
                 if stacked:
                     if v >= 0:

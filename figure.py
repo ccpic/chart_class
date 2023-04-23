@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 import matplotlib as mpl
 from plots import PlotBar, PlotBubble
 import pandas as pd
+from color import cmap_qual
 
 try:
     from typing import Literal
@@ -17,21 +18,18 @@ except ImportError:
 mpl.rcParams["font.sans-serif"] = ["Microsoft YaHei"]
 mpl.rcParams["font.serif"] = ["Microsoft YaHei"]
 mpl.rcParams["axes.unicode_minus"] = False
-mpl.rcParams["font.size"]: 16
-mpl.rcParams["hatch.linewidth"] = 0.5
-mpl.rcParams["hatch.color"] = "grey"
+# mpl.rcParams["font.size"]: 16
+# mpl.rcParams["hatch.linewidth"] = 0.5
+# mpl.rcParams["hatch.color"] = "grey"
+
+
+"""
+一个matplotlib画布类，用以简化原始matplotlib及应用符合自己日常习惯的一些设置:
+
+"""
 
 
 class GridFigure(Figure):
-    """
-    一个matplotlib画布类，用以简化原始matplotlib及应用符合自己日常习惯的一些设置:
-    grid,
-    宽高设置，
-    字体大小，
-    总标题
-    保存
-    """
-
     def __init__(
         self,
         nrows: int = 1,
@@ -40,17 +38,37 @@ class GridFigure(Figure):
         height_ratios: Optional[List[float]] = None,
         wspace: float = 0.1,
         hspace: float = 0.1,
-        savepath: str = "/plots/",  # 保存位置
-        width: int = 15,  # 宽
-        height: int = 6,  # 高
-        fontsize: int = 14,  # 字体大小
-        fmt: str = "{:,.0f}",  # 基本数字格式
-        style: Dict[str, Any] = {},  # 风格字典
+        savepath: str = "/plots/",
+        width: int = 15,
+        height: int = 6,
+        fontsize: int = 14,
+        fmt: str = "{:,.0f}",
+        cmap_qual: mpl.colors.Colormap = cmap_qual,
+        cmap_norm: mpl.colors.Colormap = plt.get_cmap("PiYG"),
+        style: Dict[str, Any] = {},
         *args,
         **kwargs,
     ) -> None:
+        """_summary_
+
+        Args:
+            nrows (int, optional): 子图行数. Defaults to 1.
+            ncols (int, optional): 子图列数. Defaults to 1.
+            width_ratios (Optional[List[float]], optional): 子图宽度比. Defaults to None.
+            height_ratios (Optional[List[float]], optional): 子图高度比. Defaults to None.
+            wspace (float, optional): 子图水平间距. Defaults to 0.1.
+            hspace (float, optional): 子图垂直间距. Defaults to 0.1.
+            savepath (str, optional): 绘图文件保存路径. Defaults to "/plots/".
+            width (int, optional): 总宽度. Defaults to 15.
+            height (int, optional): 总高度. Defaults to 6.
+            fontsize (int, optional): 全局字体大小. Defaults to 14.
+            fmt (str, optional): 主要数字格式. Defaults to "{:,.0f}".
+            cmap_qual (mpl.colors.Colormap, optional): 离散的colormap，用于分类变量着色. Defaults to cmap_qual.
+            cmap_norm (mpl.colors.Colormap, optional): 连续的colormap，用于连续变量区分表现好坏. Defaults to plt.get_cmap("PiYG").
+            style (Dict[str, Any], optional): 风格字典. Defaults to {}.
+        """
         super().__init__(*args, **kwargs)
-        
+
         # 根据nrows, ncols, width_ratios和height_ratios, wspace, hspace返回一个GridSpec
         self.nrows = nrows
         self.ncols = ncols
@@ -71,7 +89,10 @@ class GridFigure(Figure):
         self.height = height
         self.fontsize = fontsize
         self.fmt = fmt
+        self.cmap_qual = cmap_qual
+        self.cmap_norm = cmap_norm
         self._style = style
+        self.style = self.Style(self, **self._style)  # 应用风格
 
         # 宽高
         self.set_size_inches(self.width, self.height)
@@ -84,7 +105,12 @@ class GridFigure(Figure):
             self.add_subplot(111)
 
     class Style:
-        def __init__(self, figure, **kwargs) -> None:
+        def __init__(self, figure: mpl.figure.Figure, **kwargs) -> None:
+            """初始化风格
+
+            Args:
+                figure (mpl.figure.Figure): 所属的画布
+            """
             self._figure = figure
 
             """默认风格字典"""
@@ -109,7 +135,8 @@ class GridFigure(Figure):
             for key, value in d_style.items():
                 self.__setattr__(f"_{key}", value)
 
-            """初始化自动执行一遍风格设置"""
+        def apply_style(self) -> None:
+            """执行一遍风格设置，不能在初始化中进行，因为一些风格在画图后才生效"""
             self.title(self._title, self._title_fontsize)
             self.ytitle(self._ytitle, self._ytitle_fontsize)
             if self._same_xlim:
@@ -230,6 +257,26 @@ class GridFigure(Figure):
             style (Dict[str, any], optional): 风格字典. Defaults to {}.
             ax = self.axes[ax_index]
 
+        Kwargs:
+            x (Optional[str], optional): 指定x轴变量字段名，如为None，则x为data第1列. Defaults to None.
+            y (Optional[str], optional): 指定y轴变量字段名，如为None，则x为data第2列. Defaults to None.
+            z (Optional[str], optional): 指定气泡大小字段名，如为None，则气泡大小为data第3列. Defaults to None.
+            hue (Optional[str], optional): 指定气泡颜色字段名，如为None且data有第4列，则气泡颜色为第4列. Defaults to None.
+            x_avg (Optional[float], optional): x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线. Defaults to None.
+            y_avg (Optional[float], optional): y轴平均值或其他分隔值，如提供则绘制y轴分隔水平线. Defaults to None.
+            label_limit (int, optional): 限制显示标签的个数. Defaults to 15.
+            bubble_scale (float, optional): 气泡大小系数. Defaults to 1.
+            show_reg (bool, optional): 是否显示x,y的拟合趋势及置信区间. Defaults to False.
+            corr (Optional[float], optional): 相关系数，如不为None，则显示在ax左上角. Defaults to None.
+
+            x_fmt (str, optional): x轴显示数字格式，影响轴刻度标签及分隔线数据标签. Defaults to "{:,.0f}",
+            y_fmt (str, optional): y轴显示数字格式，影响轴刻度标签及分隔线数据标签. Defaults to "{:,.0f}",
+            alpha (float, optional): 气泡透明度. Defaults to 0.6,
+            edgecolor (str, optional): 气泡边框颜色. Defaults to "black",
+            avg_linestyle (str, optional): 分隔线样式. Defaults to ":",
+            avg_linewidth (float, optional): 分隔线宽度. Defaults to 1,
+            avg_color (str, optional): 分隔线及数据标签颜色. Defaults to "black",
+
         Returns:
             mpl.axes.Axes: 返回ax
         """
@@ -294,7 +341,7 @@ class GridFigure(Figure):
         return ax
 
     def save(self) -> None:
-        self.style = self.Style(self, **self._style)  # 应用风格
+        self.style.apply_style()  # 应用风格
         """保存图片"""
         script_dir = os.path.dirname(__file__)
         plot_dir = f"{script_dir}{self.savepath}"

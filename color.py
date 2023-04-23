@@ -1,3 +1,4 @@
+from matplotlib.colors import ListedColormap
 
 COLOR_DICT = {
     "100MG * 1": "#6F8DB9",
@@ -451,27 +452,16 @@ COLOR_LIST = [
     "teal",
     "crimson",
     "navy",
-    "tomato",
     "darkorange",
     "darkgreen",
     "olivedrab",
     "purple",
+    "pink",
     "deepskyblue",
     "saddlebrown",
-    "grey",
-    "cornflowerblue",
-    "magenta",
-    "teal",
-    "crimson",
-    "navy",
     "tomato",
-    "darkorange",
-    "darkgreen",
-    "olivedrab",
-    "purple",
-    "deepskyblue",
-    "saddlebrown",
-    "grey",
     "cornflowerblue",
     "magenta",
 ]
+
+cmap_qual = ListedColormap(COLOR_LIST)
