@@ -6,9 +6,10 @@ from matplotlib.gridspec import GridSpec
 import os
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 import matplotlib as mpl
-from plots import PlotBar, PlotBubble
+from plots import PlotBar, PlotBubble, PlotLine
 import pandas as pd
 from color import cmap_qual
+from itertools import cycle
 
 try:
     from typing import Literal
@@ -86,6 +87,7 @@ class GridFigure(Figure):
         self.fontsize = fontsize
         self.fmt = fmt
         self.cmap_qual = cmap_qual
+        self.iter_colors = cycle(self.figure.cmap_qual(i) for i in range(self.figure.cmap_qual.N))
         self.cmap_norm = cmap_norm
         self._style = style
         self.style = self.Style(self, **self._style)  # 应用风格
@@ -213,6 +215,40 @@ class GridFigure(Figure):
             """多个子图时只显示最下方x轴和最左边y轴的刻度标签"""
             for i, _ax in enumerate(self._figure.axes):
                 _ax.label_outer()
+
+    def plot_line(
+        self,
+        data: pd.DataFrame,
+        fmt: str = "{:,.0f}",
+        ax_index: int = 0,
+        fontsize: Optional[float] = None,
+        style: Dict[str, any] = {},
+        **kwargs,
+    ) -> mpl.axes.Axes:
+        """在当前画布的指定ax绘制柱状图
+
+        Args:
+            data (pd.DataFrame): 绘图主数据
+            fmt (str): 主数据格式，用于显示标签等的默认格式. Defaults to "{:,.0f}"
+            ax_index (int, optional): ax索引. Defaults to 0.
+            fontsize (Optional[float], optional): 绘图字号. Defaults to None.
+            style (Dict[str, any], optional): 风格字典. Defaults to {}.
+            ax = self.axes[ax_index]
+
+        Returns:
+            mpl.axes.Axes: 返回ax
+        """
+
+        ax = self.axes[ax_index]
+
+        PlotLine(
+            data=data,
+            fmt=fmt,
+            ax=ax,
+            fontsize=self.fontsize if fontsize is None else fontsize,
+            style=style,
+        ).plot(**kwargs).apply_style()
+        
 
     def plot_bubble(
         self,

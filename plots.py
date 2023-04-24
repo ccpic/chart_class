@@ -1,5 +1,5 @@
 from __future__ import annotations
-from color import cmap_qual, COLOR_DICT
+from color import COLOR_DICT
 from wordcloud import WordCloud
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional, Sequence
 import matplotlib.font_manager as fm
@@ -12,7 +12,6 @@ import pandas as pd
 from matplotlib.ticker import FuncFormatter, MultipleLocator
 import math
 from adjustText import adjust_text
-from itertools import cycle
 import scipy.stats as stats
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import warnings
@@ -49,6 +48,8 @@ def scatter_hist(ax: mpl.axes.Axes, x: Sequence, y: Sequence) -> mpl.axes.Axes:
 
     # 去除ticklabels
     ax_histx.tick_params(axis="x", labelbottom=False, length=0)
+    ax_histx.tick_params(axis="y", length=0)
+    ax_histy.tick_params(axis="x", length=0)
     ax_histy.tick_params(axis="y", labelleft=False, length=0)
 
     # # 根据binwidth计算lim
@@ -56,7 +57,7 @@ def scatter_hist(ax: mpl.axes.Axes, x: Sequence, y: Sequence) -> mpl.axes.Axes:
     # xymax = max(np.max(np.abs(x)), np.max(np.abs(y)))
     # lim = (int(xymax / binwidth) + 1) * binwidth
     # bins = np.arange(-lim, lim + binwidth, binwidth)
-    
+
     ax_histx.hist(x, color="grey")
     ax_histy.hist(y, orientation="horizontal", color="grey")
 
@@ -920,100 +921,86 @@ class PlotBubble(Plot):
 #         return self.save()
 
 
-# class PlotLine(GridFigure):
-#     def plot(
-#         self,
-#         series_showlabel: List[str] = [],
-#         endpoint_label_only: bool = False,
-#     ) -> str:
-#         """继承基本类，绘制线形图
+class PlotLine(Plot):
+    def plot(
+        self,
+        show_label: List[str] = [],
+        endpoint_label_only: bool = False,
+        **kwargs,
+    ) -> str:
+        """继承基本类，绘制线形图
 
-#         Parameters
-#         ----------
-#         series_showlabel : List[str], optional
-#             指定要显示标签的系列, by default []
-#         endpoint_label_only : bool, optional
-#             标签是全部显示还是只显示首尾节点, by default False
+        Parameters
+        ----------
+        series_showlabel : List[str], optional
+            指定要显示标签的系列, by default []
+        endpoint_label_only : bool, optional
+            标签是全部显示还是只显示首尾节点, by default False
 
-#         Returns
-#         -------
-#         str
-#             返回绘图保存的路径
-#         """
-#         for j, ax in enumerate(self.axes):
-#             df = self.data[j]
-#             ITER_COLORS = cycle(COLOR_LIST)
-#             # Generate the lines
-#             for i, column in enumerate(df.columns):
-#                 markerstyle = "o"
+        Returns
+        -------
+        str
+            返回绘图保存的路径
+        """
 
-#                 # 如果有指定颜色就颜色，否则按预设列表选取
-#                 color = COLOR_DICT.get(column, next(ITER_COLORS))
+        df = self.data
+        # Generate the lines
+        for i, column in enumerate(df.columns):
+            markerstyle = "o"
 
-#                 ax.plot(
-#                     df.index,
-#                     df[column],
-#                     color=color,
-#                     linewidth=2,
-#                     label=column,
-#                     marker=markerstyle,
-#                     markersize=5,
-#                     markerfacecolor="white",
-#                     markeredgecolor=color,
-#                 )
+            # 如果有指定颜色就颜色，否则按预设列表选取
+            color = COLOR_DICT.get(column, next(self.figure.iter_colors))
 
-#                 # 标签
-#                 if column in series_showlabel:
-#                     for k, idx in enumerate(df.index):
-#                         if endpoint_label_only:
-#                             if k == 0 or k == len(df.index) - 1:
-#                                 t = plt.text(
-#                                     idx,
-#                                     df.iloc[k, i],
-#                                     self.fmt.format(df.iloc[k, i]),
-#                                     ha="right" if k == 0 else "left",
-#                                     va="center",
-#                                     size=self.fontsize,
-#                                     color="white",
-#                                 )
+            self.ax.plot(
+                df.index,
+                df[column],
+                color=color,
+                linewidth=2,
+                label=column,
+                marker=markerstyle,
+                markersize=5,
+                markerfacecolor="white",
+                markeredgecolor=color,
+            )
 
-#                                 t.set_bbox(
-#                                     dict(facecolor=color, alpha=0.7, edgecolor=color)
-#                                 )
-#                         else:
-#                             t = plt.text(
-#                                 idx,
-#                                 df.iloc[k, i],
-#                                 self.fmt.format(df.iloc[k, i]),
-#                                 ha="center",
-#                                 va="center",
-#                                 size=self.fontsize,
-#                                 color="white",
-#                             )
-#                             t.set_bbox(
-#                                 dict(facecolor=color, alpha=0.7, edgecolor=color)
-#                             )
+            # 标签
+            if column in show_label:
+                for k, idx in enumerate(df.index):
+                    if endpoint_label_only:
+                        if k == 0 or k == len(df.index) - 1:
+                            t = self.ax.text(
+                                idx,
+                                df.iloc[k, i],
+                                self.fmt.format(df.iloc[k, i]),
+                                ha="right" if k == 0 else "left",
+                                va="center",
+                                size=self.fontsize,
+                                color="white",
+                            )
 
-#                 # Customize the major grid
-#                 ax.grid(which="major", linestyle=":", linewidth="0.5", color="grey")
+                            t.set_bbox(
+                                dict(facecolor=color, alpha=0.7, edgecolor=color)
+                            )
+                    else:
+                        t = self.ax.text(
+                            idx,
+                            df.iloc[k, i],
+                            self.fmt.format(df.iloc[k, i]),
+                            ha="center",
+                            va="center",
+                            size=self.fontsize,
+                            color="white",
+                        )
+                        t.set_bbox(
+                            dict(facecolor=color, alpha=0.7, edgecolor=color)
+                        )
 
-#                 # y轴标签格式
-#                 ax.yaxis.set_major_formatter(
-#                     FuncFormatter(lambda y, _: self.fmt.format(y))
-#                 )
+            # y轴标签格式
+            self.ax.yaxis.set_major_formatter(
+                FuncFormatter(lambda y, _: self.fmt.format(y))
+            )
 
-#                 # Shrink current axis by 20% and put a legend to the right of the current axis
-#                 box = ax.get_position()
-#                 # ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-#                 ax.legend(
-#                     loc="center left",
-#                     bbox_to_anchor=(1, 0.5),
-#                     labelspacing=1.5,
-#                     frameon=False,
-#                     prop={"family": "SimHei", "size": self.fontsize},
-#                 )
-
-#         return self.save()
+        return self
 
 
 # # 继承基本类，堆积柱状对比图类
@@ -1412,7 +1399,6 @@ class PlotBar(Plot):
             max_v = df.values.max()
             min_v = df.values.min()
 
-            iter_colors = cycle(cmap_qual(i) for i in range(cmap_qual.N))
             for i, col in enumerate(df):
                 # 计算出的指标
                 v = df.loc[index, col]
@@ -1435,9 +1421,9 @@ class PlotBar(Plot):
                     elif index in COLOR_DICT.keys():
                         color = COLOR_DICT[index]
                     else:
-                        color = next(iter_colors)
+                        color = next(self.figure.iter_colors)
                 else:
-                    color = next(iter_colors)
+                    color = next(self.figure.iter_colors)
 
                 if stacked:
                     if v >= 0:
@@ -2074,168 +2060,3 @@ class PlotBar(Plot):
 #             ax.tick_params(axis="x", labelrotation=0)  # x轴标签旋转
 
 #         return self.save()
-
-
-# # 继承基本类，堆积柱状对比图（增强型）类
-# class PlotStackedBarPlus(GridFigure):
-#     def plot(self):
-#         H_INDEX = 1.03  # 外框对比bar的高度系数
-#         for j, ax in enumerate(self.axes):
-#             # 处理绘图数据
-#             df = self.data[j].transpose()
-#             df_share = self.data[j].apply(lambda x: x / x.sum()).transpose()
-#             df_gr = self.data[j].pct_change(axis=1).transpose()
-
-#             # 绝对值bar图和增长率标注
-#             for k, index in enumerate(df.index):
-#                 bottom = 0
-#                 bottom_gr = 0
-#                 bbox_props = None
-#                 for i, col in enumerate(df):
-#                     # 如果有指定颜色就颜色，否则按预设列表选取
-#                     if col in COLOR_DICT.keys():
-#                         color = COLOR_DICT[col]
-#                     else:
-#                         color = COLOR_LIST[i]
-
-#                     # 绝对值bar图
-#                     ax.bar(
-#                         index,
-#                         df.loc[index, col],
-#                         width=0.5,
-#                         color=color,
-#                         bottom=bottom,
-#                         label=col,
-#                     )
-#                     ax.text(
-#                         index,
-#                         bottom + df.loc[index, col] / 2,
-#                         "{:,.0f}".format(df.loc[index, col])
-#                         + "("
-#                         + "{:.1%}".format(df_share.loc[index, col])
-#                         + ")",
-#                         color="white",
-#                         va="center",
-#                         ha="center",
-#                         fontsize=self.fontsize,
-#                     )
-#                     bottom += df.loc[index, col]
-
-#                     if k > 0:
-#                         # 各系列增长率标注
-#                         ax.annotate(
-#                             "{:+.1%}".format(df_gr.iloc[k, i]),
-#                             xy=(
-#                                 0.5,
-#                                 (bottom_gr + df.iloc[k - 1, i] / 2 + df.iloc[k, i] / 2)
-#                                 / 2,
-#                             ),
-#                             ha="center",
-#                             va="center",
-#                             color=color,
-#                             fontsize=self.fontsize,
-#                             bbox=bbox_props,
-#                         )
-#                         bottom_gr += df.iloc[k - 1, i] + df.iloc[k, i]
-
-#                 # 绘制总体增长率
-#                 if k > 0:
-#                     gr = df.iloc[k, :].sum() / df.iloc[k - 1, :].sum() - 1
-
-#                     ax.annotate(
-#                         "{:+.1%}".format(gr),
-#                         xy=(
-#                             0.5,
-#                             (df.iloc[k, :].sum() + df.iloc[k - 1, :].sum())
-#                             / 2
-#                             * (H_INDEX + 0.02),
-#                         ),
-#                         ha="center",
-#                         va="center",
-#                         color="black",
-#                         fontsize=self.fontsize,
-#                         bbox=bbox_props,
-#                     )
-#             # 绘制总体表现外框
-#             ax.bar(
-#                 df.index,
-#                 df.sum(axis=1) * H_INDEX,
-#                 width=0.6,
-#                 linewidth=1,
-#                 linestyle="--",
-#                 facecolor=(1, 0, 0, 0.0),
-#                 edgecolor=(0, 0, 0, 1),
-#             )
-#             for index in df.index:
-#                 ax.text(
-#                     index,
-#                     df.loc[index, :].sum() * (H_INDEX + 0.02),
-#                     "{:,.0f}".format(df.loc[index, :].sum()),
-#                     ha="center",
-#                     fontsize=self.fontsize,
-#                 )
-
-#             # 因为有总体数量标签，增加一些图表高度
-#             box = ax.get_position()
-#             ax.set_position(
-#                 [box.x0, box.y0 - box.height * 0.1, box.width, box.height * 1.1]
-#             )
-
-#             # 图例
-#             if len(self.axes) > 1:  # 平行多图时的情况
-#                 ax.legend(
-#                     df.columns,
-#                     loc="upper center",
-#                     ncol=4,
-#                     bbox_to_anchor=(0.5, -0.1),
-#                     labelspacing=1,
-#                     frameon=False,
-#                     prop={"family": "SimHei", "size": self.fontsize},
-#                 )
-#             else:  # 单图时的情况
-#                 box = ax.get_position()
-#                 ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-#                 handles, labels = ax.get_legend_handles_labels()
-#                 by_label = dict(
-#                     zip(
-#                         labels[::-1],
-#                         handles[::-1],
-#                     )
-#                 )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
-#                 ax.legend(
-#                     by_label.values(),
-#                     by_label.keys(),
-#                     loc="center left",
-#                     ncol=1,
-#                     bbox_to_anchor=(1, 0.5),
-#                     labelspacing=1,
-#                     frameon=False,
-#                     prop={"family": "SimHei", "size": self.fontsize},
-#                 )
-#             # 去除ticks
-#             # ax.get_xaxis().set_ticks([])
-#             ax.get_yaxis().set_ticks([])
-
-#         return self.save()
-
-
-if __name__ == "__main__":
-    # df = pd.DataFrame(
-    #     {"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9]}, index=["a", "b", "c"]
-    # )
-    # print(df)
-    fig, axes = plt.subplots(1, 2, figsize=(8, 3))
-    # axes = axes.ravel()
-
-    for k, ax in enumerate(axes):
-        np.random.seed(0)
-        x, y = np.random.random((2, 30))
-        ax.plot(x, y, "bo")
-
-        texts = []
-        for i in range(len(x)):
-            t = ax.text(x[i], y[i], "Text%s" % i, ha="center", va="center")
-            texts.append(t)
-        adjust_text(texts, ax=ax)
-
-    fig.savefig("test.png")

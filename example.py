@@ -25,6 +25,8 @@ if __name__ == "__main__":
     )
     print(pivoted)
 
+    """绘制气泡图
+    """
     f = plt.figure(
         FigureClass=GridFigure,
         width=11,
@@ -32,16 +34,14 @@ if __name__ == "__main__":
         ncols=1,
         fontsize=11,
         style={
-            "title": "Test",
-            "label_outer": False,
+            "title": "气泡图",
         },
     )
 
     f.plot_bubble(
         data=pivoted,
         ax_index=0,
-        style={
-        },
+        style={},
         x="2022-12",
         y="2021-12",
         z="2022-12",
@@ -53,5 +53,35 @@ if __name__ == "__main__":
         show_hist=True,
         show_legend=False,
     )
-    
+
+    f.save()
+
+    """绘制折线图
+    """
+    pivoted = a.get_pivot(
+        index="药品名称",
+        columns=a.date_column,
+        query_str="数值类型=='金额'",
+        values="数值",
+    ).div(1000000).head(10).transpose()
+    print(pivoted)
+
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=15,
+        height=6,
+        ncols=1,
+        fontsize=11,
+        style={
+            "title": "折线图",
+        },
+    )
+
+    f.plot_line(
+        data=pivoted,
+        ax_index=0,
+        style={"minor_grid": {}, "xticklabel_rotation": 90},
+        show_label=pivoted.columns[1],
+    )
+
     f.save()
