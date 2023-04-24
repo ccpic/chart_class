@@ -927,38 +927,45 @@ class PlotLine(Plot):
         show_label: List[str] = [],
         endpoint_label_only: bool = False,
         **kwargs,
-    ) -> str:
+    ) -> PlotLine:
         """继承基本类，绘制线形图
 
-        Parameters
-        ----------
-        series_showlabel : List[str], optional
-            指定要显示标签的系列, by default []
-        endpoint_label_only : bool, optional
-            标签是全部显示还是只显示首尾节点, by default False
+        Args:
+            show_label (List[str], optional): 指定要显示标签的系列. Defaults to [].
+            endpoint_label_only (bool, optional): 标签是全部显示还是只显示首尾节点. Defaults to False.
 
-        Returns
-        -------
-        str
-            返回绘图保存的路径
-        """
+        Kwargs:
+            linewidth (int, optional): 线宽. Defaults to 2.
+            marker(str,optional): 标记形状. Defaults to "o".
+            markersize(int, optional): 标记大小. Defaults to 5.
+        
+        Returns:
+            PlotLine: 返回自身实例
+        """        
 
         df = self.data
-        # Generate the lines
+        
+        d_style = {
+            "linewidth":2,
+            "marker":"o",
+            "markersize":5,
+            
+        }
+        d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
+        
         for i, column in enumerate(df.columns):
-            markerstyle = "o"
-
             # 如果有指定颜色就颜色，否则按预设列表选取
             color = COLOR_DICT.get(column, next(self.figure.iter_colors))
 
+            # 生成折线图
             self.ax.plot(
                 df.index,
                 df[column],
                 color=color,
-                linewidth=2,
+                linewidth=d_style.get("linewidth"),
                 label=column,
-                marker=markerstyle,
-                markersize=5,
+                marker=d_style.get("marker"),
+                markersize=d_style.get("markersize"),
                 markerfacecolor="white",
                 markeredgecolor=color,
             )
@@ -977,10 +984,6 @@ class PlotLine(Plot):
                                 size=self.fontsize,
                                 color="white",
                             )
-
-                            t.set_bbox(
-                                dict(facecolor=color, alpha=0.7, edgecolor=color)
-                            )
                     else:
                         t = self.ax.text(
                             idx,
@@ -991,9 +994,9 @@ class PlotLine(Plot):
                             size=self.fontsize,
                             color="white",
                         )
-                        t.set_bbox(
-                            dict(facecolor=color, alpha=0.7, edgecolor=color)
-                        )
+                    t.set_bbox(
+                        dict(facecolor=color, alpha=0.7, edgecolor=color)
+                    )
 
             # y轴标签格式
             self.ax.yaxis.set_major_formatter(

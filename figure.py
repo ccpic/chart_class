@@ -235,6 +235,14 @@ class GridFigure(Figure):
             style (Dict[str, any], optional): 风格字典. Defaults to {}.
             ax = self.axes[ax_index]
 
+        Kwargs:
+            show_label (List[str], optional): 指定要显示标签的系列. Defaults to [].
+            endpoint_label_only (bool, optional): 标签是全部显示还是只显示首尾节点. Defaults to False.
+
+            linewidth (int, optional): 线宽. Defaults to 2.
+            marker(str,optional): 标记形状. Defaults to "o".
+            markersize(int, optional): 标记大小. Defaults to 5.
+            
         Returns:
             mpl.axes.Axes: 返回ax
         """
