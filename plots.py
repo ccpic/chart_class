@@ -1,7 +1,7 @@
 from __future__ import annotations
 from color import cmap_qual, COLOR_DICT
 from wordcloud import WordCloud
-from typing import Any, Callable, Dict, List, Tuple, Union, Optional
+from typing import Any, Callable, Dict, List, Tuple, Union, Optional, Sequence
 import matplotlib.font_manager as fm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -23,6 +23,128 @@ except ImportError:
     from typing_extensions import Literal
 
 RANDOM_CMAP = mpl.colors.ListedColormap(np.random.rand(256, 3))
+
+
+def scatter_hist(ax: mpl.axes.Axes, x: Sequence, y: Sequence) -> mpl.axes.Axes:
+    """在指定scatter ax绘制x,y轴histogram
+
+    Args:
+        ax (mpl.axes.Axes): 指定ax
+        x (Sequence): scatter的x轴数据
+        y (Sequence): scatter的y轴数据
+
+    Returns:
+        mpl.axes.Axes: 返回ax_histy，用于后续调整legend位置
+    """
+
+    # 创建ax
+    ax_histx = ax.inset_axes([0, 1.01, 1, 0.2], sharex=ax)
+    ax_histy = ax.inset_axes([1.01, 0, 0.2, 1], sharey=ax)
+
+    # # 令histy的宽度等于histx的高度
+    # pos_x = ax_histx.get_position()
+    # pos_y = ax_histy.get_position()
+    # pos_y.x1 = pos_y.x0 + pos_x.y1 - pos_x.y0
+    # ax_histy.set_position(pos_y)
+
+    # 去除ticklabels
+    ax_histx.tick_params(axis="x", labelbottom=False, length=0)
+    ax_histy.tick_params(axis="y", labelleft=False, length=0)
+
+    # # 根据binwidth计算lim
+    # binwidth = 0.25
+    # xymax = max(np.max(np.abs(x)), np.max(np.abs(y)))
+    # lim = (int(xymax / binwidth) + 1) * binwidth
+
+    # bins = np.arange(-lim, lim + binwidth, binwidth)
+    ax_histx.hist(x, color="grey")
+    ax_histy.hist(y, orientation="horizontal", color="grey")
+
+    return ax_histy
+
+
+def regression_band(
+    ax: mpl.axes.Axes,
+    x: Sequence,
+    y: Sequence,
+    n: int,
+    show_ci: bool = True,
+    show_pi: bool = False,
+) -> None:
+    """在指定ax绘制线性拟合区间
+
+    Args:
+        ax (mpl.axes.Axes): 指定ax.
+        x (Sequence): 自变量.
+        y (Sequence): 因变量.
+        n (int): 观察例数.
+        show_ci (bool, optional): 是否展示confidence interval. Defaults to True.
+        show_pi (bool, optional): 是否展示95% prediction limit. Defaults to False.
+    """
+
+    n = len(x)
+    if n > 2:  # 数据点必须大于cov矩阵的scale
+        p, cov = np.polyfit(x, y, 1, cov=True)  # 简单线性回归返回parameter和covariance
+        poly1d_fn = np.poly1d(p)  # 拟合方程
+        y_model = poly1d_fn(x)  # 拟合的y值
+        m = p.size  # 参数个数
+
+        dof = n - m  # degrees of freedom
+        t = stats.t.ppf(0.975, dof)  # 显著性检验t值
+
+        # 拟合结果绘图
+        ax.plot(
+            x,
+            y_model,
+            ":",
+            color="0.1",
+            linewidth=1,
+            alpha=0.5,
+            label="Fit",
+            zorder=1,
+        )
+
+        # 误差估计
+        resid = y - y_model  # 残差
+        s_err = np.sqrt(np.sum(resid**2) / dof)  # 标准误差
+
+        # 拟合CI和PI
+        x2 = np.linspace(np.min(x), np.max(x), 100)
+        y2 = poly1d_fn(x2)
+
+        # CI计算和绘图
+        if show_ci:
+            ci = (
+                t
+                * s_err
+                * np.sqrt(
+                    1 / n + (x2 - np.mean(x)) ** 2 / np.sum((x - np.mean(x)) ** 2)
+                )
+            )
+            ax.fill_between(
+                x2,
+                y2 + ci,
+                y2 - ci,
+                color="grey",
+                edgecolor=["none"],
+                alpha=0.1,
+                zorder=0,
+            )
+
+        # Pi计算和绘图
+        if show_pi:
+            pi = (
+                t
+                * s_err
+                * np.sqrt(
+                    1 + 1 / n + (x2 - np.mean(x)) ** 2 / np.sum((x - np.mean(x)) ** 2)
+                )
+            )
+            ax.fill_between(
+                x2, y2 + pi, y2 - pi, color="None", linestyle="--", linewidth=1
+            )
+            ax.plot(x2, y2 - pi, "--", color="0.5", label="95% Prediction Limits")
+            ax.plot(x2, y2 + pi, "--", color="0.5")
 
 
 class Plot:
@@ -370,6 +492,7 @@ class PlotBubble(Plot):
         label_formatter: str = "{index}",
         bubble_scale: float = 1,
         show_reg: bool = False,
+        show_hist: bool = False,
         corr: Optional[float] = None,
         **kwargs,
     ) -> PlotBubble:
@@ -386,6 +509,7 @@ class PlotBubble(Plot):
             label_formatter (str, optional): 标签文字的格式，支持{index}, {x}, {y}, {z}, {hue}. Defaults to "{index}".
             bubble_scale (float, optional): 气泡大小系数. Defaults to 1.
             show_reg (bool, optional): 是否显示x,y的拟合趋势及置信区间. Defaults to False.
+            show_reg (bool, optional): 是否显示x,y的分布histogram Defaults to False.
             corr (Optional[float], optional): 相关系数，如不为None，则显示在ax左上角. Defaults to None.
 
         Kwargs:
@@ -426,6 +550,12 @@ class PlotBubble(Plot):
         }
         d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
 
+        # 添加histogram，在前半步执行因为涉及到legend位置的问题
+        if show_hist:
+            ax_legend = scatter_hist(ax=self.ax, x=x, y=x)
+        else:
+            ax_legend = self.ax
+
         # 确定颜色方案
         if hue is None:
             cmap = RANDOM_CMAP
@@ -460,7 +590,7 @@ class PlotBubble(Plot):
                         for i, c in enumerate(categories)
                     ]
                     handles = sorted(handles, key=lambda h: h.get_label())
-                    self.ax.legend(
+                    ax_legend.legend(
                         handles=handles,
                         title=hue.name,
                         loc=self.style._legend_loc,
@@ -490,7 +620,7 @@ class PlotBubble(Plot):
         # 如果hue存在并且是连续变量，添加colorbar
         if hue is not None:
             if pd.api.types.is_numeric_dtype(hue.dtype):
-                divider = make_axes_locatable(self.ax)
+                divider = make_axes_locatable(ax_legend)
                 cax = divider.append_axes("right", size="5%", pad=0.05)
                 cbar = self.figure.colorbar(scatter, cax=cax, orientation="vertical")
                 cbar.set_label(hue.name)
@@ -505,11 +635,11 @@ class PlotBubble(Plot):
         texts = []
         for i in range(len(df.index[:label_limit])):
             d_label = {
-                "x":d_style.get("x_fmt").format(x[i]),
-                "y":d_style.get("y_fmt").format(y[i]),
-                "z":z[i],
-                "hue":hue[i] if hue is not None else None,
-                "index":df.index[i]
+                "x": d_style.get("x_fmt").format(x[i]),
+                "y": d_style.get("y_fmt").format(y[i]),
+                "z": z[i],
+                "hue": hue[i] if hue is not None else None,
+                "index": df.index[i],
             }
             texts.append(
                 self.ax.text(
@@ -531,6 +661,10 @@ class PlotBubble(Plot):
                 force_text=0.5,
                 arrowprops=dict(arrowstyle="->", color="black"),
             )
+
+        # 添加轴label
+        self.style._xlabel = x.name
+        self.style._ylabel = y.name
 
         # 设置坐标轴格式
         self.ax.xaxis.set_major_formatter(
@@ -578,75 +712,9 @@ class PlotBubble(Plot):
                 zorder=1,
             )
 
-        """以下部分绘制回归拟合曲线及CI和PI
-        参考
-        http://nbviewer.ipython.org/github/demotu/BMC/blob/master/notebooks/CurveFitting.ipynb
-        https://stackoverflow.com/questions/27164114/show-confidence-limits-and-prediction-limits-in-scatter-plot
-        """
+        # 添加线性拟合曲线
         if show_reg:
-            n = len(x)  # 观察例数
-            if n > 2:  # 数据点必须大于cov矩阵的scale
-                p, cov = np.polyfit(x, y, 1, cov=True)  # 简单线性回归返回parameter和covariance
-                poly1d_fn = np.poly1d(p)  # 拟合方程
-                y_model = poly1d_fn(x)  # 拟合的y值
-                m = p.size  # 参数个数
-
-                dof = n - m  # degrees of freedom
-                t = stats.t.ppf(0.975, dof)  # 显著性检验t值
-
-                # 拟合结果绘图
-                self.ax.plot(
-                    x,
-                    y_model,
-                    "-",
-                    color="0.1",
-                    linewidth=1.5,
-                    alpha=0.5,
-                    label="Fit",
-                )
-
-                # 误差估计
-                resid = y - y_model  # 残差
-                s_err = np.sqrt(np.sum(resid**2) / dof)  # 标准误差
-
-                # 拟合CI和PI
-                x2 = np.linspace(np.min(x), np.max(x), 100)
-                y2 = poly1d_fn(x2)
-
-                # CI计算和绘图
-                ci = (
-                    t
-                    * s_err
-                    * np.sqrt(
-                        1 / n + (x2 - np.mean(x)) ** 2 / np.sum((x - np.mean(x)) ** 2)
-                    )
-                )
-                self.ax.fill_between(
-                    x2,
-                    y2 + ci,
-                    y2 - ci,
-                    color="#b9cfe7",
-                    edgecolor=["none"],
-                    alpha=0.5,
-                )
-
-                # Pi计算和绘图
-                pi = (
-                    t
-                    * s_err
-                    * np.sqrt(
-                        1
-                        + 1 / n
-                        + (x2 - np.mean(x)) ** 2 / np.sum((x - np.mean(x)) ** 2)
-                    )
-                )
-                self.ax.fill_between(
-                    x2, y2 + pi, y2 - pi, color="None", linestyle="--", linewidth=1
-                )
-                self.ax.plot(
-                    x2, y2 - pi, "--", color="0.5", label="95% Prediction Limits"
-                )
-                self.ax.plot(x2, y2 + pi, "--", color="0.5")
+            regression_band(ax=self.ax, x=x, y=y)
 
         # Add corr
         if corr is not None:
@@ -1589,7 +1657,7 @@ class PlotBar(Plot):
         return self
 
 
-# # 继承基本类，Histgram分布图类
+# # 继承基本类，histogram分布图类
 # class PlotHist(GridFigure):
 #     def plot(
 #         self,

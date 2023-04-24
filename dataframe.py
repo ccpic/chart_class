@@ -490,45 +490,23 @@ if __name__ == "__main__":
         .set_index("药品名称")
     )
     print(pivoted)
-    # pivoted = pivoted.merge(df[["药品名称", "谈判年份"]], how="left", on="药品名称")
-    # pivoted.set_index("药品名称")
-    # print(pivoted)
 
     f = plt.figure(
         FigureClass=GridFigure,
-        ncols=2,
-        wspace=0.3,
-        # sharex=True,
-        # sharey=True,
+        width=11,
+        height=10,
+        ncols=1,
         fontsize=11,
         style={
-            "title": "123",
+            "title": "Test",
             "label_outer": False,
         },
     )
 
     f.plot_bubble(
-        data=pivoted.head(10),
+        data=pivoted,
         ax_index=0,
         style={
-            "ylabel": "test",
-        },
-        x="2022-12",
-        y="2021-12",
-        z="2022-12",
-        hue="2021-12",
-        x_avg=4,
-        y_avg=4,
-        label_limit=100,
-        label_formatter="{index}\n({x}, {y})",
-        x_fmt="{:,.1f}",
-        y_fmt="{:,.1f}",
-    )
-    f.plot_bubble(
-        data=pivoted.tail(10),
-        ax_index=1,
-        style={
-            "ylabel": "test",
         },
         x="2022-12",
         y="2021-12",
@@ -538,22 +516,8 @@ if __name__ == "__main__":
         label_formatter="{index}\n({x}, {y})",
         x_fmt="{:,.1f}",
         y_fmt="{:,.1f}",
+        show_hist=True,
+        show_legend=False,
     )
-
-    # pivoted = (
-    #     a.get_pivot(
-    #         index=a.date_column,
-    #         columns="谈判年份",
-    #         query_str="数值类型=='金额'",
-    #         values="数值",
-    #     )
-    #     .sort_index()
-    #     .iloc[-4:, :]
-    #     .div(100000000)
-    # )
-    # print(pivoted)
-    # f.plot_bar(
-    #     data=pivoted,
-    #     ax_index=1,
-    # )
+    
     f.save()

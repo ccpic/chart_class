@@ -14,16 +14,47 @@ if __name__ == "__main__":
     )
     pivoted = (
         a.get_pivot(
-            index=a.date_column,
-            columns="药品名称",
+            index=["谈判年份", "药品名称"],
+            columns=a.date_column,
             query_str="数值类型=='金额'",
             values="数值",
         )
-        .sort_index()
         .div(100000000)
+        .reset_index()
+        .set_index("药品名称")
     )
     print(pivoted)
 
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=11,
+        height=10,
+        ncols=1,
+        fontsize=11,
+        style={
+            "title": "Test",
+            "label_outer": False,
+        },
+    )
+
+    f.plot_bubble(
+        data=pivoted,
+        ax_index=0,
+        style={
+        },
+        x="2022-12",
+        y="2021-12",
+        z="2022-12",
+        hue="谈判年份",
+        label_limit=100,
+        label_formatter="{index}\n({x}, {y})",
+        x_fmt="{:,.1f}",
+        y_fmt="{:,.1f}",
+        show_hist=True,
+        show_legend=False,
+    )
+    
+    f.save()
     f = plt.figure(  # 必须使用plt.figure，如果直接初始化类会有些奇怪的错误，比如adjust_text包的一些问题
         FigureClass=GridFigure,
         ncols=2,
