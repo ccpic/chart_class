@@ -58,12 +58,17 @@ if __name__ == "__main__":
 
     """绘制折线图
     """
-    pivoted = a.get_pivot(
-        index="药品名称",
-        columns=a.date_column,
-        query_str="数值类型=='金额'",
-        values="数值",
-    ).div(1000000).head(10).transpose()
+    pivoted = (
+        a.get_pivot(
+            index="药品名称",
+            columns=a.date_column,
+            query_str="数值类型=='金额'",
+            values="数值",
+        )
+        .div(1000000)
+        .head(10)
+        .transpose()
+    )
     print(pivoted)
 
     f = plt.figure(
@@ -85,3 +90,25 @@ if __name__ == "__main__":
     )
 
     f.save()
+
+    """绘制热力图
+    """
+
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=12,
+        height=10,
+        ncols=1,
+        fontsize=11,
+        style={"title": "热力图"},
+    )
+
+    f.plot_heatgrid(
+        data=pivoted,
+        ax_index=0,
+        style = {
+            "xticklabel_rotation": 90
+        }
+    )
+
+    f.save(transparent=False)

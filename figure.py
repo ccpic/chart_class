@@ -6,7 +6,7 @@ from matplotlib.gridspec import GridSpec
 import os
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 import matplotlib as mpl
-from plots import PlotBar, PlotBubble, PlotLine
+from plots import PlotBar, PlotBubble, PlotLine, PlotHeatGrid
 import pandas as pd
 from color import cmap_qual
 from itertools import cycle
@@ -87,7 +87,9 @@ class GridFigure(Figure):
         self.fontsize = fontsize
         self.fmt = fmt
         self.cmap_qual = cmap_qual
-        self.iter_colors = cycle(self.figure.cmap_qual(i) for i in range(self.figure.cmap_qual.N))
+        self.iter_colors = cycle(
+            self.figure.cmap_qual(i) for i in range(self.figure.cmap_qual.N)
+        )
         self.cmap_norm = cmap_norm
         self._style = style
         self.style = self.Style(self, **self._style)  # 应用风格
@@ -216,6 +218,40 @@ class GridFigure(Figure):
             for i, _ax in enumerate(self._figure.axes):
                 _ax.label_outer()
 
+    def plot_heatgrid(
+        self,
+        data: pd.DataFrame,
+        fmt: str = "{:,.0f}",
+        ax_index: int = 0,
+        fontsize: Optional[float] = None,
+        style: Dict[str, any] = {},
+        **kwargs,
+    ) -> mpl.axes.Axes:
+        """在当前画布的指定ax绘制网格热力图
+
+        Args:
+            data (pd.DataFrame): 绘图主数据
+            fmt (str): 主数据格式，用于显示标签等的默认格式. Defaults to "{:,.0f}"
+            ax_index (int, optional): ax索引. Defaults to 0.
+            fontsize (Optional[float], optional): 绘图字号. Defaults to None.
+            style (Dict[str, any], optional): 风格字典. Defaults to {}.
+            ax = self.axes[ax_index]
+        
+        Kwargs:
+            cbar (bool, optional): 是否添加colorbar. Defaults to True.
+            show_label (bool, optional): 是否往每个网格添加标签文本. Defaults to True.
+        """
+        
+        ax = self.axes[ax_index]
+    
+        PlotHeatGrid(
+            data=data,
+            fmt=fmt,
+            ax=ax,
+            fontsize=self.fontsize if fontsize is None else fontsize,
+            style=style,
+        ).plot(**kwargs).apply_style()
+
     def plot_line(
         self,
         data: pd.DataFrame,
@@ -225,7 +261,7 @@ class GridFigure(Figure):
         style: Dict[str, any] = {},
         **kwargs,
     ) -> mpl.axes.Axes:
-        """在当前画布的指定ax绘制柱状图
+        """在当前画布的指定ax绘制折线图
 
         Args:
             data (pd.DataFrame): 绘图主数据
@@ -242,7 +278,7 @@ class GridFigure(Figure):
             linewidth (int, optional): 线宽. Defaults to 2.
             marker(str,optional): 标记形状. Defaults to "o".
             markersize(int, optional): 标记大小. Defaults to 5.
-            
+
         Returns:
             mpl.axes.Axes: 返回ax
         """
@@ -256,7 +292,6 @@ class GridFigure(Figure):
             fontsize=self.fontsize if fontsize is None else fontsize,
             style=style,
         ).plot(**kwargs).apply_style()
-        
 
     def plot_bubble(
         self,
@@ -267,7 +302,7 @@ class GridFigure(Figure):
         style: Dict[str, any] = {},
         **kwargs,
     ) -> mpl.axes.Axes:
-        """在当前画布的指定ax绘制柱状图
+        """在当前画布的指定ax绘制气泡图
 
         Args:
             data (pd.DataFrame): 绘图主数据
@@ -362,12 +397,16 @@ class GridFigure(Figure):
 
         return ax
 
-    def save(self) -> str:
+    def save(self, transparent:bool=True, dpi:int=300) -> str:
         """保存图片
+
+        Args:
+            transparent (bool, optional): 背景是否透明. Defaults to True.
+            dpi (int, optional): _description_. Defaults to 600.
 
         Returns:
             str: 返回保存图片的路径
-        """
+        """        
 
         self.style.apply_style()  # 应用风格，一些风格只能在绘图后生效
         self.gridspec.tight_layout(self)  # 自动调整子图参数，使之填充整个图像区域，但有时不生效
@@ -380,6 +419,7 @@ class GridFigure(Figure):
         if os.path.exists(plot_dir) is False:
             os.makedirs(plot_dir)
 
+        # 根据图表标题设置保存文件名
         path = "%s%s.png" % (
             plot_dir,
             "test"
@@ -390,8 +430,8 @@ class GridFigure(Figure):
             path,
             format="png",
             bbox_inches="tight",
-            transparent=True,
-            dpi=600,
+            transparent=transparent,
+            dpi=dpi,
         )
         print(path + " has been saved...")
 

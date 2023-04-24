@@ -1929,137 +1929,25 @@ class PlotBar(Plot):
 #         return self.save()
 
 
-# # 继承基本类，网格热力图类
-# class PlotHeatGrid(GridFigure):
-#     def __init__(
-#         self,
-#         *args,
-#         **kwargs,
-#     ):
-#         super().__init__(*args, **kwargs)
+class PlotHeatGrid(Plot):
+    def plot(self, cbar: bool = True, show_label:bool = True) -> PlotHeatGrid:
+        """继承基本类，生成网格热力图类
 
-#     def plot(self, cbar: bool = True, cmap: list = ["bwr"], fmt: list = [",.0f"]):
-#         check_data_with_axes(cmap, self.axes)
-#         check_data_with_axes(fmt, self.axes)
+        Args:
+            cbar (bool, optional): 是否添加colorbar. Defaults to True.
+            show_label (bool, optional): 是否往每个网格添加标签文本. Defaults to True.
 
-#         for j, ax in enumerate(self.axes):
-#             df = self.data[j]
-#             sns.heatmap(
-#                 df,
-#                 ax=ax,
-#                 annot=True,
-#                 cbar=cbar,
-#                 cmap=cmap[j],
-#                 fmt=fmt[j],
-#                 annot_kws={"fontsize": self.fontsize},
-#             )
-
-#             ax.set(ylabel=None)  # 去除y轴标题
-
-#         return self.save()
-
-
-# # 继承基本类，堆积柱状对比图类
-# class PlotBarLine(GridFigure):
-#     def plot(self, add_gr_text: bool = False, threshold: float = 0):
-#         for j, ax in enumerate(self.axes):
-#             # 处理绘图数据
-#             df = self.data[j].transpose()
-#             df_gr = self.data[j].pct_change(axis=1).transpose()
-
-#             # 绝对值bar图和增长率标注
-#             for k, index in enumerate(df.index):
-#                 bottom_pos = 0
-#                 bottom_neg = 0
-#                 bottom_gr = 0
-#                 bbox_props = None
-#                 for i, col in enumerate(df):
-#                     if df.loc[index, col] >= 0:
-#                         bottom = bottom_pos
-#                     else:
-#                         bottom = bottom_neg
-#                     # 如果有指定颜色就颜色，否则按预设列表选取
-#                     if col in COLOR_DICT.keys():
-#                         color = COLOR_DICT[col]
-#                     else:
-#                         color = COLOR_LIST[i]
-
-#                     # 绝对值bar图
-#                     ax.bar(
-#                         index,
-#                         df.loc[index, col],
-#                         width=0.5,
-#                         color=color,
-#                         bottom=bottom,
-#                         label=col,
-#                     )
-#                     if abs(df.loc[index, col]) >= threshold:
-#                         ax.text(
-#                             index,
-#                             bottom + df.loc[index, col] / 2,
-#                             self.fmt.format(df.loc[index, col]),
-#                             color="white",
-#                             va="center",
-#                             ha="center",
-#                             fontsize=self.fontsize,
-#                         )
-#                     if df.loc[index, col] >= 0:
-#                         bottom_pos += df.loc[index, col]
-#                     else:
-#                         bottom_neg += df.loc[index, col]
-
-#                     patches = ax.patches
-#                     for rect in patches:
-#                         height = rect.get_height()
-#                         # 负数则添加纹理
-#                         if height < 0:
-#                             rect.set_hatch("//")
-
-#                     if add_gr_text:
-#                         if k > 0:
-#                             # 各系列增长率标注
-#                             ax.annotate(
-#                                 "{:+.1%}".format(df_gr.iloc[k, i]),
-#                                 xy=(
-#                                     0.5,
-#                                     (
-#                                         bottom_gr
-#                                         + df.iloc[k - 1, i] / 2
-#                                         + df.iloc[k, i] / 2
-#                                     )
-#                                     / 2,
-#                                 ),
-#                                 ha="center",
-#                                 va="center",
-#                                 color=color,
-#                                 fontsize=self.fontsize,
-#                                 bbox=bbox_props,
-#                             )
-#                             bottom_gr += df.iloc[k - 1, i] + df.iloc[k, i]
-#             # 图例
-#             box = ax.get_position()
-#             ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-#             handles, labels = ax.get_legend_handles_labels()
-#             by_label = dict(
-#                 zip(
-#                     labels[::-1],
-#                     handles[::-1],
-#                 )
-#             )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
-#             ax.legend(
-#                 by_label.values(),
-#                 by_label.keys(),
-#                 loc="center left",
-#                 ncol=1,
-#                 bbox_to_anchor=(1, 0.5),
-#                 labelspacing=1,
-#                 frameon=False,
-#                 prop={"family": "SimHei", "size": self.fontsize},
-#             )
-
-#             ax.axhline(0, color="black", linewidth=0.5)  # y轴为0的横线
-#             ax.get_yaxis().set_ticks([])  # 去除y ticks
-
-#             ax.tick_params(axis="x", labelrotation=0)  # x轴标签旋转
-
-#         return self.save()
+        Returns:
+            PlotHeatGrid: 返回自身实例
+        """        
+        sns.heatmap(
+            data=self.data,
+            ax=self.ax,
+            annot=show_label,
+            cbar=cbar,
+            cmap=self.figure.cmap_norm,
+            fmt=self.fmt[2:-1], # seaborn格式会自己加{:}
+            annot_kws={"fontsize": self.fontsize},
+        )
+        
+        return self
