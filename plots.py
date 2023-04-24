@@ -367,6 +367,7 @@ class PlotBubble(Plot):
         x_avg: Optional[float] = None,
         y_avg: Optional[float] = None,
         label_limit: int = 15,
+        label_formatter: str = "{index}",
         bubble_scale: float = 1,
         show_reg: bool = False,
         corr: Optional[float] = None,
@@ -382,6 +383,7 @@ class PlotBubble(Plot):
             x_avg (Optional[float], optional): x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线. Defaults to None.
             y_avg (Optional[float], optional): y轴平均值或其他分隔值，如提供则绘制y轴分隔水平线. Defaults to None.
             label_limit (int, optional): 限制显示标签的个数. Defaults to 15.
+            label_formatter (str, optional): 标签文字的格式，支持{index}, {x}, {y}, {z}, {hue}. Defaults to "{index}".
             bubble_scale (float, optional): 气泡大小系数. Defaults to 1.
             show_reg (bool, optional): 是否显示x,y的拟合趋势及置信区间. Defaults to False.
             corr (Optional[float], optional): 相关系数，如不为None，则显示在ax左上角. Defaults to None.
@@ -394,14 +396,13 @@ class PlotBubble(Plot):
             avg_linestyle (str, optional): 分隔线样式. Defaults to ":",
             avg_linewidth (float, optional): 分隔线宽度. Defaults to 1,
             avg_color (str, optional): 分隔线及数据标签颜色. Defaults to "black",
-        
+
         Returns:
             PlotBubble: 返回自身实例
-        """        
+        """
 
         df = self.data
 
-        labels = df.index
         # 如果不指定，则分别读取df第1-4列为x,y,z,hue
         x = df.iloc[:, 0] if x is None else df.loc[:, x]
         y = df.iloc[:, 1] if y is None else df.loc[:, y]
@@ -501,18 +502,26 @@ class PlotBubble(Plot):
 
         # 添加系列标签
         np.random.seed(0)
-        texts = [
-            self.ax.text(
-                x[i],
-                y[i],
-                labels[i],
-                ha="center",
-                va="center",
-                multialignment="center",
-                fontsize=self.fontsize,
+        texts = []
+        for i in range(len(df.index[:label_limit])):
+            d_label = {
+                "x":d_style.get("x_fmt").format(x[i]),
+                "y":d_style.get("y_fmt").format(y[i]),
+                "z":z[i],
+                "hue":hue[i] if hue is not None else None,
+                "index":df.index[i]
+            }
+            texts.append(
+                self.ax.text(
+                    x[i],
+                    y[i],
+                    label_formatter.format(**d_label),
+                    ha="center",
+                    va="center",
+                    multialignment="center",
+                    fontsize=self.fontsize,
+                )
             )
-            for i in range(len(labels[:label_limit]))
-        ]
 
         # 用adjust_text包保证标签互不重叠
         if label_limit > 1:

@@ -519,7 +519,10 @@ if __name__ == "__main__":
         hue="2021-12",
         x_avg=4,
         y_avg=4,
-        label_limit=0,
+        label_limit=100,
+        label_formatter="{index}\n({x}, {y})",
+        x_fmt="{:,.1f}",
+        y_fmt="{:,.1f}",
     )
     f.plot_bubble(
         data=pivoted.tail(10),
@@ -531,7 +534,10 @@ if __name__ == "__main__":
         y="2021-12",
         z="2022-12",
         hue="谈判年份",
-        label_limit=0,
+        label_limit=100,
+        label_formatter="{index}\n({x}, {y})",
+        x_fmt="{:,.1f}",
+        y_fmt="{:,.1f}",
     )
 
     # pivoted = (
