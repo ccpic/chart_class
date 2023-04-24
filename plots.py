@@ -55,10 +55,14 @@ def scatter_hist(ax: mpl.axes.Axes, x: Sequence, y: Sequence) -> mpl.axes.Axes:
     # binwidth = 0.25
     # xymax = max(np.max(np.abs(x)), np.max(np.abs(y)))
     # lim = (int(xymax / binwidth) + 1) * binwidth
-
     # bins = np.arange(-lim, lim + binwidth, binwidth)
+    
     ax_histx.hist(x, color="grey")
     ax_histy.hist(y, orientation="horizontal", color="grey")
+
+    # label
+    ax_histx.set_ylabel(f"{x.name}分布")
+    ax_histy.set_xlabel(f"{y.name}分布")
 
     return ax_histy
 
@@ -552,7 +556,7 @@ class PlotBubble(Plot):
 
         # 添加histogram，在前半步执行因为涉及到legend位置的问题
         if show_hist:
-            ax_legend = scatter_hist(ax=self.ax, x=x, y=x)
+            ax_legend = scatter_hist(ax=self.ax, x=x, y=y)
         else:
             ax_legend = self.ax
 
