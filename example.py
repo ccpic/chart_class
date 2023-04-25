@@ -112,3 +112,5 @@ if __name__ == "__main__":
     )
 
     f.save(transparent=False)
+
+    print(f.plot(kind="line"))

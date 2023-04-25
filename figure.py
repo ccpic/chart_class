@@ -218,8 +218,9 @@ class GridFigure(Figure):
             for i, _ax in enumerate(self._figure.axes):
                 _ax.label_outer()
 
-    def plot_heatgrid(
+    def plot(
         self,
+        kind: Literal["bar", "line", "bubble", "heatmap"],
         data: pd.DataFrame,
         fmt: str = "{:,.0f}",
         ax_index: int = 0,
@@ -230,174 +231,67 @@ class GridFigure(Figure):
         """在当前画布的指定ax绘制网格热力图
 
         Args:
-            data (pd.DataFrame): 绘图主数据
+            kind (Literal["bar", "line", "bubble", "heatmap"]): 绘图类型.
+            data (pd.DataFrame): 绘图主数据，一个pandas df.
             fmt (str): 主数据格式，用于显示标签等的默认格式. Defaults to "{:,.0f}"
             ax_index (int, optional): ax索引. Defaults to 0.
             fontsize (Optional[float], optional): 绘图字号. Defaults to None.
             style (Dict[str, any], optional): 风格字典. Defaults to {}.
             ax = self.axes[ax_index]
-        
-        Kwargs:
-            cbar (bool, optional): 是否添加colorbar. Defaults to True.
-            show_label (bool, optional): 是否往每个网格添加标签文本. Defaults to True.
-        """
-        
-        ax = self.axes[ax_index]
-    
-        PlotHeatGrid(
-            data=data,
-            fmt=fmt,
-            ax=ax,
-            fontsize=self.fontsize if fontsize is None else fontsize,
-            style=style,
-        ).plot(**kwargs).apply_style()
-
-    def plot_line(
-        self,
-        data: pd.DataFrame,
-        fmt: str = "{:,.0f}",
-        ax_index: int = 0,
-        fontsize: Optional[float] = None,
-        style: Dict[str, any] = {},
-        **kwargs,
-    ) -> mpl.axes.Axes:
-        """在当前画布的指定ax绘制折线图
-
-        Args:
-            data (pd.DataFrame): 绘图主数据
-            fmt (str): 主数据格式，用于显示标签等的默认格式. Defaults to "{:,.0f}"
-            ax_index (int, optional): ax索引. Defaults to 0.
-            fontsize (Optional[float], optional): 绘图字号. Defaults to None.
-            style (Dict[str, any], optional): 风格字典. Defaults to {}.
-            ax = self.axes[ax_index]
-
-        Kwargs:
-            show_label (List[str], optional): 指定要显示标签的系列. Defaults to [].
-            endpoint_label_only (bool, optional): 标签是全部显示还是只显示首尾节点. Defaults to False.
-
-            linewidth (int, optional): 线宽. Defaults to 2.
-            marker(str,optional): 标记形状. Defaults to "o".
-            markersize(int, optional): 标记大小. Defaults to 5.
-
-        Returns:
-            mpl.axes.Axes: 返回ax
-        """
-
-        ax = self.axes[ax_index]
-
-        PlotLine(
-            data=data,
-            fmt=fmt,
-            ax=ax,
-            fontsize=self.fontsize if fontsize is None else fontsize,
-            style=style,
-        ).plot(**kwargs).apply_style()
-
-    def plot_bubble(
-        self,
-        data: pd.DataFrame,
-        fmt: str = "{:,.0f}",
-        ax_index: int = 0,
-        fontsize: Optional[float] = None,
-        style: Dict[str, any] = {},
-        **kwargs,
-    ) -> mpl.axes.Axes:
-        """在当前画布的指定ax绘制气泡图
-
-        Args:
-            data (pd.DataFrame): 绘图主数据
-            fmt (str): 主数据格式，用于显示标签等的默认格式. Defaults to "{:,.0f}"
-            ax_index (int, optional): ax索引. Defaults to 0.
-            fontsize (Optional[float], optional): 绘图字号. Defaults to None.
-            style (Dict[str, any], optional): 风格字典. Defaults to {}.
-            ax = self.axes[ax_index]
-
-        Kwargs:
-            x (Optional[str], optional): 指定x轴变量字段名，如为None，则x为data第1列. Defaults to None.
-            y (Optional[str], optional): 指定y轴变量字段名，如为None，则x为data第2列. Defaults to None.
-            z (Optional[str], optional): 指定气泡大小字段名，如为None，则气泡大小为data第3列. Defaults to None.
-            hue (Optional[str], optional): 指定气泡颜色字段名. Defaults to None.
-            x_avg (Optional[float], optional): x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线. Defaults to None.
-            y_avg (Optional[float], optional): y轴平均值或其他分隔值，如提供则绘制y轴分隔水平线. Defaults to None.
-            label_limit (int, optional): 限制显示标签的个数. Defaults to 15.
-            bubble_scale (float, optional): 气泡大小系数. Defaults to 1.
-            show_reg (bool, optional): 是否显示x,y的拟合趋势及置信区间. Defaults to False.
-            corr (Optional[float], optional): 相关系数，如不为None，则显示在ax左上角. Defaults to None.
-
-            x_fmt (str, optional): x轴显示数字格式，影响轴刻度标签及分隔线数据标签. Defaults to "{:,.0f}",
-            y_fmt (str, optional): y轴显示数字格式，影响轴刻度标签及分隔线数据标签. Defaults to "{:,.0f}",
-            alpha (float, optional): 气泡透明度. Defaults to 0.6,
-            edgecolor (str, optional): 气泡边框颜色. Defaults to "black",
-            avg_linestyle (str, optional): 分隔线样式. Defaults to ":",
-            avg_linewidth (float, optional): 分隔线宽度. Defaults to 1,
-            avg_color (str, optional): 分隔线及数据标签颜色. Defaults to "black",
-
-        Returns:
-            mpl.axes.Axes: 返回ax
-        """
-
-        ax = self.axes[ax_index]
-
-        PlotBubble(
-            data=data,
-            fmt=fmt,
-            ax=ax,
-            fontsize=self.fontsize if fontsize is None else fontsize,
-            style=style,
-        ).plot(**kwargs).apply_style()
-
-        return ax
-
-    def plot_bar(
-        self,
-        data: pd.DataFrame,
-        fmt: str = "{:,.0f}",
-        ax_index: int = 0,
-        fontsize: Optional[float] = None,
-        style: Dict[str, any] = {},
-        data_line: Optional[pd.DataFrame] = None,
-        fmt_line: Optional[str] = "{:+,.0%}",
-        **kwargs,
-    ) -> mpl.axes.Axes:
-        """在当前画布的指定ax绘制柱状图
-
-        Args:
-            data (pd.DataFrame): 绘图主数据
-            fmt (str): 主数据格式，用于显示标签等的默认格式. Defaults to "{:,.0f}"
-            ax_index (int, optional): ax索引. Defaults to 0.
-            fontsize (Optional[float], optional): 绘图字号. Defaults to None.
-            style (Dict[str, any], optional): 风格字典. Defaults to {}.
-            data_line (Optional[pd.DataFrame], optional): 次坐标轴折线图数据. Defaults to None.
-            fmt_line (Optional[str], optional): 次坐标轴折线图数据格式. Defaults to "{:+,.0%}".
 
         **kwargs:
-            stacked (bool, optional): 是否堆积. Defaults to True.
-            show_label (bool, optional): 是否显示数字标签. Defaults to True.
-            label_formatter (str, optional): 主标签的格式，支持通配符{abs},{share},{gr},{index},{col}. Defaults to "{abs}".
-            show_total_bar (bool, optional): 是否显示一个总体表现外框. Defaults to False.
-            show_total_label (bool, optional): 是否在最上方显示堆积之和数字标签. Defaults to False.
-            add_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
-            threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
-
-        Returns:
-            mpl.axes.Axes: 返回ax
+            bar:
+                stacked (bool, optional): 是否堆积. Defaults to True.
+                show_label (bool, optional): 是否显示数字标签. Defaults to True.
+                label_formatter (str, optional): 主标签的格式，支持通配符{abs},{share},{gr},{index},{col}. Defaults to "{abs}".
+                show_total_bar (bool, optional): 是否显示一个总体表现外框. Defaults to False.
+                show_total_label (bool, optional): 是否在最上方显示堆积之和数字标签. Defaults to False.
+                add_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
+                threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
+            line:
+                show_label (List[str], optional): 指定要显示标签的系列. Defaults to [].
+                endpoint_label_only (bool, optional): 标签是全部显示还是只显示首尾节点. Defaults to False.
+                linewidth (int, optional): 线宽. Defaults to 2.
+                marker(str,optional): 标记形状. Defaults to "o".
+                markersize(int, optional): 标记大小. Defaults to 5.
+            bubble:
+                x (Optional[str], optional): 指定x轴变量字段名，如为None，则x为data第1列. Defaults to None.
+                y (Optional[str], optional): 指定y轴变量字段名，如为None，则x为data第2列. Defaults to None.
+                z (Optional[str], optional): 指定气泡大小字段名，如为None，则气泡大小为data第3列. Defaults to None.
+                hue (Optional[str], optional): 指定气泡颜色字段名. Defaults to None.
+                x_avg (Optional[float], optional): x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线. Defaults to None.
+                y_avg (Optional[float], optional): y轴平均值或其他分隔值，如提供则绘制y轴分隔水平线. Defaults to None.
+                label_limit (int, optional): 限制显示标签的个数. Defaults to 15.
+                bubble_scale (float, optional): 气泡大小系数. Defaults to 1.
+                show_reg (bool, optional): 是否显示x,y的拟合趋势及置信区间. Defaults to False.
+                corr (Optional[float], optional): 相关系数，如不为None，则显示在ax左上角. Defaults to None.
+                x_fmt (str, optional): x轴显示数字格式，影响轴刻度标签及分隔线数据标签. Defaults to "{:,.0f}",
+                y_fmt (str, optional): y轴显示数字格式，影响轴刻度标签及分隔线数据标签. Defaults to "{:,.0f}",
+                alpha (float, optional): 气泡透明度. Defaults to 0.6,
+                edgecolor (str, optional): 气泡边框颜色. Defaults to "black",
+                avg_linestyle (str, optional): 分隔线样式. Defaults to ":",
+                avg_linewidth (float, optional): 分隔线宽度. Defaults to 1,
+                avg_color (str, optional): 分隔线及数据标签颜色. Defaults to "black",
+            heatmap:
+                cbar (bool, optional): 是否添加colorbar. Defaults to True.
+                show_label (bool, optional): 是否往每个网格添加标签文本. Defaults to True.
         """
-
+        # 根据kind确定绘图类
+        cls = globals()[f"Plot{kind.capitalize()}"]
+        # 根据ax_index确定ax
         ax = self.axes[ax_index]
 
-        PlotBar(
+        cls(
             data=data,
             fmt=fmt,
             ax=ax,
             fontsize=self.fontsize if fontsize is None else fontsize,
             style=style,
-            data_line=data_line,
-            fmt_line=fmt_line,
         ).plot(**kwargs).apply_style()
 
         return ax
 
-    def save(self, transparent:bool=True, dpi:int=300) -> str:
+    def save(self, transparent: bool = True, dpi: int = 300) -> str:
         """保存图片
 
         Args:
@@ -406,7 +300,7 @@ class GridFigure(Figure):
 
         Returns:
             str: 返回保存图片的路径
-        """        
+        """
 
         self.style.apply_style()  # 应用风格，一些风格只能在绘图后生效
         self.gridspec.tight_layout(self)  # 自动调整子图参数，使之填充整个图像区域，但有时不生效
