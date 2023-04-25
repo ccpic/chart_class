@@ -453,12 +453,22 @@ class Plot:
                         labels[::-1] + labels2[::-1],
                         handles[::-1] + handles2[::-1],
                     )
+                    if self._plot.__class__.__name__ == "PlotBar" # 柱状图则图例顺序倒序
+                    else zip(
+                        labels + labels2,
+                        handles + handles2,
+                    )
                 )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
             except:
                 by_label = dict(
                     zip(
                         labels[::-1],
                         handles[::-1],
+                    )
+                    if self._plot.__class__.__name__ == "PlotBar" # 柱状图则图例顺序倒序
+                    else zip(
+                        labels,
+                        handles,
                     )
                 )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
             self._plot.ax.legend(
