@@ -38,7 +38,8 @@ if __name__ == "__main__":
         },
     )
 
-    f.plot_bubble(
+    f.plot(
+        kind="bubble",
         data=pivoted,
         ax_index=0,
         style={},
@@ -82,7 +83,8 @@ if __name__ == "__main__":
         },
     )
 
-    f.plot_line(
+    f.plot(
+        kind="line",
         data=pivoted,
         ax_index=0,
         style={"minor_grid": {}, "xticklabel_rotation": 90},
@@ -103,14 +105,21 @@ if __name__ == "__main__":
         style={"title": "热力图"},
     )
 
-    f.plot_heatgrid(
-        data=pivoted,
-        ax_index=0,
-        style = {
-            "xticklabel_rotation": 90
-        }
-    )
+    f.plot(kind="heatmap", data=pivoted, ax_index=0, style={"xticklabel_rotation": 90})
 
     f.save(transparent=False)
 
-    print(f.plot(kind="line"))
+    """绘制词云
+    """
+
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=12,
+        height=10,
+        ncols=1,
+        fontsize=11,
+        style={"title": "词云"},
+    )
+
+    f.plot(kind="wordcloud", data=pivoted.transpose().sum(axis=1))
+    f.save(transparent=False)

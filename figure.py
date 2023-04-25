@@ -6,7 +6,7 @@ from matplotlib.gridspec import GridSpec
 import os
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 import matplotlib as mpl
-from plots import PlotBar, PlotBubble, PlotLine, PlotHeatGrid
+from plots import PlotBar, PlotBubble, PlotLine, PlotHeatmap, PlotWordcloud
 import pandas as pd
 from color import cmap_qual
 from itertools import cycle
@@ -220,7 +220,7 @@ class GridFigure(Figure):
 
     def plot(
         self,
-        kind: Literal["bar", "line", "bubble", "heatmap"],
+        kind: Literal["bar", "line", "bubble", "heatmap", "wordcloud"],
         data: pd.DataFrame,
         fmt: str = "{:,.0f}",
         ax_index: int = 0,
@@ -231,7 +231,7 @@ class GridFigure(Figure):
         """在当前画布的指定ax绘制网格热力图
 
         Args:
-            kind (Literal["bar", "line", "bubble", "heatmap"]): 绘图类型.
+            kind (Literal["bar", "line", "bubble", "heatmap", "wordcloud"]): 绘图类型.
             data (pd.DataFrame): 绘图主数据，一个pandas df.
             fmt (str): 主数据格式，用于显示标签等的默认格式. Defaults to "{:,.0f}"
             ax_index (int, optional): ax索引. Defaults to 0.
@@ -275,6 +275,11 @@ class GridFigure(Figure):
             heatmap:
                 cbar (bool, optional): 是否添加colorbar. Defaults to True.
                 show_label (bool, optional): 是否往每个网格添加标签文本. Defaults to True.
+            wordcloud:
+                col_freq (Optional[str]): 指定频次列，如不指定则默认为df的第一列.
+                mask_shape (Literal["rectangle", "circle"], optional): 词云形状类别，默认为矩形. Defaults to "rectangle".
+                mask_width (int, optional): 形状为矩形时的矩形宽度. Defaults to 800.
+                mask_height (int, optional): 形状为矩形时的矩形高度. Defaults to 600.
         """
         # 根据kind确定绘图类
         cls = globals()[f"Plot{kind.capitalize()}"]

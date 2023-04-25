@@ -869,43 +869,35 @@ class PlotBubble(Plot):
 class PlotWordcloud(Plot):
     def plot(
         self,
-        mask_shape: str = "rectangle",
+        col_freq: Optional[str] = None,
+        mask_shape: Literal["rectangle", "circle"] = "rectangle",
         mask_width: int = 800,
         mask_height: int = 600,
     ) -> PlotWordcloud:
         """继承基本类，绘制文字云图
 
         Args:
-            mask_shape (str, optional): _description_. Defaults to "rectangle".
-            mask_width (int, optional): _description_. Defaults to 800.
-            mask_height (int, optional): _description_. Defaults to 600.
+            col_freq (Optional[str]): 指定频次列，如不指定则默认为df的第一列.
+            mask_shape (Literal["rectangle", "circle"], optional): 词云形状类别，默认为矩形. Defaults to "rectangle".
+            mask_width (int, optional): 形状为矩形时的矩形宽度. Defaults to 800.
+            mask_height (int, optional): 形状为矩形时的矩形高度. Defaults to 600.
 
         Returns:
-            PlotWordcloud: _description_
-        """        
-        """继承基本类，绘制文字云图
-
-        Parameters
-        ----------
-        mask_shape : str, optional
-            词云形状类别:circle|rectangle, by default "rectangle"
-        mask_width : int, optional
-            形状为矩形时的矩形宽度, by default 800
-        mask_height : int, optional
-            形状为矩形时的矩形高度, by default 600
-
-        Returns
-        -------
-        PlotWordcloud
-            返回绘图保存的路径
+            PlotWordcloud: 返回自身实例
         """
 
         df = self.data
-        df.dropna(inplace=True)
 
-        d_words = {}
-        for index, row in df.iterrows():
-            d_words[index] = row[0]
+        if isinstance(df, pd.Series):
+            pass
+        elif isinstance(df, pd.DataFrame):
+            # 如果不指定col_freq则选取df第一列为频次数据
+            df = df.loc[:, col_freq] if col_freq is not None else df.iloc[:, 0]
+
+        df.dropna(inplace=True)
+        d_words = df.to_dict()
+
+        font_path = "C:/Windows/Fonts/msyh.ttc"  # 字体路径
 
         if mask_shape == "circle":
             # 产生一个以(150,150)为圆心,半径为130的圆形mask
@@ -915,7 +907,7 @@ class PlotWordcloud(Plot):
             wordcloud = WordCloud(
                 width=800,
                 height=800,
-                font_path="C:/Windows/Fonts/msyh.ttf",
+                font_path=font_path,
                 background_color="white",
                 mask=mask,
             )
@@ -923,7 +915,7 @@ class PlotWordcloud(Plot):
             wordcloud = WordCloud(
                 width=mask_width,
                 height=mask_height,
-                font_path="C:/Windows/Fonts/msyh.ttf",
+                font_path=font_path,
                 background_color="white",
             )
 
@@ -1456,7 +1448,7 @@ class PlotBar(Plot):
 #         end = df.iloc[:, 1] if end is None else df.loc[:, end]
 #         if hue is not None:
 #             hue = df.loc[:, hue]
-            
+
 #         index_range = range(1, len(df.index) + 1)
 #         ax.hlines(
 #             y=index_range,
@@ -1560,7 +1552,7 @@ class PlotBar(Plot):
 
 #         self.style._legend_loc =  "lower center"
 #         self.style._legend_ncol =  2
-        
+
 #         return self
 
 
