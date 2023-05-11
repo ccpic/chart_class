@@ -6,7 +6,14 @@ from matplotlib.gridspec import GridSpec
 import os
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 import matplotlib as mpl
-from plots import PlotBar, PlotBubble, PlotLine, PlotHeatmap, PlotWordcloud
+from plots import (
+    PlotBar,
+    PlotBubble,
+    PlotLine,
+    PlotHeatmap,
+    PlotWordcloud,
+    PlotStripdot,
+)
 import pandas as pd
 from color import cmap_qual
 from itertools import cycle
@@ -36,7 +43,6 @@ class GridFigure(Figure):
         width: int = 15,
         height: int = 6,
         fontsize: int = 14,
-        fmt: str = "{:,.0f}",
         cmap_qual: mpl.colors.Colormap = cmap_qual,
         cmap_norm: mpl.colors.Colormap = plt.get_cmap("PiYG"),
         style: Dict[str, Any] = {},
@@ -58,7 +64,6 @@ class GridFigure(Figure):
             width (int, optional): 总宽度. Defaults to 15.
             height (int, optional): 总高度. Defaults to 6.
             fontsize (int, optional): 全局字体大小. Defaults to 14.
-            fmt (str, optional): 主要数字格式. Defaults to "{:,.0f}".
             cmap_qual (mpl.colors.Colormap, optional): 离散的colormap，用于分类变量着色. Defaults to cmap_qual.
             cmap_norm (mpl.colors.Colormap, optional): 连续的colormap，用于连续变量区分表现好坏. Defaults to plt.get_cmap("PiYG").
             style (Dict[str, Any], optional): 风格字典. Defaults to {}.
@@ -85,7 +90,6 @@ class GridFigure(Figure):
         self.width = width
         self.height = height
         self.fontsize = fontsize
-        self.fmt = fmt
         self.cmap_qual = cmap_qual
         self.iter_colors = cycle(
             self.figure.cmap_qual(i) for i in range(self.figure.cmap_qual.N)
@@ -220,7 +224,7 @@ class GridFigure(Figure):
 
     def plot(
         self,
-        kind: Literal["bar", "line", "bubble", "heatmap", "wordcloud"],
+        kind: Literal["bar", "line", "bubble", "stripdot", "heatmap", "wordcloud"],
         data: pd.DataFrame,
         fmt: str = "{:,.0f}",
         ax_index: int = 0,
@@ -231,7 +235,7 @@ class GridFigure(Figure):
         """在当前画布的指定ax绘制网格热力图
 
         Args:
-            kind (Literal["bar", "line", "bubble", "heatmap", "wordcloud"]): 绘图类型.
+            kind (Literal["bar", "line", "bubble", "stripdot", "heatmap", "wordcloud"]): 绘图类型.
             data (pd.DataFrame): 绘图主数据，一个pandas df.
             fmt (str): 主数据格式，用于显示标签等的默认格式. Defaults to "{:,.0f}"
             ax_index (int, optional): ax索引. Defaults to 0.
@@ -268,6 +272,7 @@ class GridFigure(Figure):
                 x_fmt (str, optional): x轴显示数字格式，影响轴刻度标签及分隔线数据标签. Defaults to "{:,.0f}",
                 y_fmt (str, optional): y轴显示数字格式，影响轴刻度标签及分隔线数据标签. Defaults to "{:,.0f}",
                 alpha (float, optional): 气泡透明度. Defaults to 0.6,
+                random_color (bool, optional): 气泡颜色是否随机. Defaults to True,
                 edgecolor (str, optional): 气泡边框颜色. Defaults to "black",
                 avg_linestyle (str, optional): 分隔线样式. Defaults to ":",
                 avg_linewidth (float, optional): 分隔线宽度. Defaults to 1,
@@ -280,6 +285,15 @@ class GridFigure(Figure):
                 mask_shape (Literal["rectangle", "circle"], optional): 词云形状类别，默认为矩形. Defaults to "rectangle".
                 mask_width (int, optional): 形状为矩形时的矩形宽度. Defaults to 800.
                 mask_height (int, optional): 形状为矩形时的矩形高度. Defaults to 600.
+            stripdot:
+                start (Optional[str], optional): 起始点数据的列名，如不设置则在数据只有1列的情况下默认为None，数据多于1列的情况下默认为第1列. Defaults to None.
+                end (Optional[str], optional): 结束点数据的列名，如不设置则在数据只有1列时默认为此列，数据多于1列的情况下默认为第2列. Defaults to None.
+                hue (Optional[str], optional): 指定Dot颜色字段名. Defaults to None.
+                text_diff (bool, optional): 是否显示差值标签. Defaults to True.
+                color_line (str): 横线的颜色. Defaults to "grey".
+                color_start (str): 起始点的颜色. Defaults to "grey".
+                color_end (str): 结束点的颜色. Defaults to self.figure.cmap_qual.colors[0].
+                alpha (float): 透明度. Defaults to 0.3.
         """
         # 根据kind确定绘图类
         cls = globals()[f"Plot{kind.capitalize()}"]

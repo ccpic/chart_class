@@ -46,7 +46,7 @@ if __name__ == "__main__":
         x="2022-12",
         y="2021-12",
         z="2022-12",
-        hue="谈判年份",
+        hue="2022-12",
         label_limit=10,
         label_formatter="{index}\n({x}, {y})",
         x_fmt="{:,.1f}",
@@ -55,6 +55,29 @@ if __name__ == "__main__":
         show_legend=False,
     )
 
+    f.save()
+
+    """绘制算珠图"""
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=11,
+        height=10,
+        ncols=1,
+        fontsize=11,
+        style={
+            "title": "算珠图",
+        },
+    )
+
+    f.plot(
+        kind="stripdot",
+        data=pivoted,
+        fmt="{:,.1f}",
+        ax_index=0,
+        start="2021-12",
+        end="2022-12",
+        style={},
+    )
     f.save()
 
     """绘制折线图
@@ -85,7 +108,7 @@ if __name__ == "__main__":
 
     f.plot(
         kind="line",
-        data=pivoted,
+        data=pivoted.iloc[:, 1],
         ax_index=0,
         style={"minor_grid": {}, "xticklabel_rotation": 90},
         show_label=pivoted.columns[1],
