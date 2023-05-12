@@ -81,8 +81,27 @@ if __name__ == "__main__":
     )
     f.save()
 
-    """绘制折线图
-    """
+    """绘制直方图"""
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=15,
+        height=6,
+        ncols=1,
+        fontsize=11,
+        style={
+            "title": "直方图",
+        },
+    )
+
+    f.plot(
+        kind="hist",
+        data=pivoted.loc[:,"2022-12"],
+        ax_index=0,
+        style={},
+    )
+    f.save()
+    
+    """绘制折线图"""
     pivoted = (
         a.get_pivot(
             index="药品名称",

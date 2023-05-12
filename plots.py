@@ -1320,123 +1320,130 @@ class PlotBar(Plot):
         return self
 
 
-# # 继承基本类，histogram分布图类
-# class PlotHist(GridFigure):
-#     def plot(
-#         self,
-#         bins: int = 100,
-#         tiles: int = 10,
-#         show_kde: bool = True,
-#         show_metrics: bool = True,
-#         show_tiles: bool = False,
-#         ind: list = None,
-#     ):
-#         for j, ax in enumerate(self.axes):
-#             df = self.data[j]
-#             df.plot(
-#                 kind="hist",
-#                 density=True,
-#                 bins=bins,
-#                 ax=ax,
-#                 color="grey",
-#                 legend=None,
-#                 alpha=0.5,
-#             )
-#             if show_kde:
-#                 ax_new = ax.twinx()
-#                 df.plot(kind="kde", ax=ax_new, color="darkorange", legend=None, ind=ind)
-#                 # ax_new.get_legend().remove()
-#                 ax_new.set_yticks([])  # 删除y轴刻度
-#                 ax_new.set_ylabel(None)
+class PlotHist(Plot):
+    def plot(
+        self,
+        bins: int = 100,
+        tiles: int = 10,
+        show_kde: bool = True,
+        show_metrics: bool = True,
+        show_tiles: bool = False,
+        ind: Optional[list] = None,
+    ) -> PlotHist:
+        """继承基本类，绘制histogram直方图
 
-#             # ax.set_title(title)
-#             # ax.set_xlabel(xlabel)
-#             # ax.set_yticks([])  # 删除y轴刻度
-#             # ax.set_ylabel(ylabel)
+        Args:
+            bins (int, optional): 直方图柱的个数. Defaults to 100.
+            tiles (int, optional): 等分线的个数. Defaults to 10.
+            show_kde (bool, optional): 是否显示核密度估计曲线. Defaults to True.
+            show_metrics (bool, optional): 是否显示均值和中位数. Defaults to True.
+            show_tiles (bool, optional): 是否显示等分线_. Defaults to False.
+            ind (Optional[list], optional): 评估点，如为None则为1000个等距点. Defaults to None.
 
-#             # 添加百分位信息
-#             if show_tiles:
-#                 # 计算百分位数据
-#                 percentiles = []
-#                 for i in range(tiles):
-#                     percentiles.append(
-#                         [df.quantile((i) / tiles), "D" + str(i + 1)]
-#                     )  # 十分位Decile
+        Returns:
+            PlotHist: 返回一个自身的实例
+        """
 
-#                 # 在hist图基础上绘制百分位
-#                 for i, percentile in enumerate(percentiles):
-#                     ax.axvline(percentile[0], color="crimson", linestyle=":")  # 竖分隔线
-#                     ax.text(
-#                         percentile[0],
-#                         ax.get_ylim()[1] * 0.97,
-#                         int(percentile[0]),
-#                         ha="center",
-#                         color="crimson",
-#                         fontsize=self.fontsize,
-#                     )
-#                     if i < tiles - 1:
-#                         ax.text(
-#                             percentiles[i][0]
-#                             + (percentiles[i + 1][0] - percentiles[i][0]) / 2,
-#                             ax.get_ylim()[1],
-#                             percentile[1],
-#                             ha="center",
-#                         )
-#                     else:
-#                         ax.text(
-#                             percentiles[tiles - 1][0]
-#                             + (ax.get_xlim()[1] - percentiles[tiles - 1][0]) / 2,
-#                             ax.get_ylim()[1],
-#                             percentile[1],
-#                             ha="center",
-#                         )
+        df = self.data
+        df.plot(
+            kind="hist",
+            density=True,
+            bins=bins,
+            ax=self.ax,
+            color="grey",
+            legend=None,
+            alpha=0.5,
+        )
+        if show_kde:
+            ax_kde = self.ax.twinx()
+            df.plot(kind="kde", ax=ax_kde, color="darkorange", legend=None, ind=ind)
+            # ax_kde.get_legend().remove()
+            ax_kde.set_yticks([])  # 删除y轴刻度
+            ax_kde.set_ylabel(None)
 
-#             # 添加均值、中位数等信息
-#             if show_metrics:
-#                 median = np.median(df.values)  # 计算中位数
-#                 mean = np.mean(df.values)  # 计算平均数
-#                 # if self.text_diff is not None:
-#                 #     median_diff = self.text_diff[j]["中位数"]  # 计算对比中位数
-#                 #     mean_diff = self.text_diff[j]["平均数"]  # 计算对比平均数
+        # 添加百分位信息
+        if show_tiles:
+            # 计算百分位数据
+            percentiles = []
+            for i in range(tiles):
+                percentiles.append(
+                    [df.quantile((i) / tiles), "D" + str(i + 1)]
+                )  # 十分位Decile
 
-#                 if median > mean:
-#                     yindex_median = 0.95
-#                     yindex_mean = 0.9
-#                     pos_median = "left"
-#                     pos_mean = "right"
-#                 else:
-#                     yindex_mean = 0.95
-#                     yindex_median = 0.9
-#                     pos_median = "right"
-#                     pos_mean = "left"
+            # 在hist图基础上绘制百分位
+            for i, percentile in enumerate(percentiles):
+                self.ax.axvline(percentile[0], color="crimson", linestyle=":")  # 竖分隔线
+                self.ax.text(
+                    percentile[0],
+                    self.ax.get_ylim()[1] * 0.97,
+                    int(percentile[0]),
+                    ha="center",
+                    color="crimson",
+                    fontsize=self.fontsize,
+                )
+                if i < tiles - 1:
+                    self.ax.text(
+                        percentiles[i][0]
+                        + (percentiles[i + 1][0] - percentiles[i][0]) / 2,
+                        self.ax.get_ylim()[1],
+                        percentile[1],
+                        ha="center",
+                    )
+                else:
+                    self.ax.text(
+                        percentiles[tiles - 1][0]
+                        + (self.ax.get_xlim()[1] - percentiles[tiles - 1][0]) / 2,
+                        self.ax.get_ylim()[1],
+                        percentile[1],
+                        ha="center",
+                    )
 
-#                 ax.axvline(median, color="crimson", linestyle=":")
-#                 ax.text(
-#                     median,
-#                     ax.get_ylim()[1] * yindex_median,
-#                     f"中位数：{self.fmt.format(median)}",
-#                     ha=pos_median,
-#                     color="crimson",
-#                     fontsize=self.fontsize,
-#                 )
+        # 添加均值、中位数等信息
+        if show_metrics:
+            median = np.median(df.values)  # 计算中位数
+            mean = np.mean(df.values)  # 计算平均数
+            # if self.text_diff is not None:
+            #     median_diff = self.text_diff[j]["中位数"]  # 计算对比中位数
+            #     mean_diff = self.text_diff[j]["平均数"]  # 计算对比平均数
 
-#                 ax.axvline(mean, color="purple", linestyle=":")
-#                 ax.text(
-#                     mean,
-#                     ax.get_ylim()[1] * yindex_mean,
-#                     f"平均数：{self.fmt.format(mean)}",
-#                     ha=pos_mean,
-#                     color="purple",
-#                     fontsize=self.fontsize,
-#                 )
+            if median > mean:
+                yindex_median = 0.95
+                yindex_mean = 0.9
+                pos_median = "left"
+                pos_mean = "right"
+            else:
+                yindex_mean = 0.95
+                yindex_median = 0.9
+                pos_median = "right"
+                pos_mean = "left"
 
-#             # 去除ticks
-#             ax.get_yaxis().set_ticks([])
+            self.ax.axvline(median, color="crimson", linestyle=":")
+            self.ax.text(
+                median,
+                self.ax.get_ylim()[1] * yindex_median,
+                f"中位数：{self.fmt.format(median)}",
+                ha=pos_median,
+                color="crimson",
+                fontsize=self.fontsize,
+            )
 
-#             # 轴标题
-#             ax.set_ylabel("频次", fontsize=self.fontsize)
+            self.ax.axvline(mean, color="purple", linestyle=":")
+            self.ax.text(
+                mean,
+                self.ax.get_ylim()[1] * yindex_mean,
+                f"平均数：{self.fmt.format(mean)}",
+                ha=pos_mean,
+                color="purple",
+                fontsize=self.fontsize,
+            )
 
-#         return self.save()
+        # 去除ticks
+        self.ax.get_yaxis().set_ticks([])
+
+        # 轴标题
+        self.ax.set_ylabel("频次", fontsize=self.fontsize)
+
+        return self
 
 
 class PlotStripdot(Plot):
@@ -1461,7 +1468,7 @@ class PlotStripdot(Plot):
             color_start (str): 起始点的颜色. Defaults to "grey".
             color_end (str): 结束点的颜色. Defaults to self.figure.cmap_qual.colors[0].
             alpha (float): 透明度. Defaults to 0.3.
-            
+
         Returns:
             PlotStripdot: 返回一个自身实例
         """
@@ -1581,7 +1588,6 @@ class PlotStripdot(Plot):
                 )
                 warnings.warn("画布存在colorbar，label_outer风格不生效", UserWarning)
 
-       
         # 添加最新时点的数据标签
         text_gap = (self.ax.get_xlim()[1] - self.ax.get_xlim()[0]) / 50
         for i in index_range:
@@ -1609,16 +1615,15 @@ class PlotStripdot(Plot):
             linewidth=0.5,
             alpha=0.2,
         )
-        
+
         self.ax.set_yticks(index_range, labels=df.index)  # 添加y轴标签
         self.ax.tick_params(
             axis="y", which="major", labelsize=self.fontsize
         )  # 调整y轴标签字体大小
-        
-        # 如果hue存在，将y轴的ticklabels也着色
-        for i, label in enumerate(self.ax.get_yticklabels(which='both')):
-            label.set_color(colors[i])
 
+        # 如果hue存在，将y轴的ticklabels也着色
+        for i, label in enumerate(self.ax.get_yticklabels(which="both")):
+            label.set_color(colors[i])
 
         if text_diff and df.shape[1] > 1:
             for i in index_range:
@@ -1632,7 +1637,7 @@ class PlotStripdot(Plot):
 
                 if v_diff != 0 and math.isnan(v_diff) is False:
                     t = self.ax.text(
-                        self.ax.get_xlim()[1]*0.99,
+                        self.ax.get_xlim()[1] * 0.99,
                         i,
                         fmt_diff.format(v_diff),
                         ha="right",

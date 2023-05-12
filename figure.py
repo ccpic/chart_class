@@ -13,6 +13,7 @@ from plots import (
     PlotHeatmap,
     PlotWordcloud,
     PlotStripdot,
+    PlotHist,
 )
 import pandas as pd
 from color import cmap_qual
@@ -224,7 +225,9 @@ class GridFigure(Figure):
 
     def plot(
         self,
-        kind: Literal["bar", "line", "bubble", "stripdot", "heatmap", "wordcloud"],
+        kind: Literal[
+            "bar", "line", "bubble", "stripdot", "hist", "heatmap", "wordcloud"
+        ],
         data: pd.DataFrame,
         fmt: str = "{:,.0f}",
         ax_index: int = 0,
@@ -235,7 +238,7 @@ class GridFigure(Figure):
         """在当前画布的指定ax绘制网格热力图
 
         Args:
-            kind (Literal["bar", "line", "bubble", "stripdot", "heatmap", "wordcloud"]): 绘图类型.
+            kind (Literal["bar", "line", "bubble", "stripdot", "hist", "heatmap", "wordcloud"]): 绘图类型.
             data (pd.DataFrame): 绘图主数据，一个pandas df.
             fmt (str): 主数据格式，用于显示标签等的默认格式. Defaults to "{:,.0f}"
             ax_index (int, optional): ax索引. Defaults to 0.
@@ -294,6 +297,13 @@ class GridFigure(Figure):
                 color_start (str): 起始点的颜色. Defaults to "grey".
                 color_end (str): 结束点的颜色. Defaults to self.figure.cmap_qual.colors[0].
                 alpha (float): 透明度. Defaults to 0.3.
+            hist:
+                bins (int, optional): 直方图柱的个数. Defaults to 100.
+                tiles (int, optional): 等分线的个数. Defaults to 10.
+                show_kde (bool, optional): 是否显示核密度估计曲线. Defaults to True.
+                show_metrics (bool, optional): 是否显示均值和中位数. Defaults to True.
+                show_tiles (bool, optional): 是否显示等分线_. Defaults to False.
+                ind (Optional[list], optional): 评估点，如为None则为1000个等距点. Defaults to None.
         """
         # 根据kind确定绘图类
         cls = globals()[f"Plot{kind.capitalize()}"]
