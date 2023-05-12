@@ -14,6 +14,7 @@ from plots import (
     PlotWordcloud,
     PlotStripdot,
     PlotHist,
+    PlotBoxdot,
 )
 import pandas as pd
 from color import cmap_qual
@@ -226,7 +227,14 @@ class GridFigure(Figure):
     def plot(
         self,
         kind: Literal[
-            "bar", "line", "bubble", "stripdot", "hist", "heatmap", "wordcloud"
+            "bar",
+            "line",
+            "bubble",
+            "stripdot",
+            "boxdot",
+            "hist",
+            "heatmap",
+            "wordcloud",
         ],
         data: pd.DataFrame,
         fmt: str = "{:,.0f}",
@@ -238,13 +246,12 @@ class GridFigure(Figure):
         """在当前画布的指定ax绘制网格热力图
 
         Args:
-            kind (Literal["bar", "line", "bubble", "stripdot", "hist", "heatmap", "wordcloud"]): 绘图类型.
+            kind (Literal["bar", "line", "bubble", "stripdot", "boxdot", "hist", "heatmap", "wordcloud"]): 绘图类型.
             data (pd.DataFrame): 绘图主数据，一个pandas df.
             fmt (str): 主数据格式，用于显示标签等的默认格式. Defaults to "{:,.0f}"
             ax_index (int, optional): ax索引. Defaults to 0.
-            fontsize (Optional[float], optional): 绘图字号. Defaults to None.
+            fontsize (Optional[float], optional): 绘图字号，如不提供则使用画布字号. Defaults to None.
             style (Dict[str, any], optional): 风格字典. Defaults to {}.
-            ax = self.axes[ax_index]
 
         **kwargs:
             bar:
@@ -304,6 +311,15 @@ class GridFigure(Figure):
                 show_metrics (bool, optional): 是否显示均值和中位数. Defaults to True.
                 show_tiles (bool, optional): 是否显示等分线_. Defaults to False.
                 ind (Optional[list], optional): 评估点，如为None则为1000个等距点. Defaults to None.
+            boxdot:
+                x (Optional[str], optional): x轴类别数据的字段名，如不指定则为第1列. Defaults to None.
+                y (Optional[str], optional): y轴数值数据的字段名，如不指定则为第2列. Defaults to None.
+                label_limit (int, optional): 展示数据点标签的数量. Defaults to 0.
+                label_threshold (float, optional): 对大于此值的数据点展示标签. Defaults to 0.
+                show_stats (bool, optional): 是否显示统计值，包括最大值、最小值、中位数. Defaults to True.
+                order (Optional[Union[None, list]], optional): 类别按什么排序，如果为None则按照数据自动排序. Defaults to None.
+                dot_size (float): 散点大小. Defaults to 8.
+                jitter (float): 随机散开的间距. Defaults to 0.2
         """
         # 根据kind确定绘图类
         cls = globals()[f"Plot{kind.capitalize()}"]

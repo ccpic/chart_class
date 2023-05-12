@@ -77,7 +77,29 @@ if __name__ == "__main__":
         start="2021-12",
         end="2022-12",
         style={},
-        hue="谈判年份"
+        hue="谈判年份",
+    )
+    f.save()
+
+    """绘制箱型散点图"""
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=15,
+        height=6,
+        ncols=1,
+        fontsize=11,
+        style={
+            "title": "箱型散点图",
+        },
+    )
+
+    f.plot(
+        kind="boxdot",
+        data=pivoted,
+        ax_index=0,
+        style={},
+        x="谈判年份",
+        y="2022-12",
     )
     f.save()
 
@@ -95,12 +117,12 @@ if __name__ == "__main__":
 
     f.plot(
         kind="hist",
-        data=pivoted.loc[:,"2022-12"],
+        data=pivoted.loc[:, "2022-12"],
         ax_index=0,
         style={},
     )
     f.save()
-    
+
     """绘制折线图"""
     pivoted = (
         a.get_pivot(

@@ -754,126 +754,117 @@ class PlotBubble(Plot):
         return self
 
 
-# class PlotBoxWithDots(GridFigure):
-#     def plot(
-#         self,
-#         label_limit: int = 0,
-#         label_threshold: float = 0,
-#         show_stats: bool = True,
-#         order: Union[None, list] = None,
-#         dot_size: int = 8,
-#     ) -> str:
-#         """继承基本类，绘制带数据点的箱型图
+class PlotBoxdot(Plot):
+    def plot(
+        self,
+        x: Optional[str] = None,
+        y: Optional[str] = None,
+        label_limit: int = 0,
+        label_threshold: float = 0,
+        show_stats: bool = True,
+        order: Optional[Union[None, list]] = None,
+        **kwargs,
+    ) -> PlotBoxdot:
+        """继承基本类，绘制带数据点的箱型图
 
-#         Parameters
-#         ----------
-#         label_limit : int, optional
-#             展示数据点标签的数量, by default 0
-#         label_threshold : float, optional
-#             对大于此值的数据点展示标签, by default 0
-#         show_stats : bool, optional
-#             是否显示统计值，包括最大值、最小值、中位数, by default True
-#         order : Union[None, list], optional
-#             类别按什么排序，如果为None则按照数据自动排序, by default None
-#         dot_size : int, optional
-#             数据点大小, by default 8
+        Args:
+            x (Optional[str], optional): x轴类别数据的字段名，如不指定则为第1列. Defaults to None.
+            y (Optional[str], optional): y轴数值数据的字段名，如不指定则为第2列. Defaults to None.
+            label_limit (int, optional): 展示数据点标签的数量. Defaults to 0.
+            label_threshold (float, optional): 对大于此值的数据点展示标签. Defaults to 0.
+            show_stats (bool, optional): 是否显示统计值，包括最大值、最小值、中位数. Defaults to True.
+            order (Optional[Union[None, list]], optional): 类别按什么排序，如果为None则按照数据自动排序. Defaults to None.
 
-#         Returns
-#         -------
-#         str
-#             返回绘图保存的路径
-#         """
-#         for j, ax in enumerate(self.axes):
-#             try:
-#                 df = self.data[j]
-#             except IndexError:
-#                 ax.axis("off")
-#                 continue
+        Returns:
+            PlotBoxWithDots: 返回一个自身实例
+        """
 
-#             x = df.columns[0]
-#             y = df.columns[1]
+        df = self.data
 
-#             ax = sns.stripplot(
-#                 x=x,
-#                 y=y,
-#                 data=df,
-#                 edgecolor="black",
-#                 alpha=0.5,
-#                 s=dot_size,
-#                 linewidth=1.0,
-#                 jitter=0.2,
-#                 ax=ax,
-#                 order=order,
-#             )
-#             ax = sns.boxplot(
-#                 x=x,
-#                 y=y,
-#                 data=df,
-#                 whis=np.inf,
-#                 boxprops={"facecolor": "None"},
-#                 order=order,
-#             )
+        x = df.columns[0] if x is None else x
+        y = df.columns[1] if y is None else y
 
-#             ax_xticklabels = [t.get_text() for t in ax.get_xticklabels()]  # 获取x轴标签列表
+        d_style = {"dot_size": 8, "jitter": 0.2}
+        d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
 
-#             # 添加数据点标签
+        ax = sns.stripplot(
+            x=x,
+            y=y,
+            data=df,
+            edgecolor="black",
+            alpha=0.5,
+            s=d_style.get("dot_size"),
+            linewidth=1.0,
+            jitter=d_style.get("jitter"),
+            ax=self.ax,
+            order=order,
+        )
+        ax = sns.boxplot(
+            x=x,
+            y=y,
+            data=df,
+            whis=np.inf,
+            boxprops={"facecolor": "None"},
+            order=order,
+        )
 
-#             labels = []
-#             for category in ax_xticklabels:
-#                 df_temp = df[df[x] == category]
-#                 for k, idx in enumerate(df_temp.index):
-#                     if k == label_limit:
-#                         break
+        ax_xticklabels = [t.get_text() for t in ax.get_xticklabels()]  # 获取x轴标签列表
+        # 添加数据点标签
 
-#                     point = ax.collections[
-#                         ax_xticklabels.index(category)
-#                     ].get_offsets()[
-#                         k
-#                     ]  # 获得散点图的坐标，因为有jitter，不能直接用原始数
+        labels = []
+        for category in ax_xticklabels:
+            df_temp = df[df[x] == category]
+            for k, idx in enumerate(df_temp.index):
+                if k == label_limit:
+                    break
 
-#                     if point[1] > label_threshold:  # y值大于某阈值的才显示
-#                         labels.append(
-#                             plt.text(
-#                                 point[0],
-#                                 point[1],
-#                                 idx,
-#                                 size=self.fontsize * 0.8,
-#                                 color="black",
-#                             )
-#                         )
+                point = ax.collections[ax_xticklabels.index(category)].get_offsets()[
+                    k
+                ]  # 获得散点图的坐标，因为有jitter，不能直接用原始数
 
-#             adjust_text(
-#                 labels,
-#                 force_text=0.5,
-#                 arrowprops=dict(arrowstyle="->", color="black"),
-#             )
+                if point[1] > label_threshold:  # y值大于某阈值的才显示
+                    labels.append(
+                        plt.text(
+                            point[0],
+                            point[1],
+                            idx,
+                            size=self.fontsize * 0.8,
+                            color="black",
+                        )
+                    )
+        if len(labels) > 0:
+            adjust_text(
+                labels,
+                force_text=0.5,
+                arrowprops=dict(arrowstyle="->", color="black"),
+            )
 
-#             # 添加最大值， 最小值，中位数标签
-#             if show_stats:
-#                 df_groupby = df.groupby(x)[y]
-#                 maxs = df_groupby.max().reindex(ax_xticklabels)  # 最高值
-#                 mins = df_groupby.min().reindex(ax_xticklabels)  # 最低值
-#                 medians = df_groupby.median().reindex(ax_xticklabels)  # 中位数
+        # 添加最大值， 最小值，中位数标签
+        if show_stats:
+            df_groupby = df.groupby(x)[y]
+            maxs = df_groupby.max().reindex(ax_xticklabels)  # 最高值
+            mins = df_groupby.min().reindex(ax_xticklabels)  # 最低值
+            medians = df_groupby.median().reindex(ax_xticklabels)  # 中位数
 
-#                 for l in [maxs, mins, medians]:
-#                     for xtick in ax.get_xticks():
-#                         if l is medians:
-#                             posx = xtick + 0.4
-#                         else:
-#                             posx = xtick + 0.25
+            for l in [maxs, mins, medians]:
+                for xtick in ax.get_xticks():
+                    if l is medians:
+                        posx = xtick + 0.4
+                    else:
+                        posx = xtick + 0.25
 
-#                         ax.text(
-#                             posx,
-#                             l[xtick],
-#                             self.fmt.format(l[xtick]),
-#                             horizontalalignment="left",
-#                             verticalalignment="center",
-#                             size=self.fontsize,
-#                             color="black",
-#                             weight="semibold",
-#                         )
+                    ax.text(
+                        posx,
+                        l[xtick],
+                        self.fmt.format(l[xtick]),
+                        horizontalalignment="left",
+                        verticalalignment="center",
+                        size=self.fontsize,
+                        color="black",
+                        weight="semibold",
+                    )
 
-#         return self.save()
+        return self
 
 
 class PlotWordcloud(Plot):
