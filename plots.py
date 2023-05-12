@@ -1525,7 +1525,7 @@ class PlotStripdot(Plot):
                         for i, c in enumerate(categories)
                     ]
                     handles = sorted(handles, key=lambda h: h.get_label())
-                    self.ax.legend(
+                    hue_legend = plt.legend(
                         handles=handles,
                         title=hue.name,
                         loc=self.style._legend_loc,
@@ -1536,7 +1536,8 @@ class PlotStripdot(Plot):
                         else (0.5, 1),
                         prop={"family": "Microsoft YaHei", "size": self.fontsize},
                     )
-                    self.style._show_legend = False  # 不再使用Plot类的通用方法生成图例
+                    self.ax.add_artist(hue_legend)
+                    # self.style._show_legend = False  # 不再使用Plot类的通用方法生成图例
         else:  # 不指定hue，则随机着色
             colors = [cmap(i) for i in range(df.shape[0])]
 
@@ -1580,6 +1581,7 @@ class PlotStripdot(Plot):
                 )
                 warnings.warn("画布存在colorbar，label_outer风格不生效", UserWarning)
 
+       
         # 添加最新时点的数据标签
         text_gap = (self.ax.get_xlim()[1] - self.ax.get_xlim()[0]) / 50
         for i in index_range:
@@ -1607,10 +1609,16 @@ class PlotStripdot(Plot):
             linewidth=0.5,
             alpha=0.2,
         )
+        
         self.ax.set_yticks(index_range, labels=df.index)  # 添加y轴标签
         self.ax.tick_params(
             axis="y", which="major", labelsize=self.fontsize
         )  # 调整y轴标签字体大小
+        
+        # 如果hue存在，将y轴的ticklabels也着色
+        for i, label in enumerate(self.ax.get_yticklabels(which='both')):
+            label.set_color(colors[i])
+
 
         if text_diff and df.shape[1] > 1:
             for i in index_range:
@@ -1624,10 +1632,10 @@ class PlotStripdot(Plot):
 
                 if v_diff != 0 and math.isnan(v_diff) is False:
                     t = self.ax.text(
-                        self.ax.get_xlim()[1] * 1.1,
+                        self.ax.get_xlim()[1]*0.99,
                         i,
                         fmt_diff.format(v_diff),
-                        ha="center",
+                        ha="right",
                         va="center",
                         color=fontcolor,
                         fontsize=self.fontsize,

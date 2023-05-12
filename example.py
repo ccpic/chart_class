@@ -77,6 +77,7 @@ if __name__ == "__main__":
         start="2021-12",
         end="2022-12",
         style={},
+        hue="谈判年份"
     )
     f.save()
 
