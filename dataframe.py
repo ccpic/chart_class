@@ -1,5 +1,6 @@
 from __future__ import annotations
 import pandas as pd
+import numpy as np
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -46,6 +47,9 @@ class DateRange:
         date: datetime
             目标时间, 所有后续计算都围绕这个时间
         """
+
+    def __repr__(self) -> str:
+        return f"DateRange({self.date})"
 
     def mat(
         self,
@@ -208,6 +212,8 @@ class DfAnalyzer:
         data: pd.DataFrame,
         name: str,
         date_column: Optional[str] = None,
+        period_interval: Optional[int] = None,
+        strftime: str = "%Y-%m",
         sorter: Dict[str, list] = {},
         save_path: str = "/plots/",
     ):
@@ -221,6 +227,8 @@ class DfAnalyzer:
             数据集名称，可用在后续绘图的标题等处
         date_column : Optional[str], optional
             指定时间戳字段名称（如有）, by default None
+        strftime: str, optional
+            指定时间戳的字符串格式, by default "%Y-%m"
         sorter : Dict[str, list], optional
             排序字典，key为要排序的字段名，value为排序顺序, by default {}
         save_path : str, optional
@@ -229,6 +237,7 @@ class DfAnalyzer:
         self.data = data
         self.name = name
         self.date_column = date_column
+        self._strftime = strftime
 
         if self.date_column is not None:
             try:
@@ -236,8 +245,14 @@ class DfAnalyzer:
                     self.data[self.date_column]
                 )  # 尝试将时间戳字段转换为datetime格式
                 self.date = self.data[self.date_column].max()  # 如有时间戳字段，尝试寻找最后一期时间
-                self._freq = pd.infer_freq(self.data[self.date_column].unique())
-                # 自动判断时间戳字段的频率间隔是多少
+                self._period_interval = period_interval
+                # self._freq = pd.infer_freq(
+                #     self.data[self.date_column].unique()
+                # )  # 自动判断时间戳字段的频率间隔是多少
+                # if self._freq[:2] == "QS":
+                #     self._period_interval = 3
+                # elif self._freq[:2] == "MS":
+                #     self._period_interval = 1
                 self.date_range = DateRange(self.date)
 
             except:
@@ -246,7 +261,27 @@ class DfAnalyzer:
         self.sorter = sorter
         self.save_path = save_path
 
-    # 透视
+    def unit_change(
+        self, unit_str: Optional[Literal["十亿", "亿", "百万", "万", "千"]]
+    ) -> int:
+        """根据中文单位字符串返回数值换算要除以的整数，如输入"万"，返回10000
+
+        Args:
+            unit_str (str, optional): 中文单位字符串.，可输入值["十亿", "亿", "百万", "万", "千"].
+
+        Returns:
+            int: 数值换算要除以的整数
+        """
+        D_UNIT_CHANGE = {
+            None: 1,
+            "十亿": 1000000000,
+            "亿": 100000000,
+            "百万": 1000000,
+            "万": 10000,
+            "千": 1000,
+        }
+        return D_UNIT_CHANGE.get(unit_str)
+
     def get_pivot(
         self,
         index: Optional[str] = None,
@@ -266,7 +301,6 @@ class DfAnalyzer:
         sort_asc: bool = False,
         dropna: bool = True,
         fillna: Optional[Union[int, float, str]] = 0,
-        strftime: str = "%Y-%m",
     ) -> pd.DataFrame:
         """生成一个数据透视表，比直接用pd.pivot_table更适合日常场景
 
@@ -294,8 +328,6 @@ class DfAnalyzer:
             是否删除所有都是缺失值的整行或整列, by default True
         fillna : Optional[Union[int, float, str]] , optional
             缺失值替换, by default 0
-        strftime: str, optional
-            如果index是日期格式，则转换为字符串的格式, by default "%Y-%m"
 
         Returns
         -------
@@ -321,11 +353,11 @@ class DfAnalyzer:
 
         # 如果index是日期格式，则根据格式转换为字符串
         if index == self.date_column:
-            df.index = df.index.strftime(strftime)
+            df.index = df.index.strftime(self._strftime)
 
         if columns == self.date_column:
             df.columns = pd.to_datetime(df.columns)
-            df.columns = df.columns.strftime(strftime)
+            df.columns = df.columns.strftime(self._strftime)
 
         if sort_values == "rows_by_last_col":
             df = df.sort_values(by=df.columns[-1], ascending=sort_asc)
@@ -353,7 +385,8 @@ class DfAnalyzer:
 
         # 缺失值替换
         if fillna is not None:
-            df = df.fillna(fillna)
+            df.fillna(fillna, inplace=True)
+            df.replace([np.inf, -np.inf], fillna, inplace=True)
 
         if perc in [0, "index"]:
             df = df.div(df.sum(axis=1), axis=0)  # 计算行汇总的百分比
@@ -407,17 +440,11 @@ class DfAnalyzer:
         df.set_index(self.date_column, inplace=True)
 
         if period in ["MAT", "MQT"]:
-            # 根据时间戳间隔和转换目标，确定滚动周期，如本身数据如为QS(Quarter Start)，想转换为MAT数据，则滚动周期为4
-            if self._freq[:2] == "QS":
-                if period == "MAT":
-                    rolling_window = 4
-                elif period == "MQT":
-                    rolling_window = 1
-            elif self._freq[:2] == "MS":
-                if period == "MAT":
-                    rolling_window = 12
-                elif period == "MQT":
-                    rolling_window = 3
+            # 根据时间戳间隔和转换目标，确定滚动周期
+            if period == "MAT":
+                rolling_window = 12 / self._period_interval
+            elif period == "MQT":
+                rolling_window = 3 / self._period_interval
 
             # 按影响rolling计算的字段分组，并计算每个日期的滚动总计
             grouped = df.groupby(cols_grouper)
@@ -469,6 +496,63 @@ class DfAnalyzer:
 
         return new_obj
 
+    def ptable(
+        self,
+        index: str,
+        values: str,
+        hue: Optional[str] = None,
+        date: Optional[str] = None,
+        query_str: str = "ilevel_0 in ilevel_0",  # 默认query语句能返回df总体
+        fillna: bool = False,
+    ) -> pd.DataFrame:
+        df_ts = self.get_pivot(
+            index=index,
+            columns=self.date_column,
+            values=values,
+            query_str=query_str,
+        )
+
+        if date is None:
+            df = df_ts.iloc[:, -1]  # 如果不指定date，则默认为最latest
+            date_ya = int(((12 / self._period_interval) + 1) * -1)  # 根据期数计算year ago
+            df_ya = df_ts.iloc[:, date_ya]
+        else:
+            df = df_ts.loc[:, date]
+            date_ya = (pd.Timestamp(date) - pd.DateOffset(years=1)).strftime(
+                self._strftime
+            )  # 根据时间戳计算year ago
+            df_ya = df_ts.loc[:, date_ya]
+
+        df_rank = df.rank(ascending=False)  # 排名
+        df_share = df.div(df.sum())  # 本期份额
+        df_ya_share = df_ya.div(df_ya.sum())  # 上期份额
+        df_share_diff = df_share.subtract(df_ya_share)  # 份额变化
+        df_diff = df.subtract(df_ya)  # 净增长
+        df_gr = df.div(df_ya).subtract(1)  # 增长率
+        df_ei = df.div(df_ya).div(df.sum() / df_ya.sum()).mul(100)  # Evolution Index
+
+        df_combined = pd.concat(
+            [df_rank, df, df_diff, df_share, df_share_diff, df_gr, df_ei], axis=1
+        )
+        df_combined.columns = ["排名", "表现", "同比净增长", "份额", "份额变化", "同比增长率", "EI"]
+        df_combined = df_combined.sort_values(by="表现", ascending=False)
+
+        if fillna:
+            df_combined["同比增长率"].fillna(0, inplace=True)
+            df_combined["同比增长率"].replace([np.inf, -np.inf], 0, inplace=True)
+            df_combined["EI"].fillna(100, inplace=True)
+            df_combined["EI"].replace([np.inf, -np.inf], 100, inplace=True)
+
+        if hue:
+            df_combined = df_combined.merge(
+                self.data[[index, hue]], how="left", left_index=True, right_on=index
+            )
+            df_combined = df_combined.drop_duplicates()
+            df_combined.set_index(index, inplace=True)
+            df_combined.insert(1, hue, df_combined.pop(hue))
+
+        return df_combined
+
 
 if __name__ == "__main__":
     df = pd.read_excel("data.xlsx", engine="openpyxl")
@@ -506,8 +590,7 @@ if __name__ == "__main__":
     f.plot_bubble(
         data=pivoted,
         ax_index=0,
-        style={
-        },
+        style={},
         x="2022-12",
         y="2021-12",
         z="2022-12",
@@ -519,5 +602,5 @@ if __name__ == "__main__":
         show_hist=True,
         show_legend=False,
     )
-    
+
     f.save()

@@ -15,6 +15,7 @@ import scipy.stats as stats
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import warnings
 import math
+from itertools import cycle
 
 try:
     from typing import Literal
@@ -502,11 +503,14 @@ class PlotBubble(Plot):
         x: Optional[str] = None,
         y: Optional[str] = None,
         z: Optional[str] = None,
+        xlim: Optional[Tuple[float, float]] = None,
+        ylim: Optional[Tuple[float, float]] = None,
         hue: Optional[str] = None,
         x_avg: Optional[float] = None,
         y_avg: Optional[float] = None,
         label_limit: int = 15,
         label_formatter: str = "{index}",
+        label_topy: int = 0,
         bubble_scale: float = 1,
         show_reg: bool = False,
         show_hist: bool = False,
@@ -519,11 +523,14 @@ class PlotBubble(Plot):
             x (Optional[str], optional): 指定x轴变量字段名，如为None，则x为data第1列. Defaults to None.
             y (Optional[str], optional): 指定y轴变量字段名，如为None，则x为data第2列. Defaults to None.
             z (Optional[str], optional): 指定气泡大小字段名，如为None，则气泡大小为data第3列. Defaults to None.
+            xlim (Optional[Tuple[float, float]]): 手动指定x轴边界. Defaults to None.
+            ylim (Optional[Tuple[float, float]]): 手动指定y轴边界. Defaults to None.
             hue (Optional[str], optional): 指定气泡颜色字段名. Defaults to None.
             x_avg (Optional[float], optional): x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线. Defaults to None.
             y_avg (Optional[float], optional): y轴平均值或其他分隔值，如提供则绘制y轴分隔水平线. Defaults to None.
             label_limit (int, optional): 限制显示标签的个数. Defaults to 15.
             label_formatter (str, optional): 标签文字的格式，支持{index}, {x}, {y}, {z}, {hue}. Defaults to "{index}".
+            label_topy (int, optional): 如>0则强制显示y轴值最高的n个item的标签. Defaults to 0.
             bubble_scale (float, optional): 气泡大小系数. Defaults to 1.
             show_reg (bool, optional): 是否显示x,y的拟合趋势及置信区间. Defaults to False.
             show_reg (bool, optional): 是否显示x,y的分布histogram Defaults to False.
@@ -567,6 +574,12 @@ class PlotBubble(Plot):
             "avg_color": "black",
         }
         d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
+
+        # 设置x,y轴边界
+        if ylim is not None:
+            self.ax.set_ylim(ymin=ylim[0], ymax=ylim[1])
+        if xlim is not None:
+            self.ax.set_xlim(xmin=xlim[0], xmax=xlim[1])
 
         # 添加histogram，在前半步执行因为涉及到legend位置的问题
         if show_hist:
@@ -656,25 +669,32 @@ class PlotBubble(Plot):
         # 添加系列标签
         np.random.seed(0)
         texts = []
-        for i in range(len(df.index[:label_limit])):
-            d_label = {
-                "x": d_style.get("x_fmt").format(x[i]),
-                "y": d_style.get("y_fmt").format(y[i]),
-                "z": z[i],
-                "hue": hue[i] if hue is not None else None,
-                "index": df.index[i],
-            }
-            texts.append(
-                self.ax.text(
-                    x[i],
-                    y[i],
-                    label_formatter.format(**d_label),
-                    ha="center",
-                    va="center",
-                    multialignment="center",
-                    fontsize=self.fontsize,
+        x_shown = x if xlim is None else x[x.between(xlim[0], xlim[1])]
+        y_shown = y if ylim is None else y[y.between(ylim[0], ylim[1])]
+        index_shown = x_shown.index.intersection(y_shown.index)
+
+        for i in range(len(index_shown)):
+            if i <= label_limit or (
+                index_shown[i] in y.loc[index_shown].nlargest(label_topy).index
+            ):  # 在label_limit内或者强制要求展示y值最大item的标签时
+                d_label = {
+                    "x": d_style.get("x_fmt").format(x.loc[index_shown][i]),
+                    "y": d_style.get("y_fmt").format(y.loc[index_shown][i]),
+                    "z": z.loc[index_shown][i],
+                    "hue": hue.loc[index_shown][i] if hue is not None else None,
+                    "index": index_shown[i],
+                }
+                texts.append(
+                    self.ax.text(
+                        x.loc[index_shown][i],
+                        y.loc[index_shown][i],
+                        label_formatter.format(**d_label),
+                        ha="center",
+                        va="center",
+                        multialignment="center",
+                        fontsize=self.fontsize,
+                    )
                 )
-            )
 
         # 用adjust_text包保证标签互不重叠
         if label_limit > 1:
@@ -686,8 +706,10 @@ class PlotBubble(Plot):
             )
 
         # 添加轴label
-        self.style._xlabel = x.name
-        self.style._ylabel = y.name
+        if self.style._xlabel is None:
+            self.style._xlabel = x.name
+        if self.style._ylabel is None:
+            self.style._ylabel = y.name
 
         # 设置坐标轴格式
         self.ax.xaxis.set_major_formatter(
@@ -1041,8 +1063,8 @@ class PlotBar(Plot):
         label_formatter: str = "{abs}",
         show_total_bar: bool = False,
         show_total_label: bool = False,
-        add_gr_text: bool = False,
-        threshold: float = 0.02,
+        show_gr: bool = False,
+        label_threshold: float = 0.02,
         *args,
         **kwargs,
     ) -> PlotBar:
@@ -1054,17 +1076,23 @@ class PlotBar(Plot):
             label_formatter (str, optional): 主标签的格式，支持通配符{abs},{share},{gr},{index},{col}. Defaults to "{abs}".
             show_total_bar (bool, optional): 是否显示一个总体表现外框. Defaults to False.
             show_total_label (bool, optional): 是否在最上方显示堆积之和数字标签. Defaults to False.
-            add_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
-            threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
+            show_gr (bool, optional): 是否显示增长率数字. Defaults to False.
+            label_threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
 
         Returns:
             self: 返回自身plot实例
         """
         df = self.data
-        df_share = self.data.apply(lambda x: x / x.sum())
+        df_share = df.div(df.sum(axis=1), axis=0)
         df_gr = self.data.pct_change(axis=0)
         if self.data_line is not None:
             df_line = self.data_line
+
+        d_style = {
+            "bar_width": 0.8,
+            "label_fontsize": self.fontsize,
+        }
+        d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
 
         # 绝对值bar图和增长率标注
         for k, index in enumerate(df.index):
@@ -1074,7 +1102,10 @@ class PlotBar(Plot):
 
             max_v = df.values.max()
             min_v = df.values.min()
-
+            
+            self.figure.iter_colors = cycle(
+                self.figure.cmap_qual(i) for i in range(self.figure.cmap_qual.N)
+            )  # reset colors cycle between bars
             for i, col in enumerate(df):
                 # 计算出的指标
                 v = df.loc[index, col]
@@ -1110,17 +1141,7 @@ class PlotBar(Plot):
                     bottom = 0
 
                 # bar宽度
-                bar_width = 0
-                if stacked:
-                    bar_width = 0.5
-                    # if isinstance(
-                    #     df.index, pd.DatetimeIndex
-                    # ):  # 如果x轴是日期，宽度是以“天”为单位的
-                    #     bar_width = 20
-                    # else:
-                    #     bar_width = 0.5
-                else:
-                    bar_width = 0.8 / df.shape[1]
+                bar_width = d_style.get("bar_width")
 
                 # bar x轴位置
                 if stacked:
@@ -1151,7 +1172,7 @@ class PlotBar(Plot):
                     )
 
                     # 因为多了总体表现外框，移除右、上边框
-                    self._style._hide_top_right_spines = True
+                    self.style._hide_top_right_spines = True
 
                 if show_label is True:
                     if stacked is False or df.shape[1] == 1:  # 非堆叠图或只有一列数的情况（非堆叠）
@@ -1174,7 +1195,7 @@ class PlotBar(Plot):
                         va = "center"
                         fontcolor = "white"
 
-                    if abs(v / self.ax.get_ylim()[1]) >= threshold:
+                    if abs(v / self.ax.get_ylim()[1]) >= label_threshold:
                         self.ax.text(
                             x=pos_x,
                             y=pos_y,
@@ -1182,7 +1203,7 @@ class PlotBar(Plot):
                             color=fontcolor,
                             va=va,
                             ha="center",
-                            fontsize=self.fontsize,
+                            fontsize=d_style.get("label_fontsize"),
                             zorder=5,
                         )
                 if v >= 0:
@@ -1197,7 +1218,7 @@ class PlotBar(Plot):
                     if height < 0:
                         rect.set_hatch("//")
 
-                if add_gr_text:
+                if show_gr:
                     if k > 0:
                         # 各系列增长率标注
                         self.ax.text(
@@ -1224,7 +1245,7 @@ class PlotBar(Plot):
                                 ha="center",
                                 va="bottom",
                                 color="black",
-                                fontsize=self.fontsize,
+                                fontsize=d_style.get("label_fontsize"),
                             )
 
             # 在柱状图顶端添加total值
@@ -1235,7 +1256,7 @@ class PlotBar(Plot):
                         x=p,
                         y=v * 1.05 if show_total_bar else v,  # 如果绘制整体外框则优化total值文本的位置
                         s=self.fmt.format(float(v)),
-                        fontsize=self.fontsize,
+                        fontsize=d_style.get("label_fontsize"),
                         ha="center",
                         va="bottom",
                         zorder=5,

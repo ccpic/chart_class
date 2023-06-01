@@ -4,7 +4,7 @@ from pptx.util import Inches, Pt, Cm
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR, MSO_VERTICAL_ANCHOR
-from pptx.slide import SlideLayout
+from pptx.slide import SlideLayout, Slide
 
 
 class PPT:

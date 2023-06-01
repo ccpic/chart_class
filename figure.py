@@ -93,9 +93,7 @@ class GridFigure(Figure):
         self.height = height
         self.fontsize = fontsize
         self.cmap_qual = cmap_qual
-        self.iter_colors = cycle(
-            self.figure.cmap_qual(i) for i in range(self.figure.cmap_qual.N)
-        )
+        self.iter_colors = cycle(self.cmap_qual(i) for i in range(self.cmap_qual.N))
         self.cmap_norm = cmap_norm
         self._style = style
         self.style = self.Style(self, **self._style)  # 应用风格
@@ -260,8 +258,9 @@ class GridFigure(Figure):
                 label_formatter (str, optional): 主标签的格式，支持通配符{abs},{share},{gr},{index},{col}. Defaults to "{abs}".
                 show_total_bar (bool, optional): 是否显示一个总体表现外框. Defaults to False.
                 show_total_label (bool, optional): 是否在最上方显示堆积之和数字标签. Defaults to False.
-                add_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
-                threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
+                show_gr (bool, optional): 是否显示增长率数字. Defaults to False.
+                label_threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
+                bar_width (float, optional): 柱宽度，越宽间距越小. Defaults to 0.8.
             line:
                 show_label (List[str], optional): 指定要显示标签的系列. Defaults to [].
                 endpoint_label_only (bool, optional): 标签是全部显示还是只显示首尾节点. Defaults to False.
@@ -272,10 +271,14 @@ class GridFigure(Figure):
                 x (Optional[str], optional): 指定x轴变量字段名，如为None，则x为data第1列. Defaults to None.
                 y (Optional[str], optional): 指定y轴变量字段名，如为None，则x为data第2列. Defaults to None.
                 z (Optional[str], optional): 指定气泡大小字段名，如为None，则气泡大小为data第3列. Defaults to None.
+                xlim (Optional[Tuple[float, float]]): 手动指定x轴边界. Defaults to None.
+                ylim (Optional[Tuple[float, float]]): 手动指定y轴边界. Defaults to None.
                 hue (Optional[str], optional): 指定气泡颜色字段名. Defaults to None.
                 x_avg (Optional[float], optional): x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线. Defaults to None.
                 y_avg (Optional[float], optional): y轴平均值或其他分隔值，如提供则绘制y轴分隔水平线. Defaults to None.
                 label_limit (int, optional): 限制显示标签的个数. Defaults to 15.
+                label_formatter (str, optional): 标签文字的格式，支持{index}, {x}, {y}, {z}, {hue}. Defaults to "{index}".
+                label_topy (int, optional): 如>0则强制显示y轴值最高的n个item的标签. Defaults to 0.
                 bubble_scale (float, optional): 气泡大小系数. Defaults to 1.
                 show_reg (bool, optional): 是否显示x,y的拟合趋势及置信区间. Defaults to False.
                 corr (Optional[float], optional): 相关系数，如不为None，则显示在ax左上角. Defaults to None.
