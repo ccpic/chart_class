@@ -9,6 +9,7 @@ from pptx.enum.text import PP_ALIGN, MSO_ANCHOR, MSO_VERTICAL_ANCHOR
 from pptx.slide import SlideLayout, Slide
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional
 from collections import namedtuple
+import math
 
 try:
     from typing import Literal
@@ -22,22 +23,22 @@ Loc = namedtuple("Loc", ["left", "top"])
 class Section:
     def __init__(
         self,
-        left: Union[Inches, Cm],
-        top: Union[Inches, Cm],
-        width: Union[Inches, Cm],
-        height: Union[Inches, Cm],
+        left: Union[Inches, Cm, int],
+        top: Union[Inches, Cm, int],
+        width: Union[Inches, Cm, int],
+        height: Union[Inches, Cm, int],
     ) -> None:
         """初始化Section类，定义一个矩形范围
 
         Parameters
         ----------
-        left: Union[Inches, Cm]
+        left: Union[Inches, Cm, int]
             左边距
-        right: Union[Inches, Cm]
+        right: Union[Inches, Cm, int]
             右边距
-        width: Union[Inches, Cm]
+        width: Union[Inches, Cm, int]
             宽度
-        height: Union[Inches, Cm]
+        height: Union[Inches, Cm, int]
             高度
         """
         self.left = left
@@ -143,11 +144,37 @@ class Section:
     bottom_right = right_bottom
 
 
+def is_light_color(color: Optional[Union[RGBColor, str]]) -> bool:
+    """判断一个颜色是否是浅色
+
+    Args:
+        color (Optional[Union[RGBColor, str]]): 一个颜色，可以是pptx包的RGBColor类型，也可以是十六进制颜色字符串
+
+    Returns:
+        bool: 返回一个布尔值
+    """
+    if color is None:
+        return True
+    else:
+        rgb_color = (
+            color if isinstance(color, RGBColor) else RGBColor.from_string(color)
+        )
+        r, g, b = rgb_color
+        hsp = math.sqrt(0.299 * (r * r) + 0.587 * (g * g) + 0.114 * (b * b))
+
+        if hsp > 127.5:
+            return True
+        else:
+            return False
+
+
 def anchor_loc(
     shape_width: float,
     shape_height: float,
     loc: Loc,
-    anchor: Literal["center", "top_left", "top_right", "right_top"] = "center",
+    anchor: Literal[
+        "center", "top_left", "left_top", "top_right", "right_top"
+    ] = "center",
 ) -> Loc:
     """根据形状大小和不同锚点返回调整过的位置
 
@@ -155,7 +182,7 @@ def anchor_loc(
         shape_width (float): 形状宽度
         shape_height (float): 形状高度
         loc (Loc): 目标位置
-        anchor (Literal["center", "top_left", "top_right", "right_top"]): 锚点. Defaults to "center".
+        anchor (Literal["center", "top_left", "left_top", "top_right", "right_top"]): 锚点. Defaults to "center".
 
     Returns:
         Loc: 返回一个代表调整后位置的tuple(左边距，上边距)
@@ -195,11 +222,21 @@ class SlideContent:
             left=Cm(5.6), top=Cm(17.36), width=self.prs.slide_width, height=Cm(1.71)
         )
 
-    def add_text(self):
-        width = Cm(5)
-        height = Cm(1)
-        left, top = anchor_loc(width, height, self.body.top_right, anchor="top_right")
-        obj_text = self.slide.shapes.add_shape(
+    def add_text(
+        self,
+        text: str,
+        width: Union[Inches, Cm, int],
+        height: Union[Inches, Cm, int],
+        loc: Loc,
+        anchor: Literal["center", "top_left", "top_right", "right_top"] = "center",
+        fill_color: Optional[Union[RGBColor, str]] = None,
+        line_color: Optional[Union[RGBColor, str]] = None,
+        font_color: Optional[Union[RGBColor, str]] = None,
+        font_size: Optional[Union[Pt, int]] = Pt(14),
+        text_wrap: bool = False,
+    ):
+        left, top = anchor_loc(width, height, loc, anchor=anchor)
+        shape = self.slide.shapes.add_shape(
             MSO_SHAPE.RECTANGLE,
             left=left,
             top=top,
@@ -207,7 +244,57 @@ class SlideContent:
             height=height,
         )
 
+        # 形状填充
+        fill = shape.fill
+        if fill_color is None:
+            fill.background()
+        else:
+            fill.solid()
+            fill.fore_color.rgb = (
+                fill_color
+                if isinstance(fill_color, RGBColor)
+                else RGBColor.from_string(fill_color)
+            )
 
+        # 边框
+        line = shape.line
+        if line_color is None:
+            line.fill.background()
+        else:
+            line.color.rgb = (
+                line_color
+                if isinstance(line_color, RGBColor)
+                else RGBColor.from_string(line_color)
+            )
+
+        # 形状文字
+        text_frame = shape.text_frame
+        text_frame.word_wrap = text_wrap
+        p = text_frame.paragraphs[0]
+        run = p.add_run()
+        run.text = text
+
+        # 设置字体
+        font = run.font
+        font.name = "Calibri"
+        font.size = font_size
+        font.bold = True
+        font.italic = None  # cause value to be inherited from theme
+        if font_color is None:
+            if is_light_color(fill_color):
+                font.color.rgb = RGBColor(0, 0, 0)
+            else:
+                font.color.rgb = RGBColor(255, 255, 255)
+        else:
+            font.color.rgb = (
+                font_color
+                if isinstance(font_color, RGBColor)
+                else RGBColor.from_string(font_color)
+            )
+
+        return shape
+
+    
 class PPT:
     def __init__(self, template_path: str, save_path: str = None) -> None:
         self.template_path = template_path
@@ -231,10 +318,10 @@ class PPT:
     def add_content_slide(
         self,
         layout_style: int = 0,
-    ):
+    ) -> SlideContent:
         slide = self.prs.slides.add_slide(self.prs.slide_layouts[layout_style])
-        slide = SlideContent(self.prs, slide)
-        t = slide.add_text()
+        content = SlideContent(self.prs, slide)
+        return content
 
     def save(self):
         self.prs.save(self.save_path)
@@ -243,5 +330,13 @@ class PPT:
 
 if __name__ == "__main__":
     p = PPT("template.pptx")
-    p.add_content_slide()
+    c = p.add_content_slide()
+    c.add_text(
+        "测试",
+        Cm(4),
+        Cm(0.5),
+        c.body.top_right,
+        anchor="top_right",
+        fill_color="F0CB46",
+    )
     p.save()
