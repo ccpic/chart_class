@@ -3,6 +3,7 @@ from pptx import presentation, Presentation
 from pptx.util import Inches, Pt, Cm
 from pptx.shapes.base import BaseShape
 from pptx.shapes.autoshape import Shape
+from pptx.shapes.picture import Picture
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR, MSO_VERTICAL_ANCHOR
@@ -196,7 +197,7 @@ def anchor_loc(
     else:
         left = loc.left
         top = loc.top
-    return Loc(left, top)
+    return Loc(int(left), int(top))  # pptx很多参数如shape的top和left只接受整数
 
 
 class SlideContent:
@@ -234,7 +235,7 @@ class SlideContent:
         font_color: Optional[Union[RGBColor, str]] = None,
         font_size: Optional[Union[Pt, int]] = Pt(14),
         text_wrap: bool = False,
-    ):
+    ) -> Shape:
         left, top = anchor_loc(width, height, loc, anchor=anchor)
         shape = self.slide.shapes.add_shape(
             MSO_SHAPE.RECTANGLE,
@@ -294,7 +295,30 @@ class SlideContent:
 
         return shape
 
-    
+    def add_image(
+        self,
+        image_file: str,
+        width: Union[Inches, Cm, int],
+        height: Union[Inches, Cm, int],
+        loc: Loc,
+        anchor: Literal["center", "top_left", "top_right", "right_top"] = "center",
+    ) -> Picture:
+        # 先插入图片，方便获取图片长宽（插入图片时如不同时指定宽和高，pptx高会自动缩放尺寸），再调整位置
+        image = self.slide.shapes.add_picture(
+            image_file=image_file,
+            left=0,
+            top=0,
+            width=width,
+            height=height,
+        )
+
+        left, top = anchor_loc(image.width, image.height, loc, anchor=anchor)
+        image.left = left
+        image.top = top
+
+        return pic
+
+
 class PPT:
     def __init__(self, template_path: str, save_path: str = None) -> None:
         self.template_path = template_path
@@ -333,10 +357,16 @@ if __name__ == "__main__":
     c = p.add_content_slide()
     c.add_text(
         "测试",
-        Cm(4),
-        Cm(0.5),
-        c.body.top_right,
+        width=Cm(4),
+        height=Cm(0.5),
+        loc=c.body.top_right,
         anchor="top_right",
         fill_color="F0CB46",
+    )
+    c.add_image(
+        "D:\PyProjects\chart_class\plots\肾性贫血市场分治疗大类PTD滚动年趋势.png",
+        width=c.body.width * 0.8,
+        height=None,
+        loc=c.body.center,
     )
     p.save()
