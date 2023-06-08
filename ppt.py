@@ -234,6 +234,8 @@ class SlideContent:
         line_color: Optional[Union[RGBColor, str]] = None,
         font_color: Optional[Union[RGBColor, str]] = None,
         font_size: Optional[Union[Pt, int]] = Pt(14),
+        font_bold=False,
+        font_italic=False,
         text_wrap: bool = False,
     ) -> Shape:
         left, top = anchor_loc(width, height, loc, anchor=anchor)
@@ -277,10 +279,9 @@ class SlideContent:
 
         # 设置字体
         font = run.font
-        font.name = "Calibri"
         font.size = font_size
-        font.bold = True
-        font.italic = None  # cause value to be inherited from theme
+        font.bold = font_bold
+        font.italic = font_italic
         if font_color is None:
             if is_light_color(fill_color):
                 font.color.rgb = RGBColor(0, 0, 0)
@@ -316,7 +317,12 @@ class SlideContent:
         image.left = left
         image.top = top
 
-        return pic
+        return image
+
+    def set_title(self, title: str) -> Shape:
+        title_shape = self.slide.shapes.title
+        title_shape.text = title
+        return title_shape
 
 
 class PPT:
@@ -355,6 +361,7 @@ class PPT:
 if __name__ == "__main__":
     p = PPT("template.pptx")
     c = p.add_content_slide()
+    c.set_title("测试测试")
     c.add_text(
         "测试",
         width=Cm(4),
