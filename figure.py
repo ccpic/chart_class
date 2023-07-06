@@ -1,4 +1,5 @@
 from __future__ import annotations
+from color import COLOR_DICT
 from re import T
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
@@ -45,6 +46,7 @@ class GridFigure(Figure):
         width: int = 15,
         height: int = 6,
         fontsize: int = 14,
+        color_dict: Dict[str, str] = None,
         cmap_qual: mpl.colors.Colormap = cmap_qual,
         cmap_norm: mpl.colors.Colormap = plt.get_cmap("PiYG"),
         style: Dict[str, Any] = {},
@@ -66,6 +68,7 @@ class GridFigure(Figure):
             width (int, optional): 总宽度. Defaults to 15.
             height (int, optional): 总高度. Defaults to 6.
             fontsize (int, optional): 全局字体大小. Defaults to 14.
+            color_dict (Dict[str, str], optional): 颜色字典. Defaults to COLOR_DICT in color.py.
             cmap_qual (mpl.colors.Colormap, optional): 离散的colormap，用于分类变量着色. Defaults to cmap_qual.
             cmap_norm (mpl.colors.Colormap, optional): 连续的colormap，用于连续变量区分表现好坏. Defaults to plt.get_cmap("PiYG").
             style (Dict[str, Any], optional): 风格字典. Defaults to {}.
@@ -92,6 +95,7 @@ class GridFigure(Figure):
         self.width = width
         self.height = height
         self.fontsize = fontsize
+        self.color_dict = COLOR_DICT if color_dict is None else color_dict
         self.cmap_qual = cmap_qual
         self.iter_colors = cycle(self.cmap_qual(i) for i in range(self.cmap_qual.N))
         self.cmap_norm = cmap_norm
@@ -186,7 +190,7 @@ class GridFigure(Figure):
                 self._figure.supylabel(title, fontsize=fontsize)
             except AttributeError:
                 pass
-            
+
         def fig_legend(
             self,
             loc: Literal["center left", "lower center"] = "center left",

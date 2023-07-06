@@ -1,5 +1,4 @@
 from __future__ import annotations
-from color import COLOR_DICT
 from wordcloud import WordCloud
 from typing import Any, Callable, Dict, List, Tuple, Union, Optional, Sequence
 import matplotlib as mpl
@@ -161,6 +160,7 @@ class Plot:
         fontsize: int = 14,  # 字体大小
         fmt: str = "{:,.0f}",  # 基本数字格式
         style: Dict[str, Any] = {},  # 风格字典
+        color_dict: Dict[str, str] = None, # 颜色字典
         *args,
         **kwargs,
     ):
@@ -173,6 +173,7 @@ class Plot:
         self.fmt = fmt
         self._style = style
         self.style = self.Style(self, **self._style)
+        self.color_dict = self.figure.color_dict if color_dict is None else color_dict
 
     class Style:
         def __init__(self, plot, **kwargs) -> None:
@@ -987,7 +988,7 @@ class PlotLine(Plot):
 
         for i, column in enumerate(df.columns):
             # 如果有指定颜色就颜色，否则按预设列表选取
-            color = COLOR_DICT.get(column, next(self.figure.iter_colors))
+            color = self.color_dict.get(column, next(self.figure.iter_colors))
 
             # 生成折线图
             self.ax.plot(
@@ -1131,10 +1132,10 @@ class PlotBar(Plot):
 
                 # 如果有指定颜色就颜色，否则按预设列表选取
                 if stacked:
-                    if col in COLOR_DICT.keys():
-                        color = COLOR_DICT[col]
-                    elif index in COLOR_DICT.keys():
-                        color = COLOR_DICT[index]
+                    if col in self.color_dict.keys():
+                        color = self.color_dict[col]
+                    elif index in self.color_dict.keys():
+                        color = self.color_dict[index]
                     else:
                         color = next(self.figure.iter_colors)
                 else:
