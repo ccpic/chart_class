@@ -182,9 +182,11 @@ class GridFigure(Figure):
             fontsize : Optional[float], optional
                 标题字体大小, by default None
             """
-
-            self._figure.supylabel(title, fontsize=fontsize)
-
+            try:
+                self._figure.supylabel(title, fontsize=fontsize)
+            except AttributeError:
+                pass
+            
         def fig_legend(
             self,
             loc: Literal["center left", "lower center"] = "center left",

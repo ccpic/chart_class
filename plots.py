@@ -195,6 +195,7 @@ class Plot:
                 "ylim": None,  # y轴边界(最小值, 最大值)
                 "y2lim": None,  # y轴次坐标轴边界(最小值, 最大值)
                 # 刻度相关的风格
+                "all_xticks": False,  # 显示所有x轴刻度
                 "xticklabel_fontsize": plot.fontsize,  # x轴刻度标签字体大小
                 "yticklabel_fontsize": plot.fontsize,  # y轴刻度标签字体大小
                 "xticklabel_rotation": None,  # x抽刻度标签旋转角度
@@ -229,6 +230,8 @@ class Plot:
                 self._xticks_length,
                 self._yticks_length,
             )
+            if self._all_xticks:
+                self.all_xticks()
             if self._xticks_interval is not None:
                 self.xticks_interval(self._xticks_interval)
             if self._yticks_interval is not None:
@@ -265,6 +268,9 @@ class Plot:
                 标题字体大小, by default None
             """
             self._plot.ax.set_title(title, fontsize=fontsize)
+
+        def all_xticks(self):
+            self._plot.ax.set(xticks=self._plot.data.index)
 
         def tick_params(
             self,
@@ -559,8 +565,10 @@ class PlotBubble(Plot):
         hue = df.loc[:, hue] if hue is not None else None
 
         # z列标准化并乘以系数以得到一般情况下都合适的气泡大小
-        z = (z - z.min()) / (z.max() - z.min())
+        if z.max() != z.min():
+            z = (z - z.min()) / (z.max() - z.min())
         z = (z * 100) ** 1.8 * bubble_scale
+        print(z)
 
         # 设置默认风格，并根据kwargs更新
         d_style = {
@@ -1102,7 +1110,7 @@ class PlotBar(Plot):
 
             max_v = df.values.max()
             min_v = df.values.min()
-            
+
             self.figure.iter_colors = cycle(
                 self.figure.cmap_qual(i) for i in range(self.figure.cmap_qual.N)
             )  # reset colors cycle between bars

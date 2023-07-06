@@ -1,10 +1,9 @@
 from __future__ import annotations
 import pandas as pd
 import numpy as np
-from typing import Any, Callable, Dict, List, Tuple, Union, Optional
+from typing import Callable, Dict, List, Union, Optional
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from dateutil.parser import parse
 from figure import GridFigure
 import copy
 import matplotlib.pyplot as plt
@@ -53,7 +52,8 @@ class DateRange:
 
     def mat(
         self,
-        freq: Literal["MS", "3MS", "Q", "D"] = "MS",  # 这里要用M而不是MS因为是month start
+        freq: Literal["MS", "3MS", "Q", "D"] = "MS",
+        # 这里要用M而不是MS因为是month start
         strftime: str = "%Y-%m",
         yoy_period: bool = False,
     ) -> List[str]:
@@ -442,22 +442,27 @@ class DfAnalyzer:
         if period in ["MAT", "MQT"]:
             # 根据时间戳间隔和转换目标，确定滚动周期
             if period == "MAT":
-                rolling_window = 12 / self._period_interval
+                rolling_window = int(12 / self._period_interval)
             elif period == "MQT":
-                rolling_window = 3 / self._period_interval
+                rolling_window = int(3 / self._period_interval)
 
-            # 按影响rolling计算的字段分组，并计算每个日期的滚动总计
-            grouped = df.groupby(cols_grouper)
-            rolling = (
-                grouped[cols_amount].rolling(window=rolling_window, min_periods=1).sum()
-            )
-            rolling = rolling.reset_index()
+            if cols_grouper is None:
+                df = df.rolling(window=rolling_window, min_periods=1).sum()
+            else:
+                # 按影响rolling计算的字段分组，并计算每个日期的滚动总计
+                grouped = df.groupby(cols_grouper)
+                rolling = (
+                    grouped[cols_amount]
+                    .rolling(window=rolling_window, min_periods=1)
+                    .sum()
+                )
+                rolling = rolling.reset_index()
 
-            # 将rolling统计还原到原df
-            df = df.reset_index().rename(columns={"index": self.date_column})
-            df = df.merge(
-                right=rolling, how="left", on=cols_grouper + [self.date_column]
-            )
+                # 将rolling统计还原到原df
+                df = df.reset_index().rename(columns={"index": self.date_column})
+                df = df.merge(
+                    right=rolling, how="left", on=cols_grouper + [self.date_column]
+                )
 
         elif period in ["YEAR", "QTR"]:
             if period == "YEAR":
@@ -465,32 +470,36 @@ class DfAnalyzer:
             elif period == "QTR":
                 resample_window = "Q"
 
-            grouped = (
-                df.groupby(cols_grouper)
-                .resample(resample_window)[cols_amount]
-                .agg("sum")
-            )
-            grouped = grouped.reset_index()
-            # resample("Y")方法返回的时间戳为年尾12.31，将其改为和原始数一致
-            grouped["Date"] = grouped["Date"].apply(
-                lambda x: x.replace(day=self.date.day)
-            )
+            if cols_grouper is None:
+                df = df.resample(resample_window).agg("sum")
+            else:
+                grouped = (
+                    df.groupby(cols_grouper)
+                    .resample(resample_window)[cols_amount]
+                    .agg("sum")
+                )
+                grouped = grouped.reset_index()
+                # resample("Y")方法返回的时间戳为年尾12.31，将其改为和原始数一致
+                grouped["Date"] = grouped["Date"].apply(
+                    lambda x: x.replace(day=self.date.day)
+                )
 
-            # 将resample统计还原到原df
-            df = df.reset_index().rename(columns={"index": self.date_column})
-            df = df.merge(
-                right=grouped, how="right", on=cols_grouper + [self.date_column]
-            )
+                # 将resample统计还原到原df
+                df = df.reset_index().rename(columns={"index": self.date_column})
+                df = df.merge(
+                    right=grouped, how="right", on=cols_grouper + [self.date_column]
+                )
 
-        # 解决merge后重复列都保留并自动重命名的问题
-        if isinstance(cols_amount, str):
-            cols_amount = [cols_amount]
-        df = df.drop([s + "_x" for s in cols_amount], axis=1)
-        df = df.rename(
-            columns=lambda x: x.replace("_y", "")
-            if x in [s + "_y" for s in cols_amount]
-            else x
-        )
+        if cols_grouper is not None:
+            # 解决merge后重复列都保留并自动重命名的问题
+            if isinstance(cols_amount, str):
+                cols_amount = [cols_amount]
+            df = df.drop([s + "_x" for s in cols_amount], axis=1)
+            df = df.rename(
+                columns=lambda x: x.replace("_y", "")
+                if x in [s + "_y" for s in cols_amount]
+                else x
+            )
 
         new_obj.data = df
 
