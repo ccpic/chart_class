@@ -269,7 +269,9 @@ class DfAnalyzer:
         """
         df = a.data
         columns = ", ".join(df.columns.to_list())
-        return f"DfAnalyzer({df.shape[0]} rows, {df.shape[1]} columns)\nColumns: {columns}"
+        return (
+            f"DfAnalyzer({df.shape[0]} rows, {df.shape[1]} columns)\nColumns: {columns}"
+        )
 
     def unit_change(
         self, unit_str: Optional[Literal["十亿", "亿", "百万", "万", "千"]]
@@ -523,7 +525,22 @@ class DfAnalyzer:
         date: Optional[str] = None,
         query_str: str = "ilevel_0 in ilevel_0",  # 默认query语句能返回df总体
         fillna: bool = False,
+        show_total: bool = False,
     ) -> pd.DataFrame:
+        """计算一个针对有时间戳df的kpi汇总表，kpis 包括(排名, 当期表现, 同比净增长, 份额, 份额变化, 同比增长率, Evolution Index)
+
+
+        Args:
+            index (str): 透视表的行标签字段
+            values (str): 透视表的值字段
+            hue (Optional[str], optional): 分类标签字段. Defaults to None.
+            date (Optional[str], optional): 指定日期，如不指定则以最新日期计算. Defaults to None.
+            query_str (str, optional): 数据筛选字符串,如"Date=='2022-12'"_. Defaults to "ilevel_0 in ilevel_0".
+            show_total (bool, optional): 是否显示汇总. Defaults to False.
+
+        Returns:
+            pd.DataFrame: _description_
+        """
         df_ts = self.get_pivot(
             index=index,
             columns=self.date_column,
@@ -556,12 +573,6 @@ class DfAnalyzer:
         df_combined.columns = ["排名", "表现", "同比净增长", "份额", "份额变化", "同比增长率", "EI"]
         df_combined = df_combined.sort_values(by="表现", ascending=False)
 
-        if fillna:
-            df_combined["同比增长率"].fillna(0, inplace=True)
-            df_combined["同比增长率"].replace([np.inf, -np.inf], 0, inplace=True)
-            df_combined["EI"].fillna(100, inplace=True)
-            df_combined["EI"].replace([np.inf, -np.inf], 100, inplace=True)
-
         if hue:
             df_combined = df_combined.merge(
                 self.data[[index, hue]], how="left", left_index=True, right_on=index
@@ -570,6 +581,37 @@ class DfAnalyzer:
             df_combined.set_index(index, inplace=True)
             df_combined.insert(1, hue, df_combined.pop(hue))
 
+        if show_total:
+            d_total = {}
+            df_total = self.get_pivot(
+                index=None,
+                columns=self.date_column,
+                values=values,
+                query_str=query_str,
+            )
+
+            if date is None:
+                d_total["表现"] = df_total.iloc[:, -1].values[0]
+                date_ya = int(((12 / self._period_interval) + 1) * -1)  # 根据期数计算year ago
+                total_ya = df_total.iloc[:, date_ya].values[0]
+            else:
+                d_total["表现"] = df_total.loc[:, date].values[0]
+                date_ya = (pd.Timestamp(date) - pd.DateOffset(years=1)).strftime(
+                    self._strftime
+                )  # 根据时间戳计算year ago
+                total_ya = df_total.loc[:, date_ya].values[0]
+
+            d_total["同比净增长"] = d_total["表现"] - total_ya
+            d_total["份额"] = 1
+            d_total["份额变化"] = 0
+            if total_ya != 0:
+                d_total["同比增长率"] = d_total["表现"] / total_ya - 1
+            else:
+                d_total["同比增长率"] = np.inf
+            d_total["EI"] = 100
+
+            df_combined = df_combined.append(pd.Series(d_total, name="汇总"))
+            
         return df_combined
 
 
@@ -581,7 +623,15 @@ if __name__ == "__main__":
         cols_grouper=["分子+年份+降幅", "CORPORATION", "PACKAGE", "数值类型"],
         cols_amount="数值",
     )
-    print(a)
+    print(
+        a.ptable(
+            index="MOLECULE_CN",
+            values="数值",
+            hue="TC I",
+            query_str="数值类型=='金额'",
+            show_total=True,
+        )
+    )
     # pivoted = (
     #     a.get_pivot(
     #         index=["谈判年份", "药品名称"],
