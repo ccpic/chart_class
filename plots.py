@@ -518,6 +518,7 @@ class PlotBubble(Plot):
         label_limit: int = 15,
         label_formatter: str = "{index}",
         label_topy: int = 0,
+        label_mustshow: List[str] = [],
         bubble_scale: float = 1,
         show_reg: bool = False,
         show_hist: bool = False,
@@ -538,6 +539,7 @@ class PlotBubble(Plot):
             label_limit (int, optional): 限制显示标签的个数. Defaults to 15.
             label_formatter (str, optional): 标签文字的格式，支持{index}, {x}, {y}, {z}, {hue}. Defaults to "{index}".
             label_topy (int, optional): 如>0则强制显示y轴值最高的n个item的标签. Defaults to 0.
+            label_mustshow (List[str], optional): 强制显示该列表中的标签. Defaults to [].
             bubble_scale (float, optional): 气泡大小系数. Defaults to 1.
             show_reg (bool, optional): 是否显示x,y的拟合趋势及置信区间. Defaults to False.
             show_reg (bool, optional): 是否显示x,y的分布histogram Defaults to False.
@@ -685,7 +687,7 @@ class PlotBubble(Plot):
         for i in range(len(index_shown)):
             if i <= label_limit or (
                 index_shown[i] in y.loc[index_shown].nlargest(label_topy).index
-            ):  # 在label_limit内或者强制要求展示y值最大item的标签时
+            ) or (index_shown[i] in label_mustshow):  # 在label_limit内或者强制要求展示y值最大item的标签时
                 d_label = {
                     "x": d_style.get("x_fmt").format(x.loc[index_shown][i]),
                     "y": d_style.get("y_fmt").format(y.loc[index_shown][i]),

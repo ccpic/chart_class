@@ -524,7 +524,6 @@ class DfAnalyzer:
         hue: Optional[str] = None,
         date: Optional[str] = None,
         query_str: str = "ilevel_0 in ilevel_0",  # 默认query语句能返回df总体
-        fillna: bool = False,
         show_total: bool = False,
     ) -> pd.DataFrame:
         """计算一个针对有时间戳df的kpi汇总表，kpis 包括(排名, 当期表现, 同比净增长, 份额, 份额变化, 同比增长率, Evolution Index)

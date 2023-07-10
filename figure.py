@@ -285,6 +285,7 @@ class GridFigure(Figure):
                 label_limit (int, optional): 限制显示标签的个数. Defaults to 15.
                 label_formatter (str, optional): 标签文字的格式，支持{index}, {x}, {y}, {z}, {hue}. Defaults to "{index}".
                 label_topy (int, optional): 如>0则强制显示y轴值最高的n个item的标签. Defaults to 0.
+                label_mustshow (List[str], optional): 强制显示该列表中的标签. Defaults to [].
                 bubble_scale (float, optional): 气泡大小系数. Defaults to 1.
                 show_reg (bool, optional): 是否显示x,y的拟合趋势及置信区间. Defaults to False.
                 corr (Optional[float], optional): 相关系数，如不为None，则显示在ax左上角. Defaults to None.
