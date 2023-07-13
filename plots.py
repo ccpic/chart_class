@@ -1040,33 +1040,6 @@ class PlotLine(Plot):
 
 
 class PlotBar(Plot):
-    def __init__(
-        self,
-        data,  # 原始数
-        ax=None,
-        width: int = 15,  # 宽
-        height: int = 6,  # 高
-        fontsize: int = 14,  # 字体大小
-        fmt: str = "{:,.0f}",  # 基本数字格式
-        # 以下为PlotStackedBar特有参数
-        data_line=None,  # 折线图数据
-        fmt_line="{:,.0%}",  # 折线图格式
-        *args,
-        **kwargs,
-    ):
-        self.data_line = data_line
-        self.fmt_line = fmt_line
-        super().__init__(
-            data=data,
-            ax=ax,
-            width=width,
-            height=height,
-            fontsize=fontsize,
-            fmt=fmt,
-            *args,
-            **kwargs,
-        )
-
     def plot(
         self,
         stacked: bool = True,
@@ -1074,7 +1047,8 @@ class PlotBar(Plot):
         label_formatter: str = "{abs}",
         show_total_bar: bool = False,
         show_total_label: bool = False,
-        show_gr: bool = False,
+        show_gr_text: bool = False,
+        show_gr_line: bool = False,
         label_threshold: float = 0.02,
         *args,
         **kwargs,
@@ -1096,9 +1070,7 @@ class PlotBar(Plot):
         df = self.data
         df_share = df.div(df.sum(axis=1), axis=0)
         df_gr = self.data.pct_change(axis=0)
-        if self.data_line is not None:
-            df_line = self.data_line
-
+            
         d_style = {
             "bar_width": 0.8,
             "label_fontsize": self.fontsize,
@@ -1229,7 +1201,7 @@ class PlotBar(Plot):
                     if height < 0:
                         rect.set_hatch("//")
 
-                if show_gr:
+                if show_gr_text:
                     if k > 0:
                         # 各系列增长率标注
                         self.ax.text(
@@ -1292,20 +1264,15 @@ class PlotBar(Plot):
 
         self.ax.axhline(0, color="black", linewidth=0.5)  # y轴为0的横线
 
-        if self.data_line is not None:
+        if show_gr_line:
             # 增加次坐标轴
             ax2 = self.ax.twinx()
-
-            if isinstance(df_line, pd.DataFrame):
-                label = df_line.columns[0]
-            else:
-                label = df_line.name
-
+ 
             color_line = "darkorange"
             line = ax2.plot(
-                df_line.index,
-                df_line.values,
-                label=label,
+                df_gr.index,
+                df_gr.values,
+                label="GR(y-1)",
                 color=color_line,
                 linewidth=1,
                 linestyle="dashed",
@@ -1316,12 +1283,12 @@ class PlotBar(Plot):
             if "y2lim" in kwargs:
                 ax2.set_ylim(kwargs["y2lim"][0], kwargs["y2lim"][1])
 
-            for i in range(len(df_line)):
-                if float(df_line.values[i]) <= ax2.get_ylim()[1]:
+            for i in range(len(df_gr)):
+                if float(df_gr.values[i]) <= ax2.get_ylim()[1]:
                     t = ax2.text(
-                        x=df_line.index[i],
-                        y=df_line.values[i],
-                        s=self.fmt_line.format(float(df_line.values[i])),
+                        x=df_gr.index[i],
+                        y=df_gr.values[i],
+                        s="{:+.0%}".format(float(df_gr.values[i])),
                         ha="center",
                         va="bottom",
                         fontsize=self.fontsize,
