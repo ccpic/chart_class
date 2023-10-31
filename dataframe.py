@@ -212,7 +212,7 @@ class DfAnalyzer:
         data: pd.DataFrame,
         name: str,
         date_column: Optional[str] = None,
-        period_interval: Optional[int] = None,
+        period_interval: int = 1,
         strftime: str = "%Y-%m",
         sorter: Dict[str, list] = {},
         save_path: str = "/plots/",
@@ -227,6 +227,8 @@ class DfAnalyzer:
             数据集名称，可用在后续绘图的标题等处
         date_column : Optional[str], optional
             指定时间戳字段名称（如有）, by default None
+        period_interval : int, optional
+            指定时间戳的间隔期数, by default 1
         strftime: str, optional
             指定时间戳的字符串格式, by default "%Y-%m"
         sorter : Dict[str, list], optional

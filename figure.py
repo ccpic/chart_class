@@ -20,6 +20,7 @@ from plots import (
 import pandas as pd
 from color import cmap_qual
 from itertools import cycle
+from annotation import Connection
 
 try:
     from typing import Literal
@@ -330,6 +331,9 @@ class GridFigure(Figure):
                 order (Optional[Union[None, list]], optional): 类别按什么排序，如果为None则按照数据自动排序. Defaults to None.
                 dot_size (float): 散点大小. Defaults to 8.
                 jitter (float): 随机散开的间距. Defaults to 0.2
+
+        Returns:
+        mpl.axes.Axes: mpl ax
         """
         # 根据kind确定绘图类
         cls = globals()[f"Plot{kind.capitalize()}"]
@@ -343,6 +347,33 @@ class GridFigure(Figure):
             fontsize=self.fontsize if fontsize is None else fontsize,
             style=style,
         ).plot(**kwargs).apply_style()
+
+        return ax
+
+    def annotate(
+        self,
+        x1: float,
+        x2: float,
+        text: str,
+        offset: Optional[float] = None,
+        ax_index: int = 0,
+    ) -> mpl.axes.Axes:
+        """在指定ax画注释文本和线条
+
+        Args:
+            ax_index (int, optional): ax索引. Defaults to 0.
+
+        Returns:
+            mpl.axes.Axes: mpl ax
+        """
+        # 根据ax_index确定ax
+        ax = self.axes[ax_index]
+
+        plot_data = ax.get_lines()[0].get_ydata()
+        y1 = plot_data[x1]
+        y2 = plot_data[x2]
+
+        Connection(ax, x1, x2, y1, y2, text, offset).draw()
 
         return ax
 
