@@ -541,6 +541,7 @@ class DfAnalyzer:
         Returns:
             pd.DataFrame: _description_
         """
+
         df_ts = self.get_pivot(
             index=index,
             columns=self.date_column,

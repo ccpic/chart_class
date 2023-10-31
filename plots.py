@@ -1050,6 +1050,7 @@ class PlotBar(Plot):
         show_gr_text: bool = False,
         show_gr_line: bool = False,
         label_threshold: float = 0.02,
+        period_change:int = 1,
         *args,
         **kwargs,
     ) -> PlotBar:
@@ -1061,15 +1062,17 @@ class PlotBar(Plot):
             label_formatter (str, optional): 主标签的格式，支持通配符{abs},{share},{gr},{index},{col}. Defaults to "{abs}".
             show_total_bar (bool, optional): 是否显示一个总体表现外框. Defaults to False.
             show_total_label (bool, optional): 是否在最上方显示堆积之和数字标签. Defaults to False.
-            show_gr (bool, optional): 是否显示增长率数字. Defaults to False.
+            show_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
+            show_gr_line (bool, optional): 是否显示增长率线形图. Defaults to False.
             label_threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
+            period_change (float, optional): 计算增长率同比的期数. Defaults to 1.
 
         Returns:
             self: 返回自身plot实例
         """
         df = self.data
         df_share = df.div(df.sum(axis=1), axis=0)
-        df_gr = self.data.pct_change(axis=0)
+        df_gr = self.data.pct_change(axis=0, periods=period_change)
             
         d_style = {
             "bar_width": 0.8,
