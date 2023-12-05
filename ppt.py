@@ -1,10 +1,11 @@
+from __future__ import annotations
 import os
 from pptx import presentation, Presentation
 from pptx.util import Inches, Pt, Cm
 from pptx.shapes.base import BaseShape
 from pptx.shapes.autoshape import Shape
 from pptx.shapes.picture import Picture
-from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.shapes import MSO_SHAPE, MSO_SHAPE_TYPE
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR, MSO_VERTICAL_ANCHOR
 from pptx.slide import SlideLayout, Slide
@@ -18,7 +19,188 @@ except ImportError:
     from typing_extensions import Literal
 
 
-Loc = namedtuple("Loc", ["left", "top"])
+# Loc = namedtuple("Loc", ["left", "top"])
+class Loc:
+    def __init__(self, left: Union[Inches, Cm, int], top: Union[Inches, Cm, int]):
+        self.left = left
+        self.top = top
+        """_初始化一个Loc类，定义一个ppt当中对象的位置
+        
+        Args:
+            left(Union[Inches, Cm, int]): x轴坐标
+            top(Union[Inches, Cm, int]): y轴坐标
+        """
+
+    def __repr__(self):
+        return f"Loc({self.left}, {self.top})"
+
+    def __iter__(self):
+        yield self.left
+        yield self.top
+
+    def __add__(
+        self,
+        other: Union[
+            Tuple[Union[Inches, Cm, int], Union[Inches, Cm, int]],
+            List[Union[Inches, Cm, int], Union[Inches, Cm, int]],
+        ],
+    ) -> Loc:
+        """与另一个二元元祖或列表相加，得到新位置
+
+        Example:
+            >>> loc1 = Loc(1, 2)
+            >>> loc2 = Loc(3, 4)
+            >>> loc3 = loc1 + loc2
+            >>> loc3
+            Loc(4, 6)
+            >>> loc4 = loc1 + (5, 6)
+            >>> loc4
+            Loc(6, 8)
+
+        Args:
+            other (Union[
+            Tuple[Union[Inches, Cm, int], Union[Inches, Cm, int]],
+            List[Union[Inches, Cm, int], Union[Inches, Cm, int]],
+            ]): 要相加的二元元祖或列表
+
+        Raises:
+            TypeError: 类型错误
+
+        Returns:
+            Loc: 返回新位置
+        """
+
+        if isinstance(other, (tuple, list)) and len(other) == 2:
+            return Loc(self.left + other[0], self.top + other[1])
+        else:
+            raise TypeError("不支持的类型，只支持二元元祖或列表。")
+
+    def __sub__(self, other):
+        """与另一个二元元祖或列表相减，得到新位置
+
+        Example:
+            >>> loc1 = Loc(1, 2)
+            >>> loc2 = Loc(3, 4)
+            >>> loc3 = loc1 - loc2
+            >>> loc3
+            Loc(-2, -2)
+            >>> loc4 = loc1 - (5, 6)
+            >>> loc4
+            Loc(-4, -4)
+
+        Args:
+            other (Union[
+            Tuple[Union[Inches, Cm, int], Union[Inches, Cm, int]],
+            List[Union[Inches, Cm, int], Union[Inches, Cm, int]],
+            ]): 要相加的二元元祖或列表
+
+        Raises:
+            TypeError: 类型错误
+
+        Returns:
+            Loc: 返回新位置
+        """
+        if isinstance(other, (tuple, list)) and len(other) == 2:
+            return Loc(self.left - other[0], self.top - other[1])
+        else:
+            raise TypeError("不支持的类型，只支持二元元祖或列表。")
+
+
+class AnchorLoc(Loc):
+    def __init__(
+        self,
+        left: Union[Inches, Cm, int],
+        top: Union[Inches, Cm, int],
+        shape_width: Union[Inches, Cm, int],
+        shape_height: Union[Inches, Cm, int],
+        anchor: Literal[
+            "center",
+            "top_left",
+            "left_top",
+            "top_right",
+            "right_top",
+            "top_mid",
+            "mid_top",
+            "top",
+            "bottom_right",
+            "right_bottom",
+            "bottom_left",
+            "left_bottom",
+            "bottom_mid",
+            "mid_bottom",
+            "bottom",
+            "mid_right",
+            "right_mid",
+            "right",
+            "mid_left",
+            "right_left",
+            "left",
+        ] = "center",
+    ):
+        """_初始化一个AnchorLoc类，定义一个ppt当中对象的位置，并根据锚点进行调整
+
+        Args:
+            left(Union[Inches, Cm, int]): x轴坐标
+            top(Union[Inches, Cm, int]): y轴坐标
+            shape_width(Union[Inches, Cm, int]): 对象的宽度
+            shape_height(Union[Inches, Cm, int]): 对象的高度
+            anchor (Literal[
+                "center",
+                "top_left", "left_top",
+                "top_right", "right_top",
+                "top_mid", "mid_top", "top",
+                "bottom_right", "right_bottom",
+                "bottom_left", "left_bottom",
+                "bottom_mid", "mid_bottom", "bottom",
+                "mid_right", "right_mid", "right",
+                "mid_left", "right_left", "left",
+            ]): 锚点. Defaults to "center".
+
+        """
+        super().__init__(left, top)  # 调用父类的构造函数，初始化 left 和 top
+        self.shape_width = shape_width
+        self.shape_height = shape_height
+        self.anchor = anchor
+
+    def __repr__(self):
+        return f"AnchorLoc(left={self.left}, top={self.top}, shape_width={self.shape_width}, shape_height={self.shape_height}), anchor={self.anchor})"
+
+    @property
+    def loc(self) -> Loc:
+        """根据形状的宽高和锚点计算调整后的坐标
+
+        Returns:
+            Loc: 返回调整后的Loc对象
+        """
+        if self.anchor == "center":
+            left = self.left - self.shape_width / 2
+            top = self.top - self.shape_height / 2
+        elif self.anchor in ["top_right", "right_top"]:
+            left = self.left - self.shape_width
+            top = self.top
+        elif self.anchor in ["top_left", "left_top"]:
+            left = self.left
+            top = self.top
+        elif self.anchor in ["top_mid", "mid_top", "top"]:
+            left = self.left - self.shape_width / 2
+            top = self.top
+        elif self.anchor in ["bottom_right", "right_bottom"]:
+            left = self.left - self.shape_width
+            top = self.top - self.shape_height
+        elif self.anchor in ["bottom_left", "left_bottom"]:
+            left = self.left
+            top = self.top - self.shape_height
+        elif self.anchor in ["bottom_mid", "mid_bottom", "bottom"]:
+            left = self.left - self.shape_width / 2
+            top = self.top - self.shape_height
+        elif self.anchor in ["mid_right", "right_mid", "right"]:
+            left = self.left - self.shape_width
+            top = self.top - self.shape_height / 2
+        elif self.anchor in ["mid_left", "right_left", "left"]:
+            left = self.left
+            top = self.top - self.shape_height / 2
+
+        return Loc(int(left), int(top))  # pptx很多参数如shape的top和left只接受整数
 
 
 class Section:
@@ -133,6 +315,64 @@ class Section:
         """
         return Loc(self.right, self.bottom)
 
+    def fraction(
+        self,
+        dimension: Literal["width", "height"],
+        frac_n: int,
+        index: Optional[int] = 1,
+    ) -> Section:
+        """宽度/高度等分并返回指定部分
+
+        Args:
+            dimension(Literal["width", "height"]): 等分宽度还是高度
+            frac_n(int): 宽度等分成几份
+            index(Optional[int]), optional: 返回等分后的第几份，不能大于frac_n. Defaults to 1.
+
+        Returns:
+            Section: 返回自身实例
+        """
+
+        if index > frac_n:
+            raise ValueError(f"参数'index'的值{index}不能大于参数'frac_n'的值{frac_n}")
+
+        if dimension == "width":
+            width_new = self.width / frac_n
+            left_new = self.left + width_new * (index - 1)
+
+            self.width = width_new
+            self.left = left_new
+        elif dimension == "height":
+            height_new = self.height / frac_n
+            top_new = self.top + height_new * (index - 1)
+
+            self.height = height_new
+            self.top = top_new
+
+        return self
+
+    def apply_margin(
+        self,
+        dimension: Literal["width", "height"] = "width",
+        margin: Union[Inches, Cm, int] = Cm(0.64),
+    ) -> Section:
+        """根据边距调整区域
+
+        Args:
+            dimension(Literal["width", "height"]): 调整宽度边距还是高度边距. Defaults to "width".
+            margin(Union[Inches, Cm, int]): 宽度等分成几份: 边距值，默认0.64厘米. Defaults to Cm(0.64).
+
+        Returns:
+            Section: 返回自身实例
+        """
+        if dimension == "width":
+            self.width = self.width - margin * 2
+            self.left = self.left + margin
+        if dimension == "height":
+            self.height = self.height - margin * 2
+            self.top = self.top + margin
+
+        return self
+
     """alias"""
     top_left = left_top
     top_mid = mid_top
@@ -169,37 +409,6 @@ def is_light_color(color: Optional[Union[RGBColor, str]]) -> bool:
             return False
 
 
-def anchor_loc(
-    shape_width: float,
-    shape_height: float,
-    loc: Loc,
-    anchor: Literal[
-        "center", "top_left", "left_top", "top_right", "right_top"
-    ] = "center",
-) -> Loc:
-    """根据形状大小和不同锚点返回调整过的位置
-
-    Args:
-        shape_width (float): 形状宽度
-        shape_height (float): 形状高度
-        loc (Loc): 目标位置
-        anchor (Literal["center", "top_left", "left_top", "top_right", "right_top"]): 锚点. Defaults to "center".
-
-    Returns:
-        Loc: 返回一个代表调整后位置的tuple(左边距，上边距)
-    """
-    if anchor == "center":
-        left = loc.left - shape_width / 2
-        top = loc.top - shape_height / 2
-    elif anchor in ["top_right", "right_top"]:
-        left = loc.left - shape_width
-        top = loc.top
-    else:
-        left = loc.left
-        top = loc.top
-    return Loc(int(left), int(top))  # pptx很多参数如shape的top和left只接受整数
-
-
 class SlideContent:
     def __init__(self, prs: Presentation, slide: Slide) -> None:
         self.prs = prs
@@ -207,18 +416,33 @@ class SlideContent:
 
     @property
     def header(self) -> Section:
+        """Slide的页眉区域
+
+        Returns:
+            Section: 返回一个Section对象
+        """
         return Section(
             left=Cm(0), top=Cm(0), width=self.prs.slide_width, height=Cm(2.72)
         )
 
     @property
     def body(self) -> Section:
+        """Slide的页面主体区域
+
+        Returns:
+            Section: 返回一个Section对象
+        """
         return Section(
             left=Cm(0), top=Cm(2.91), width=self.prs.slide_width, height=Cm(13.81)
         )
 
     @property
     def footer(self) -> Section:
+        """Slide的页脚区域
+
+        Returns:
+            Section: 返回一个Section对象
+        """
         return Section(
             left=Cm(5.6), top=Cm(17.36), width=self.prs.slide_width, height=Cm(1.71)
         )
@@ -229,18 +453,42 @@ class SlideContent:
         width: Union[Inches, Cm, int],
         height: Union[Inches, Cm, int],
         loc: Loc,
-        anchor: Literal["center", "top_left", "top_right", "right_top"] = "center",
+        anchor: Literal[
+            "center", "top_left", "top_right", "right_top", "left_top"
+        ] = "center",
+        shape_type: MSO_SHAPE_TYPE = MSO_SHAPE.RECTANGLE,
         fill_color: Optional[Union[RGBColor, str]] = None,
-        line_color: Optional[Union[RGBColor, str]] = None,
+        border_color: Optional[Union[RGBColor, str]] = None,
         font_color: Optional[Union[RGBColor, str]] = None,
         font_size: Optional[Union[Pt, int]] = Pt(14),
         font_bold=False,
         font_italic=False,
         text_wrap: bool = False,
+        *args,
+        **kwargs,
     ) -> Shape:
-        left, top = anchor_loc(width, height, loc, anchor=anchor)
+        """_summary_
+
+        Args:
+            text (str): 文本内容
+            width (Union[Inches, Cm, int]): 宽度
+            height (Union[Inches, Cm, int]): 高度
+            loc (Loc - left, top): _description_
+            anchor (Literal["center", "top_left", "top_right", "right_top", "left_top"]): 锚点.
+            fill_color (Optional[Union[RGBColor, str]], optional): 填充颜色. Defaults to None.
+            border_color (Optional[Union[RGBColor, str]], optional): 边框颜色. Defaults to None.
+            font_color (Optional[Union[RGBColor, str]], optional): 字体颜色. Defaults to None.
+            font_size (Optional[Union[Pt, int]], optional): 文字大小. Defaults to Pt(14).
+            font_bold (bool, optional): 文字是否粗体. Defaults to False.
+            font_italic (bool, optional): 文字是否斜体. Defaults to False.
+            text_wrap (bool, optional): 文字是否换行. Defaults to False.
+
+        Returns:
+            Shape: 带有文本的形状
+        """
+        left, top = AnchorLoc(loc.left, loc.top, width, height, anchor=anchor).loc
         shape = self.slide.shapes.add_shape(
-            MSO_SHAPE.RECTANGLE,
+            shape_type,
             left=left,
             top=top,
             width=width,
@@ -261,13 +509,13 @@ class SlideContent:
 
         # 边框
         line = shape.line
-        if line_color is None:
+        if border_color is None:
             line.fill.background()
         else:
             line.color.rgb = (
-                line_color
-                if isinstance(line_color, RGBColor)
-                else RGBColor.from_string(line_color)
+                border_color
+                if isinstance(border_color, RGBColor)
+                else RGBColor.from_string(border_color)
             )
 
         # 形状文字
@@ -279,7 +527,7 @@ class SlideContent:
 
         # 设置字体
         font = run.font
-        font.size = font_size
+        font.size = font_size if isinstance(font_size, Pt) else Pt(font_size)
         font.bold = font_bold
         font.italic = font_italic
         if font_color is None:
@@ -313,7 +561,7 @@ class SlideContent:
             height=height,
         )
 
-        left, top = anchor_loc(image.width, image.height, loc, anchor=anchor)
+        left, top = AnchorLoc(loc.left, loc.top, width, height, anchor=anchor).loc
         image.left = left
         image.top = top
 
@@ -332,6 +580,15 @@ class PPT:
             save_path or f"{os.path.dirname(self.template_path)}presentation.pptx"
         )
         self.prs = Presentation(template_path)
+        """初始化一个PPT类
+
+        Args:
+            template_path (str): 模板文件路径
+            save_path (str): 保存路径，默认为和模板路径同一文件夹下的presentation.pptx文件. Defaults to None.
+            
+        Returns:
+            _type_: _description_
+        """
 
     @property
     def parent_slide(self) -> SlideLayout:
@@ -350,12 +607,13 @@ class PPT:
         layout_style: int = 0,
     ) -> SlideContent:
         slide = self.prs.slides.add_slide(self.prs.slide_layouts[layout_style])
+        print(f"已添加第{self.prs.slides.index(slide)}页.")
         content = SlideContent(self.prs, slide)
         return content
 
     def save(self):
         self.prs.save(self.save_path)
-        print("PPT has been saved")
+        print(f"{self.save_path} has been saved")
 
 
 if __name__ == "__main__":

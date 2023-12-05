@@ -378,25 +378,37 @@ class Plot:
             self._plot.ax.yaxis.set_ticks_position("left")
             self._plot.ax.xaxis.set_ticks_position("bottom")
 
-        def xlim(self, xlim: Tuple[Tuple[float, float]]) -> None:
+        def xlim(self, xlim: Tuple[Union[float, str], Union[float, str]]) -> None:
             """设置x轴的边界
 
             Parameters
             ----------
-            xlim : Tuple[Tuple[float, float]]
-                包含x轴下界和上界的tuple
+            xlim : Tuple[Union[float,str], Union[float,str]]
+                包含x轴下界和上界的tuple，如果填"-"则保持当前不变
             """
-            self._plot.ax.set_xlim(xlim[0], xlim[1])
+            current_xlim = self._plot.ax.get_xlim()
+            if xlim[0] == "-":
+                self._plot.ax.set_xlim(current_xlim[0], xlim[1])
+            elif xlim[1] == "-":
+                self._plot.ax.set_xlim(xlim[0], current_xlim[1])
+            else:
+                self._plot.ax.set_xlim(current_xlim[0], xlim[1])
 
-        def ylim(self, ylim: Tuple[Tuple[float, float]]) -> None:
+        def ylim(self, ylim: Tuple[Union[float, str], Union[float, str]]) -> None:
             """设置y轴的边界
 
             Parameters
             ----------
-            ylim : Tuple[Tuple[float, float]]
-                包含y轴下界和上界的tuple
+            ylim : Tuple[Union[float,str], Union[float,str]]
+                包含y轴下界和上界的tuple，如果填"-"则保持当前不变
             """
-            self._plot.ax.set_ylim(ylim[0], ylim[1])
+            current_ylim = self._plot.ax.get_ylim()
+            if ylim[0] == "-":
+                self._plot.ax.set_ylim(current_ylim[0], ylim[1])
+            elif ylim[1] == "-":
+                self._plot.ax.set_ylim(ylim[0], current_ylim[1])
+            else:
+                self._plot.ax.set_ylim(current_ylim[0], ylim[1])
 
         def y2lim(self, y2lim: Tuple[Tuple[float, float]]) -> None:
             """设置y轴次坐标轴的边界
@@ -618,7 +630,7 @@ class PlotBubble(Plot):
                         [0],
                         [0],
                         marker="o",
-                        markerfacecolor= self._color_dict.get(c,cmap(i)),
+                        markerfacecolor=self._color_dict.get(c, cmap(i)),
                         markersize=10,
                         color="white",
                         label=c,
