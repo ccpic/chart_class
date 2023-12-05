@@ -1,15 +1,31 @@
 from matplotlib.colors import ListedColormap
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from itertools import cycle
+from typing import Any, Callable, Dict, List, Tuple, Union, Optional, Sequence
+import pandas as pd
+import numpy as np
 
 COLOR_DICT = {
-    "BEI YI (ZJ5)":"olivdedrab",
-    "FUROSEMIDE (SZO)":"saddlebrown",
-    "AMLODIPINE BESYLAT (CQY)":"deepskyblue",
-    "ADALAT (BY6)":"purple",
-    "NORVASC (VI/)":"crimson",
-    "SHI HUI DA (JTF)":"pink",    
-    "美托洛尔":"olivedrab",
-    "硝苯地平":"purple",
-    "非洛地平":"saddlebrown",
+    "MAT金额": "teal",
+    "MQT金额": "crimson",
+    "MON金额": "navy",
+    "MAT数量": "teal",
+    "MQT数量": "crimson",
+    "MON数量": "navy",
+    "Actual MAT": "teal",
+    "Trend-12M": "crimson",
+    "Trend-6M": "olivedrab",
+    "Trend-3M": "darkorange",
+    "BEI YI (ZJ5)": "olivdedrab",
+    "FUROSEMIDE (SZO)": "saddlebrown",
+    "AMLODIPINE BESYLAT (CQY)": "deepskyblue",
+    "ADALAT (BY6)": "purple",
+    "NORVASC (VI/)": "crimson",
+    "SHI HUI DA (JTF)": "pink",
+    "美托洛尔": "olivedrab",
+    "硝苯地平": "purple",
+    "非洛地平": "saddlebrown",
     "ARB+C": "navy",
     "ACEI+C": "darkorange",
     "ARB+D": "navy",
@@ -944,4 +960,54 @@ COLOR_LIST = [
     "magenta",
 ]
 
-cmap_qual = ListedColormap(COLOR_LIST)
+CMAP_QUAL = ListedColormap(COLOR_LIST)
+CMAP_NORM = plt.get_cmap("PiYG")
+RANDOM_CMAP = mpl.colors.ListedColormap(np.random.rand(256, 3))
+
+
+class Colors:
+    def __init__(
+        self,
+        color_dict: Dict[str, str] = COLOR_DICT,
+        cmap_qual: mpl.colors.Colormap = CMAP_QUAL,
+        cmap_norm: mpl.colors.Colormap = CMAP_NORM,
+    ):
+        self.color_dict = color_dict
+        self.cmap_qual = cmap_qual
+        self.cmap_norm = cmap_norm
+        self.iter_colors = cycle(self.cmap_qual(i) for i in range(self.cmap_qual.N))
+
+    def get_color(self, name: str) -> str:
+        color = self.color_dict.get(name, next(self.iter_colors))
+        return color
+
+    def get_colors(
+        self,
+        n: int,
+        color: str = None,
+        hue: pd.Series = None,
+        random_color: bool = True,
+    ) -> list:
+        if color is None:
+            color = self.cmap_qual.colors[0]
+
+        if hue is None:
+            if random_color:
+                cmap = RANDOM_CMAP
+            else:
+                cmap = ListedColormap([color])
+            colors = [cmap(i) for i in range(n)]
+        else:
+            # 如果hue字段是numeric
+            if pd.api.types.is_numeric_dtype(hue.dtype):
+                cmap = self.cmap_norm
+                norm = mpl.colors.Normalize(vmin=min(hue), vmax=max(hue))
+                colors = [cmap(norm(value)) for value in hue]
+            # 如果hue字段是categorical
+            else:
+                cmap = self.cmap_qual
+                levels, categories = pd.factorize(hue)
+
+                colors = [self.color_dict.get(categories[i], cmap(i)) for i in levels]
+
+        return cmap, colors

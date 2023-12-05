@@ -1,5 +1,4 @@
 from __future__ import annotations
-from color import COLOR_DICT
 from re import T
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
@@ -16,9 +15,10 @@ from plots import (
     PlotStripdot,
     PlotHist,
     PlotBoxdot,
+    PlotTreemap,
 )
 import pandas as pd
-from color import cmap_qual
+from color import CMAP_QUAL, CMAP_NORM, COLOR_DICT, Colors
 from itertools import cycle
 from annotation import Connection
 
@@ -47,9 +47,9 @@ class GridFigure(Figure):
         width: int = 15,
         height: int = 6,
         fontsize: int = 14,
-        color_dict: Dict[str, str] = None,
-        cmap_qual: mpl.colors.Colormap = cmap_qual,
-        cmap_norm: mpl.colors.Colormap = plt.get_cmap("PiYG"),
+        color_dict: Dict[str, str] = COLOR_DICT,
+        cmap_qual: mpl.colors.Colormap = CMAP_QUAL,
+        cmap_norm: mpl.colors.Colormap = CMAP_NORM,
         style: Dict[str, Any] = {},
         *args,
         **kwargs,
@@ -96,10 +96,9 @@ class GridFigure(Figure):
         self.width = width
         self.height = height
         self.fontsize = fontsize
-        self.color_dict = COLOR_DICT if color_dict is None else color_dict
-        self.cmap_qual = cmap_qual
-        self.iter_colors = cycle(self.cmap_qual(i) for i in range(self.cmap_qual.N))
-        self.cmap_norm = cmap_norm
+        self._color_dict = COLOR_DICT if color_dict is None else color_dict
+        self._cmap_qual = cmap_qual
+        self._cmap_norm = cmap_norm
         self._style = style
         self.style = self.Style(self, **self._style)  # 应用风格
 
@@ -246,6 +245,8 @@ class GridFigure(Figure):
         ax_index: int = 0,
         fontsize: Optional[float] = None,
         style: Dict[str, any] = {},
+        color_dict: Optional[Dict[str, str]] = None,
+        hue: Optional[str] = None,
         **kwargs,
     ) -> mpl.axes.Axes:
         """在当前画布的指定ax绘制网格热力图
@@ -257,8 +258,10 @@ class GridFigure(Figure):
             ax_index (int, optional): ax索引. Defaults to 0.
             fontsize (Optional[float], optional): 绘图字号，如不提供则使用画布字号. Defaults to None.
             style (Dict[str, any], optional): 风格字典. Defaults to {}.
+            color_dict= Optional[Dict[str,str]]: 颜色字典，如没有指定则使用默认. Defaults to None.
+            hue (Optional[str], optional): 指定颜色映射字段. Defaults to None.
 
-        **kwargs:
+        **kwargs: 其他参数，具体见各绘图类型:
             bar:
                 stacked (bool, optional): 是否堆积. Defaults to True.
                 show_label (bool, optional): 是否显示数字标签. Defaults to True.
@@ -280,7 +283,6 @@ class GridFigure(Figure):
                 z (Optional[str], optional): 指定气泡大小字段名，如为None，则气泡大小为data第3列. Defaults to None.
                 xlim (Optional[Tuple[float, float]]): 手动指定x轴边界. Defaults to None.
                 ylim (Optional[Tuple[float, float]]): 手动指定y轴边界. Defaults to None.
-                hue (Optional[str], optional): 指定气泡颜色字段名. Defaults to None.
                 x_avg (Optional[float], optional): x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线. Defaults to None.
                 y_avg (Optional[float], optional): y轴平均值或其他分隔值，如提供则绘制y轴分隔水平线. Defaults to None.
                 label_limit (int, optional): 限制显示标签的个数. Defaults to 15.
@@ -346,6 +348,8 @@ class GridFigure(Figure):
             ax=ax,
             fontsize=self.fontsize if fontsize is None else fontsize,
             style=style,
+            color_dict=color_dict,
+            hue=hue,
         ).plot(**kwargs).apply_style()
 
         return ax

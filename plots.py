@@ -9,19 +9,20 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 from matplotlib.ticker import FuncFormatter, MultipleLocator
+import matplotlib.patches as patches
 from adjustText import adjust_text
 import scipy.stats as stats
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import warnings
 import math
 from itertools import cycle
+import squarify
+from color import Colors
 
 try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
-
-RANDOM_CMAP = mpl.colors.ListedColormap(np.random.rand(256, 3))
 
 
 def scatter_hist(ax: mpl.axes.Axes, x: Sequence, y: Sequence) -> mpl.axes.Axes:
@@ -160,7 +161,8 @@ class Plot:
         fontsize: int = 14,  # 字体大小
         fmt: str = "{:,.0f}",  # 基本数字格式
         style: Dict[str, Any] = {},  # 风格字典
-        color_dict: Dict[str, str] = None, # 颜色字典
+        color_dict: Optional[Dict[str, str]] = None,  # 颜色字典
+        hue: Optional[str] = None,  # 颜色映射列名
         *args,
         **kwargs,
     ):
@@ -173,7 +175,16 @@ class Plot:
         self.fmt = fmt
         self._style = style
         self.style = self.Style(self, **self._style)
-        self.color_dict = self.figure.color_dict if color_dict is None else color_dict
+        self._color_dict = self.figure._color_dict if color_dict is None else color_dict
+        self._colors = Colors(
+            color_dict=self._color_dict,
+            cmap_qual=self.figure._cmap_qual,
+            cmap_norm=self.figure._cmap_norm,
+        )
+        if hue is not None:
+            self.hue = self.data.loc[:, hue]
+        else:
+            self.hue = None
 
     class Style:
         def __init__(self, plot, **kwargs) -> None:
@@ -512,7 +523,6 @@ class PlotBubble(Plot):
         z: Optional[str] = None,
         xlim: Optional[Tuple[float, float]] = None,
         ylim: Optional[Tuple[float, float]] = None,
-        hue: Optional[str] = None,
         x_avg: Optional[float] = None,
         y_avg: Optional[float] = None,
         label_limit: int = 15,
@@ -533,7 +543,6 @@ class PlotBubble(Plot):
             z (Optional[str], optional): 指定气泡大小字段名，如为None，则气泡大小为data第3列. Defaults to None.
             xlim (Optional[Tuple[float, float]]): 手动指定x轴边界. Defaults to None.
             ylim (Optional[Tuple[float, float]]): 手动指定y轴边界. Defaults to None.
-            hue (Optional[str], optional): 指定气泡颜色字段名. Defaults to None.
             x_avg (Optional[float], optional): x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线. Defaults to None.
             y_avg (Optional[float], optional): y轴平均值或其他分隔值，如提供则绘制y轴分隔水平线. Defaults to None.
             label_limit (int, optional): 限制显示标签的个数. Defaults to 15.
@@ -561,11 +570,10 @@ class PlotBubble(Plot):
 
         df = self.data
 
-        # 如果不指定，则分别读取df第1-4列为x,y,z,hue
+        # 如果不指定，则分别读取df第1-3列为x,y,z
         x = df.iloc[:, 0] if x is None else df.loc[:, x]
         y = df.iloc[:, 1] if y is None else df.loc[:, y]
         z = df.iloc[:, 2] if z is None else df.loc[:, z]
-        hue = df.loc[:, hue] if hue is not None else None
 
         # z列标准化并乘以系数以得到一般情况下都合适的气泡大小
         if z.max() != z.min():
@@ -598,64 +606,45 @@ class PlotBubble(Plot):
         else:
             ax_legend = self.ax
 
-        # 确定颜色方案
-        if hue is None:
-            if d_style.get("random_color"):
-                cmap = RANDOM_CMAP
-            else:
-                cmap = ListedColormap([self.figure.cmap_qual.colors[0]])
-        else:
-            # 如果hue字段是numeric
-            if pd.api.types.is_numeric_dtype(hue.dtype):
-                cmap = self.figure.cmap_norm
-            # 如果hue字段是categorical
-            else:
-                cmap = self.figure.cmap_qual
+        cmap, colors = self._colors.get_colors(
+            n=df.shape[0], hue=self.hue, random_color=d_style["random_color"]
+        )
 
-        # 根据hue列给bubble着色
-        if hue is not None:
-            # 如果hue字段是numeric
-            if pd.api.types.is_numeric_dtype(hue.dtype):
-                colors = hue
-            else:  # 如果hue字段是categorical
-                levels, categories = pd.factorize(hue)
-                colors = [cmap(i) for i in levels]
-                # 涉及hue的散点图图例很特殊，按以下方法处理
-                if self.style._show_legend is True:
-                    handles = [
-                        Line2D(
-                            [0],
-                            [0],
-                            marker="o",
-                            markerfacecolor=cmap(i),
-                            markersize=10,
-                            color="white",
-                            label=c,
-                        )
-                        for i, c in enumerate(categories)
-                    ]
-                    handles = sorted(handles, key=lambda h: h.get_label())
-                    ax_legend.legend(
-                        handles=handles,
-                        title=hue.name,
-                        loc=self.style._legend_loc,
-                        frameon=False,
-                        ncol=self.style._legend_ncol,
-                        bbox_to_anchor=(1, 0.5)
-                        if self.style._legend_loc == "center left"
-                        else (0.5, 1),
-                        prop={"family": "Microsoft YaHei", "size": self.fontsize},
+        if self.style._show_legend is True and self.hue is not None:
+            if pd.api.types.is_numeric_dtype(self.hue) is False:
+                levels, categories = pd.factorize(self.hue)
+                handles = [
+                    Line2D(
+                        [0],
+                        [0],
+                        marker="o",
+                        markerfacecolor= self._color_dict.get(c,cmap(i)),
+                        markersize=10,
+                        color="white",
+                        label=c,
                     )
-                    self.style._show_legend = False  # 不再使用Plot类的通用方法生成图例
-        else:  # 不指定hue，则随机着色
-            colors = [cmap(i) for i in range(df.shape[0])]
+                    for i, c in enumerate(categories)
+                ]
+                handles = sorted(handles, key=lambda h: h.get_label())
+                ax_legend.legend(
+                    handles=handles,
+                    title=self.hue.name,
+                    loc=self.style._legend_loc,
+                    frameon=False,
+                    ncol=self.style._legend_ncol,
+                    bbox_to_anchor=(1, 0.5)
+                    if self.style._legend_loc == "center left"
+                    else (0.5, 1),
+                    prop={"family": "Microsoft YaHei", "size": self.fontsize},
+                )
+                self.style._show_legend = False  # 不再使用Plot类的通用方法生成图例
 
         # 绘制气泡
         scatter = self.ax.scatter(
             x,
             y,
             z,
-            c=colors,
+            c=self.hue if pd.api.types.is_numeric_dtype(self.hue) else colors,
             cmap=cmap,
             alpha=d_style.get("alpha"),
             edgecolors=d_style.get("edgecolor"),
@@ -663,14 +652,14 @@ class PlotBubble(Plot):
         )
 
         # 如果hue存在并且是连续变量，添加colorbar
-        if hue is not None:
-            if pd.api.types.is_numeric_dtype(hue.dtype):
+        if self.hue is not None:
+            if pd.api.types.is_numeric_dtype(self.hue.dtype):
                 divider = make_axes_locatable(self.ax)
                 cax = divider.append_axes(
                     "right", size="5%", pad=1.65 if show_hist else 0.05
                 )
                 cbar = self.figure.colorbar(scatter, cax=cax, orientation="vertical")
-                cbar.set_label(hue.name)
+                cbar.set_label(self.hue.name)
                 cbar.ax.set_zorder(0)
                 self.figure.style._label_outer = (
                     False  # color是一个独立的ax，但是不支持label_outer()
@@ -685,14 +674,18 @@ class PlotBubble(Plot):
         index_shown = x_shown.index.intersection(y_shown.index)
 
         for i in range(len(index_shown)):
-            if i <= label_limit or (
-                index_shown[i] in y.loc[index_shown].nlargest(label_topy).index
-            ) or (index_shown[i] in label_mustshow):  # 在label_limit内或者强制要求展示y值最大item的标签时
+            if (
+                i <= label_limit
+                or (index_shown[i] in y.loc[index_shown].nlargest(label_topy).index)
+                or (index_shown[i] in label_mustshow)
+            ):  # 在label_limit内或者强制要求展示y值最大item的标签时
                 d_label = {
                     "x": d_style.get("x_fmt").format(x.loc[index_shown][i]),
                     "y": d_style.get("y_fmt").format(y.loc[index_shown][i]),
                     "z": z.loc[index_shown][i],
-                    "hue": hue.loc[index_shown][i] if hue is not None else None,
+                    "hue": self.hue.loc[index_shown][i]
+                    if self.hue is not None
+                    else None,
                     "index": index_shown[i],
                 }
                 texts.append(
@@ -990,7 +983,7 @@ class PlotLine(Plot):
 
         for i, column in enumerate(df.columns):
             # 如果有指定颜色就颜色，否则按预设列表选取
-            color = self.color_dict.get(column, next(self.figure.iter_colors))
+            color = self._colors.get_color(column)
 
             # 生成折线图
             self.ax.plot(
@@ -1050,7 +1043,7 @@ class PlotBar(Plot):
         show_gr_text: bool = False,
         show_gr_line: bool = False,
         label_threshold: float = 0.02,
-        period_change:int = 1,
+        period_change: int = 1,
         *args,
         **kwargs,
     ) -> PlotBar:
@@ -1073,7 +1066,7 @@ class PlotBar(Plot):
         df = self.data
         df_share = df.div(df.sum(axis=1), axis=0)
         df_gr = self.data.pct_change(axis=0, periods=period_change)
-            
+
         d_style = {
             "bar_width": 0.8,
             "label_fontsize": self.fontsize,
@@ -1089,8 +1082,8 @@ class PlotBar(Plot):
             max_v = df.values.max()
             min_v = df.values.min()
 
-            self.figure.iter_colors = cycle(
-                self.figure.cmap_qual(i) for i in range(self.figure.cmap_qual.N)
+            self._colors.iter_colors = cycle(
+                self._colors.cmap_qual(i) for i in range(self._colors.cmap_qual.N)
             )  # reset colors cycle between bars
             for i, col in enumerate(df):
                 # 计算出的指标
@@ -1109,14 +1102,14 @@ class PlotBar(Plot):
 
                 # 如果有指定颜色就颜色，否则按预设列表选取
                 if stacked:
-                    if col in self.color_dict.keys():
-                        color = self.color_dict[col]
-                    elif index in self.color_dict.keys():
-                        color = self.color_dict[index]
+                    if col in self._color_dict.keys():
+                        color = self._colors.get_color(col)
+                    elif index in self._color_dict.keys():
+                        color = self._colors.get_color(index)
                     else:
-                        color = next(self.figure.iter_colors)
+                        color = next(self._colors.iter_colors)
                 else:
-                    color = next(self.figure.iter_colors)
+                    color = next(self._colors.iter_colors)
 
                 if stacked:
                     if v >= 0:
@@ -1270,7 +1263,7 @@ class PlotBar(Plot):
         if show_gr_line:
             # 增加次坐标轴
             ax2 = self.ax.twinx()
- 
+
             color_line = "darkorange"
             line = ax2.plot(
                 df_gr.index,
@@ -1444,7 +1437,6 @@ class PlotStripdot(Plot):
         self,
         start: Optional[str] = None,
         end: Optional[str] = None,
-        hue: Optional[str] = None,
         text_diff: bool = True,
         **kwargs,
     ) -> PlotStripdot:
@@ -1453,7 +1445,6 @@ class PlotStripdot(Plot):
         Args:
             start (Optional[str], optional): 起始点数据的列名，如不设置则在数据只有1列的情况下默认为None，数据多于1列的情况下默认为第1列. Defaults to None.
             end (Optional[str], optional): 结束点数据的列名，如不设置则在数据只有1列时默认为此列，数据多于1列的情况下默认为第2列. Defaults to None.
-            hue (Optional[str], optional): 指定Dot颜色字段名. Defaults to None.
             text_diff (bool, optional): 是否显示差值标签. Defaults to True.
 
         Kwargs:
@@ -1477,69 +1468,51 @@ class PlotStripdot(Plot):
             diff = end.subtract(start)
             fmt_diff = self.fmt[:2] + "+" + self.fmt[2:]
 
-        hue = df.loc[:, hue] if hue is not None else None
-
         d_style = {
             "color_line": "grey",
             "color_start": "grey",
-            "color_end": self.figure.cmap_qual.colors[0],
+            "color_end": self._colors.cmap_qual.colors[0],
+            "random_color": True,
             "alpha": 0.3,
         }
         d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
         # 颜色方案，如果有hue则按hue着色，如果没有则使用self.itercolors的
 
-        # 确定颜色方案
-        if hue is None:
-            if d_style.get("random_color"):
-                cmap = RANDOM_CMAP
-            else:
-                cmap = ListedColormap([d_style.get("color_end")])
-        else:
-            # 如果hue字段是numeric
-            if pd.api.types.is_numeric_dtype(hue.dtype):
-                cmap = self.figure.cmap_norm
-            # 如果hue字段是categorical
-            else:
-                cmap = self.figure.cmap_qual
+        cmap, colors = self._colors.get_colors(
+            n=df.shape[0],
+            hue=self.hue,
+            color=d_style.get("color_end"),
+            random_color=d_style["random_color"],
+        )
 
-        # 根据hue列给bubble着色
-        if hue is not None:
-            # 如果hue字段是numeric
-            if pd.api.types.is_numeric_dtype(hue.dtype):
-                colors = hue
-            else:  # 如果hue字段是categorical
-                levels, categories = pd.factorize(hue)
-                colors = [cmap(i) for i in levels]
-                # 涉及hue的散点图图例很特殊，按以下方法处理
-                if self.style._show_legend is True:
-                    handles = [
-                        Line2D(
-                            [0],
-                            [0],
-                            marker="o",
-                            markerfacecolor=cmap(i),
-                            markersize=10,
-                            color="white",
-                            label=c,
-                        )
-                        for i, c in enumerate(categories)
-                    ]
-                    handles = sorted(handles, key=lambda h: h.get_label())
-                    hue_legend = plt.legend(
-                        handles=handles,
-                        title=hue.name,
-                        loc=self.style._legend_loc,
-                        frameon=False,
-                        ncol=self.style._legend_ncol,
-                        bbox_to_anchor=(1, 0.5)
-                        if self.style._legend_loc == "center left"
-                        else (0.5, 1),
-                        prop={"family": "Microsoft YaHei", "size": self.fontsize},
+        if self.style._show_legend is True:
+            if pd.api.types.is_numeric_dtype(self.hue) is False:
+                handles = [
+                    Line2D(
+                        [0],
+                        [0],
+                        marker="o",
+                        markerfacecolor=cmap(i),
+                        markersize=10,
+                        color="white",
+                        label=c,
                     )
-                    self.ax.add_artist(hue_legend)
-                    # self.style._show_legend = False  # 不再使用Plot类的通用方法生成图例
-        else:  # 不指定hue，则随机着色
-            colors = [cmap(i) for i in range(df.shape[0])]
+                    for i, c in enumerate(pd.factorize(self.hue)[1])
+                ]
+                handles = sorted(handles, key=lambda h: h.get_label())
+                hue_legend = plt.legend(
+                    handles=handles,
+                    title=self.hue.name,
+                    loc=self.style._legend_loc,
+                    frameon=False,
+                    ncol=self.style._legend_ncol,
+                    bbox_to_anchor=(1, 0.5)
+                    if self.style._legend_loc == "center left"
+                    else (0.5, 1),
+                    prop={"family": "Microsoft YaHei", "size": self.fontsize},
+                )
+                self.ax.add_artist(hue_legend)
+                # self.style._show_legend = False  # 不再使用Plot类的通用方法生成图例
 
         index_range = range(1, len(df.index) + 1)
         hlines = self.ax.hlines(
@@ -1560,21 +1533,21 @@ class PlotStripdot(Plot):
         scatter_end = self.ax.scatter(
             end,
             index_range,
-            color=colors,
+            c=self.hue if pd.api.types.is_numeric_dtype(self.hue) else colors,
             cmap=cmap,
             alpha=d_style.get("alpha"),
             label=end.name,
         )  # 结束端点
 
         # 如果hue存在并且是连续变量，添加colorbar
-        if hue is not None:
-            if pd.api.types.is_numeric_dtype(hue.dtype):
+        if self.hue is not None:
+            if pd.api.types.is_numeric_dtype(self.hue.dtype):
                 divider = make_axes_locatable(self.ax)
                 cax = divider.append_axes("right", size="5%", pad=0.05)
                 cbar = self.figure.colorbar(
                     scatter_end, cax=cax, orientation="vertical"
                 )
-                cbar.set_label(hue.name)
+                cbar.set_label(self.hue.name)
                 cbar.ax.set_zorder(0)
                 self.figure.style._label_outer = (
                     False  # color是一个独立的ax，但是不支持label_outer()
@@ -1672,9 +1645,176 @@ class PlotHeatmap(Plot):
             ax=self.ax,
             annot=show_label,
             cbar=cbar,
-            cmap=self.figure.cmap_norm,
+            cmap=self._colors.cmap_norm,
             fmt=self.fmt[2:-1],  # seaborn格式会自己加{:}
             annot_kws={"fontsize": self.fontsize},
         )
+
+        return self
+
+
+# 继承基本类, 矩形Treemap
+class PlotTreemap(Plot):
+    def plot(
+        self,
+        level1: str,
+        size: str,
+        level2: Optional[str] = None,
+    ) -> PlotTreemap:
+        """使用squarify包生成矩形Treemap
+
+        Args:
+            size (Optional[str], optional): 指定size列，如不指定则默认为第1列. Defaults to None.
+
+        Returns:
+            PlotTreemap: 返回自身实例
+        """
+
+        df = self.data
+
+        colors = self._colors.get_colors(n=df.shape[0], hue=self.hue)[1]
+
+        df_size1 = pd.pivot_table(
+            data=df, index=level1, columns=None, values=size, aggfunc=sum
+        ).sort_values(by=size, ascending=False)
+
+        # # 合并名称和值为Labels
+        # list_index = df.index.tolist()
+        # list_name = []
+        # for name in list_index:
+        #     if len(name) > 8:
+        #         name = name[:8] + "..."  # 防止太长的标签，在之后的可视化中会出界
+        #     list_name.append(name)
+        # list_size = df.iloc[:, 0].tolist()
+        # list_diff = df.iloc[:, 1].tolist()
+        # list_labels = [
+        #     m + "\n" + str("{:,.0f}".format(n)) + "\n" + str("{:+,.0f}".format(p))
+        #     for m, n, p in zip(list_name, list_size, list_diff)
+        # ]
+
+        # # 创造和同比净增长关联的颜色方案
+        # min_diff = min(list_diff)
+        # max_diff = max(list_diff)
+        # if min_diff > 0:
+        #     cmap = mpl.cm.Greens
+        #     norm = mpl.colors.Normalize(vmin=min_diff, vmax=max_diff)
+        # elif max_diff < 0:
+        #     cmap = mpl.cm.Reds
+        #     norm = mpl.colors.Normalize(vmin=min_diff, vmax=max_diff)
+        # else:
+        #     cmap = mpl.cm.RdYlGn  # 绿色为正，红色为负
+        #     norm = mpl.colors.TwoSlopeNorm(
+        #         vmin=min_diff, vcenter=0, vmax=max_diff
+        #     )  # 强制0为中点的正太分布渐变色
+
+        # colors = [cmap(norm(value)) for value in list_diff]
+
+        # 使用Squarify导出矩形数据，以数据手动画图，可以控制更多元素
+        list_size = df_size1[size].tolist()
+        list_size = squarify.normalize_sizes(
+            list_size, self.figure.width, self.figure.height
+        )  # 根据设置的总体宽高正态化数据
+        rects_data = squarify.squarify(
+            list_size, 0, 0, self.figure.width, self.figure.height
+        )  # Squarify算法计算出所有矩形的数据
+
+        # 根据数据循环创建矩形并添加标签
+        for i, r in enumerate(rects_data):
+            color = self._colors.get_color(df.index[i])
+
+            rect = patches.Rectangle(
+                (r["x"], r["y"]),
+                r["dx"],
+                r["dy"],
+                linewidth=10,
+                edgecolor="#222222",
+                facecolor=color,
+            )  # 创建四边形
+            self.ax.add_patch(rect)  # Add patch到轴
+            # 动态添加标签并设置标签字体大小
+            if r["dx"] > 0.02 * (self.figure.width * self.figure.height) or r["dx"] * r[
+                "dy"
+            ] > 0.01 * (self.figure.width * self.figure.height):
+                plt.text(
+                    r["x"] + r["dx"] / 2
+                    if level2 is None
+                    else r["x"]
+                    + r["dx"] * 0.05,  # 如无level2，则rect的水平中心，否则rect的left稍往右偏移
+                    r["y"] + r["dy"] / 2
+                    if level2 is None
+                    else r["y"]
+                    + r["dy"]
+                    - r["dx"] * 0.05,  # 如无level2，则rect的垂直中心，否则rect的Top稍往下偏移
+                    df_size1.index[i],
+                    ha="center" if level2 is None else "left",
+                    va="center",
+                    multialignment="center",
+                    fontsize=(self.fontsize * r["dx"])
+                    ** 0.5,  # / (self.width * self.height),
+                    color="black" if level2 is None else "grey",
+                )
+            # # 前十名左上角添加Rank
+            # if i < 10:
+            #     plt.text(
+            #         r["x"] + r["dx"] * 0.1,  # rect的left稍往右偏移
+            #         r["y"] + r["dy"] - r["dx"] * 0.1,  # rect的Top稍往下偏移
+            #         i + 1,
+            #         ha="center",
+            #         va="center",
+            #         multialignment="center",
+            #         # fontproperties=MYFONT,
+            #         fontsize=(self.fontsize * r["dx"])
+            #         ** 0.5,  # / (self.width * self.height),
+            #     )
+
+            # 绘制Level2
+            if level2 is not None:
+                df_size2 = pd.pivot_table(
+                    data=df[df[level1] == df_size1.index[i]],
+                    index=level2,
+                    columns=None,
+                    values=size,
+                    aggfunc=sum,
+                ).sort_values(by=size, ascending=False)
+                list_size2 = df_size2[size].tolist()
+                list_size2 = squarify.normalize_sizes(
+                    list_size2, r["dx"], r["dy"]
+                )  # 根据设置的总体宽高正态化数据
+                rects_data = squarify.squarify(
+                    list_size2, r["x"], r["y"], r["dx"], r["dy"]
+                )  # Squarify算法计算出所有矩形的数据
+
+                for j, r2 in enumerate(rects_data):
+                    rect2 = patches.Rectangle(
+                        (r2["x"], r2["y"]),
+                        r2["dx"],
+                        r2["dy"],
+                        linewidth=2,
+                        edgecolor="#222222",
+                        facecolor=color if self.hue is None else colors[i],
+                    )  # 创建四边形
+                    self.ax.add_patch(rect2)  # Add patch到轴
+                    # 动态添加标签并设置标签字体大小
+                    if r2["dx"] > 0.02 * (self.figure.width * self.figure.height) or r2[
+                        "dx"
+                    ] * r["dy"] > 0.01 * (self.figure.width * self.figure.height):
+                        plt.text(
+                            r2["x"] + r2["dx"] / 2,  # rect的水平中心
+                            r2["y"] + r2["dy"] / 2,  # rect的垂直中心
+                            df_size2.index[j],
+                            ha="center",
+                            va="center",
+                            multialignment="center",
+                            fontsize=(self.fontsize * r2["dx"])
+                            ** 0.5,  # / (self.width * self.height),
+                        )
+
+        # 去除边框的刻度
+        self.ax.set_xticks([])
+        self.ax.set_yticks([])
+
+        # Squarify包要求width和height的乘积等于上方主数据的和，所以要如此设置
+        self.ax.set_xlim(0, self.figure.width)
+        self.ax.set_ylim(0, self.figure.height)
 
         return self

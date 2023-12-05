@@ -25,103 +25,130 @@ if __name__ == "__main__":
     )
     print(pivoted)
 
-    # """绘制气泡图
-    # """
-    # f = plt.figure(
-    #     FigureClass=GridFigure,
-    #     width=11,
-    #     height=10,
-    #     ncols=1,
-    #     fontsize=11,
-    #     style={
-    #         "title": "气泡图",
-    #     },
-    # )
+    """绘制Treemap
+    """
 
-    # f.plot(
-    #     kind="bubble",
-    #     data=pivoted,
-    #     ax_index=0,
-    #     style={},
-    #     x="2022-12",
-    #     y="2021-12",
-    #     z="2022-12",
-    #     hue="2022-12",
-    #     label_limit=10,
-    #     label_formatter="{index}\n({x}, {y})",
-    #     x_fmt="{:,.1f}",
-    #     y_fmt="{:,.1f}",
-    #     show_hist=True,
-    #     show_legend=False,
-    # )
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=15,
+        height=6,
+        ncols=1,
+        fontsize=30,
+        style={
+            "title": "Treemap图",
+        },
+    )
 
-    # f.save()
+    f.plot(
+        kind="treemap",
+        data=pivoted.reset_index().loc[:, ["药品名称", "谈判年份", "2022-12"]],
+        ax_index=0,
+        style={},
+        level1="谈判年份",
+        level2="药品名称",
+        size="2022-12",
+        # hue="谈判年份",
+    )
 
-    # """绘制算珠图"""
-    # f = plt.figure(
-    #     FigureClass=GridFigure,
-    #     width=11,
-    #     height=10,
-    #     ncols=1,
-    #     fontsize=11,
-    #     style={
-    #         "title": "算珠图",
-    #     },
-    # )
+    f.save()
 
-    # f.plot(
-    #     kind="stripdot",
-    #     data=pivoted,
-    #     fmt="{:,.1f}",
-    #     ax_index=0,
-    #     start="2021-12",
-    #     end="2022-12",
-    #     style={},
-    #     hue="谈判年份",
-    # )
-    # f.save()
+    """绘制气泡图
+    """
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=11,
+        height=10,
+        ncols=1,
+        fontsize=11,
+        style={
+            "title": "气泡图",
+        },
+    )
 
-    # """绘制箱型散点图"""
-    # f = plt.figure(
-    #     FigureClass=GridFigure,
-    #     width=15,
-    #     height=6,
-    #     ncols=1,
-    #     fontsize=11,
-    #     style={
-    #         "title": "箱型散点图",
-    #     },
-    # )
+    f.plot(
+        kind="bubble",
+        data=pivoted,
+        ax_index=0,
+        style={},
+        x="2022-12",
+        y="2021-12",
+        z="2022-12",
+        hue="谈判年份",
+        label_limit=10,
+        label_formatter="{index}\n({x}, {y})",
+        x_fmt="{:,.1f}",
+        y_fmt="{:,.1f}",
+        show_hist=True,
+        show_legend=False,
+    )
 
-    # f.plot(
-    #     kind="boxdot",
-    #     data=pivoted,
-    #     ax_index=0,
-    #     style={},
-    #     x="谈判年份",
-    #     y="2022-12",
-    # )
-    # f.save()
+    f.save()
 
-    # """绘制直方图"""
-    # f = plt.figure(
-    #     FigureClass=GridFigure,
-    #     width=15,
-    #     height=6,
-    #     ncols=1,
-    #     fontsize=11,
-    #     style={
-    #         "title": "直方图",
-    #     },
-    # )
+    """绘制算珠图"""
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=11,
+        height=10,
+        ncols=1,
+        fontsize=11,
+        style={
+            "title": "算珠图",
+        },
+    )
 
-    # f.plot(
-    #     kind="hist",
-    #     data=pivoted.loc[:, "2022-12"],
-    #     ax_index=0,
-    #     style={},
-    # )
-    # f.save()
+    f.plot(
+        kind="stripdot",
+        data=pivoted,
+        fmt="{:,.1f}",
+        ax_index=0,
+        start="2021-12",
+        end="2022-12",
+        style={},
+        hue="谈判年份",
+    )
+    f.save()
+
+    """绘制箱型散点图"""
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=15,
+        height=6,
+        ncols=1,
+        fontsize=11,
+        style={
+            "title": "箱型散点图",
+        },
+    )
+
+    f.plot(
+        kind="boxdot",
+        data=pivoted,
+        ax_index=0,
+        style={},
+        x="谈判年份",
+        y="2022-12",
+    )
+    f.save()
+
+    """绘制直方图"""
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=15,
+        height=6,
+        ncols=1,
+        fontsize=11,
+        style={
+            "title": "直方图",
+        },
+    )
+
+    f.plot(
+        kind="hist",
+        data=pivoted.loc[:, "2022-12"],
+        ax_index=0,
+        style={},
+    )
+    f.save()
 
     """绘制折线图"""
     pivoted = (
@@ -156,37 +183,60 @@ if __name__ == "__main__":
         show_label=pivoted.columns[1],
     )
 
-    f.annotate(x1=2, x2=20, text="啦啦啦啦")
+    f.annotate(x1=2, x2=19, text="啦啦啦啦")
+    f.annotate(x1=20, x2=22, text="啦啦啦啦")
+    f.save()
+
+    """绘制柱状图
+    """
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=15,
+        height=6,
+        ncols=1,
+        fontsize=11,
+        style={
+            "title": "柱状图",
+        },
+    )
+
+    f.plot(
+        kind="bar",
+        data=pivoted.iloc[:, 0],
+        ax_index=0,
+        style={"xticklabel_rotation": 90},
+        color_dict={"奥拉帕利片": "darkorange"},
+    )
 
     f.save()
 
-    # """绘制热力图
-    # """
+    """绘制热力图
+    """
 
-    # f = plt.figure(
-    #     FigureClass=GridFigure,
-    #     width=12,
-    #     height=10,
-    #     ncols=1,
-    #     fontsize=11,
-    #     style={"title": "热力图"},
-    # )
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=12,
+        height=10,
+        ncols=1,
+        fontsize=11,
+        style={"title": "热力图"},
+    )
 
-    # f.plot(kind="heatmap", data=pivoted, ax_index=0, style={"xticklabel_rotation": 90})
+    f.plot(kind="heatmap", data=pivoted, ax_index=0, style={"xticklabel_rotation": 90})
 
-    # f.save(transparent=False)
+    f.save(transparent=False)
 
-    # """绘制词云
-    # """
+    """绘制词云
+    """
 
-    # f = plt.figure(
-    #     FigureClass=GridFigure,
-    #     width=12,
-    #     height=10,
-    #     ncols=1,
-    #     fontsize=11,
-    #     style={"title": "词云"},
-    # )
+    f = plt.figure(
+        FigureClass=GridFigure,
+        width=12,
+        height=10,
+        ncols=1,
+        fontsize=11,
+        style={"title": "词云"},
+    )
 
-    # f.plot(kind="wordcloud", data=pivoted.transpose().sum(axis=1))
-    # f.save(transparent=False)
+    f.plot(kind="wordcloud", data=pivoted.transpose().sum(axis=1))
+    f.save(transparent=False)
