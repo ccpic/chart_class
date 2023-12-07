@@ -454,7 +454,27 @@ class SlideContent:
         height: Union[Inches, Cm, int],
         loc: Loc,
         anchor: Literal[
-            "center", "top_left", "top_right", "right_top", "left_top"
+            "center",
+            "top_left",
+            "left_top",
+            "top_right",
+            "right_top",
+            "top_mid",
+            "mid_top",
+            "top",
+            "bottom_right",
+            "right_bottom",
+            "bottom_left",
+            "left_bottom",
+            "bottom_mid",
+            "mid_bottom",
+            "bottom",
+            "mid_right",
+            "right_mid",
+            "right",
+            "mid_left",
+            "right_left",
+            "left",
         ] = "center",
         shape_type: MSO_SHAPE_TYPE = MSO_SHAPE.RECTANGLE,
         fill_color: Optional[Union[RGBColor, str]] = None,
@@ -474,7 +494,17 @@ class SlideContent:
             width (Union[Inches, Cm, int]): 宽度
             height (Union[Inches, Cm, int]): 高度
             loc (Loc - left, top): _description_
-            anchor (Literal["center", "top_left", "top_right", "right_top", "left_top"]): 锚点.
+            anchor (Literal[
+                "center",
+                "top_left", "left_top",
+                "top_right", "right_top",
+                "top_mid", "mid_top", "top",
+                "bottom_right", "right_bottom",
+                "bottom_left", "left_bottom",
+                "bottom_mid", "mid_bottom", "bottom",
+                "mid_right", "right_mid", "right",
+                "mid_left", "right_left", "left",
+            ]): 锚点. Defaults to "center".
             fill_color (Optional[Union[RGBColor, str]], optional): 填充颜色. Defaults to None.
             border_color (Optional[Union[RGBColor, str]], optional): 边框颜色. Defaults to None.
             font_color (Optional[Union[RGBColor, str]], optional): 字体颜色. Defaults to None.
@@ -550,7 +580,29 @@ class SlideContent:
         width: Union[Inches, Cm, int],
         height: Union[Inches, Cm, int],
         loc: Loc,
-        anchor: Literal["center", "top_left", "top_right", "right_top"] = "center",
+        anchor: Literal[
+            "center",
+            "top_left",
+            "left_top",
+            "top_right",
+            "right_top",
+            "top_mid",
+            "mid_top",
+            "top",
+            "bottom_right",
+            "right_bottom",
+            "bottom_left",
+            "left_bottom",
+            "bottom_mid",
+            "mid_bottom",
+            "bottom",
+            "mid_right",
+            "right_mid",
+            "right",
+            "mid_left",
+            "right_left",
+            "left",
+        ] = "center",
     ) -> Picture:
         # 先插入图片，方便获取图片长宽（插入图片时如不同时指定宽和高，pptx高会自动缩放尺寸），再调整位置
         image = self.slide.shapes.add_picture(

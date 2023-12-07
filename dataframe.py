@@ -7,6 +7,8 @@ from dateutil.relativedelta import relativedelta
 from figure import GridFigure
 import copy
 import matplotlib.pyplot as plt
+from dateutil.relativedelta import relativedelta
+from datetime import timedelta
 
 try:
     from typing import Literal
@@ -242,6 +244,8 @@ class DfAnalyzer:
         self._strftime = strftime
 
         if self.date_column is not None:
+            self.date_start = self.data[self.date_column].min()
+            self.date_end = self.data[self.date_column].max()
             try:
                 self.data[self.date_column] = pd.to_datetime(
                     self.data[self.date_column]
@@ -411,13 +415,7 @@ class DfAnalyzer:
 
     def transform(
         self,
-        period: Literal[
-            "MAT",
-            "MQT",
-            "YEAR",
-            "QTR",
-        ],
-        cols_grouper: Union[List[str], str],
+        period: Literal["MAT", "MQT", "YEAR", "QTR"],
         cols_amount: Union[List[str], str],
     ) -> DfAnalyzer:
         """如有时间戳字段，将self.data转换为别的时间模式，原始数据可以为季度或月度数据
@@ -430,8 +428,6 @@ class DfAnalyzer:
             MQT - 滚动季
             YEAR - 自然年
             QTR - 自然季
-        cols_grouper : Union[List[str], str]
-            指出分组汇总数据时，哪些是分组字段
         cols_amount : Union[List[str], str]
             指出分组汇总数据时，哪些是数据字段
 
@@ -451,71 +447,68 @@ class DfAnalyzer:
         new_obj = copy.copy(self)
         df = self.data.copy()
 
-        df.set_index(self.date_column, inplace=True)
+        cols_grouper = [
+            col for col in df.columns if col not in cols_amount + [self.date_column]
+        ]
 
-        if period in ["MAT", "MQT"]:
-            # 根据时间戳间隔和转换目标，确定滚动周期
+        print(f"类别字段:{cols_grouper}\n时间字段:{self.date_column}\n数值字段:{cols_amount}")
+
+        df_grouped = (
+            df.groupby(cols_grouper + [self.date_column], dropna=False)[cols_amount]
+            .sum()
+            .reset_index()
+        )
+        df_unstacked = df_grouped.set_index(cols_grouper + [self.date_column]).unstack(
+            self.date_column
+        )
+        df_unstacked.columns = pd.MultiIndex.from_tuples(df_unstacked.columns)
+
+        df_transformed = pd.DataFrame()
+        for i, col in enumerate(cols_amount):
+            amount_columns = df_unstacked.loc[:, pd.IndexSlice[col, :]]
+            amount_columns.columns = amount_columns.columns.get_level_values(1)
+
             if period == "MAT":
-                rolling_window = int(12 / self._period_interval)
+                rolling_window = timedelta(days=365)
+                rolling_sum = amount_columns.rolling(
+                    window=rolling_window, axis=1
+                ).sum()
             elif period == "MQT":
-                rolling_window = int(3 / self._period_interval)
-
-            if cols_grouper is None:
-                df = df.rolling(window=rolling_window, min_periods=1).sum()
-            else:
-                # 按影响rolling计算的字段分组，并计算每个日期的滚动总计
-                grouped = df.groupby(cols_grouper)
-                rolling = (
-                    grouped[cols_amount]
-                    .rolling(window=rolling_window, min_periods=1)
+                rolling_sum = (
+                    amount_columns.resample("M", axis=1)
+                    .sum()
+                    .rolling(window=3, axis=1)
                     .sum()
                 )
-                rolling = rolling.reset_index()
-
-                # 将rolling统计还原到原df
-                df = df.reset_index().rename(columns={"index": self.date_column})
-                df = df.merge(
-                    right=rolling, how="left", on=cols_grouper + [self.date_column]
-                )
-
-        elif period in ["YEAR", "QTR"]:
-            if period == "YEAR":
-                resample_window = "Y"
+            elif period == "YEAR":
+                rolling_sum = amount_columns.resample("Y", axis=1).sum()
             elif period == "QTR":
-                resample_window = "Q"
+                rolling_sum = amount_columns.resample("Q", axis=1).sum()
 
-            if cols_grouper is None:
-                df = df.resample(resample_window).agg("sum")
+            rolling_sum.columns.name = self.date_column
+            rolling_sum = rolling_sum.stack().reset_index(name=col)
+
+            if i == 0:
+                df_transformed = rolling_sum
             else:
-                grouped = (
-                    df.groupby(cols_grouper)
-                    .resample(resample_window)[cols_amount]
-                    .agg("sum")
+                df_transformed = df_transformed.merge(
+                    right=rolling_sum, how="left", on=cols_grouper + [self.date_column]
                 )
-                grouped = grouped.reset_index()
-                # resample("Y")方法返回的时间戳为年尾12.31，将其改为和原始数一致
-                grouped["Date"] = grouped["Date"].apply(
-                    lambda x: x.replace(day=self.date.day)
-                )
+        df_transformed[self.date_column] = df_transformed[self.date_column].dt.strftime(
+            self._strftime
+        ) # 还原时间格式
 
-                # 将resample统计还原到原df
-                df = df.reset_index().rename(columns={"index": self.date_column})
-                df = df.merge(
-                    right=grouped, how="right", on=cols_grouper + [self.date_column]
-                )
+        # # 解决merge后重复列都保留并自动重命名的问题
+        # if isinstance(cols_amount, str):
+        #     cols_amount = [cols_amount]
+        # df = df.drop([s + "_x" for s in cols_amount], axis=1)
+        # df = df.rename(
+        #     columns=lambda x: x.replace("_y", "")
+        #     if x in [s + "_y" for s in cols_amount]
+        #     else x
+        # )
 
-        if cols_grouper is not None:
-            # 解决merge后重复列都保留并自动重命名的问题
-            if isinstance(cols_amount, str):
-                cols_amount = [cols_amount]
-            df = df.drop([s + "_x" for s in cols_amount], axis=1)
-            df = df.rename(
-                columns=lambda x: x.replace("_y", "")
-                if x in [s + "_y" for s in cols_amount]
-                else x
-            )
-
-        new_obj.data = df
+        new_obj.data = df_transformed
 
         return new_obj
 
