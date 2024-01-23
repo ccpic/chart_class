@@ -273,7 +273,7 @@ class DfAnalyzer:
         Returns:
             str: 返回一个函数描述字符串
         """
-        df = a.data
+        df = self.data
         columns = ", ".join(df.columns.to_list())
         return (
             f"DfAnalyzer({df.shape[0]} rows, {df.shape[1]} columns)\nColumns: {columns}"
@@ -447,6 +447,8 @@ class DfAnalyzer:
         new_obj = copy.copy(self)
         df = self.data.copy()
 
+        if isinstance(cols_amount, str):
+            cols_amount = [cols_amount]
         cols_grouper = [
             col for col in df.columns if col not in cols_amount + [self.date_column]
         ]
@@ -461,6 +463,8 @@ class DfAnalyzer:
         df_unstacked = df_grouped.set_index(cols_grouper + [self.date_column]).unstack(
             self.date_column
         )
+        if isinstance(df_unstacked, pd.Series):
+            df_unstacked = df_unstacked.to_frame()
         df_unstacked.columns = pd.MultiIndex.from_tuples(df_unstacked.columns)
 
         df_transformed = pd.DataFrame()
@@ -496,7 +500,7 @@ class DfAnalyzer:
                 )
         df_transformed[self.date_column] = df_transformed[self.date_column].dt.strftime(
             self._strftime
-        ) # 还原时间格式
+        )  # 还原时间格式
 
         # # 解决merge后重复列都保留并自动重命名的问题
         # if isinstance(cols_amount, str):
@@ -516,7 +520,7 @@ class DfAnalyzer:
         self,
         index: str,
         values: str,
-        hue: Optional[str] = None,
+        hue: Optional[Union[str, List[str]]] = None,
         date: Optional[str] = None,
         query_str: str = "ilevel_0 in ilevel_0",  # 默认query语句能返回df总体
         fillna: bool = False,
@@ -570,12 +574,15 @@ class DfAnalyzer:
         df_combined = df_combined.sort_values(by="表现", ascending=False)
 
         if hue:
-            df_combined = df_combined.merge(
-                self.data[[index, hue]], how="left", left_index=True, right_on=index
-            )
-            df_combined = df_combined.drop_duplicates()
-            df_combined.set_index(index, inplace=True)
-            df_combined.insert(1, hue, df_combined.pop(hue))
+            if isinstance(hue, str):
+                hue = [hue]
+            for i, h in enumerate(hue):
+                df_combined = df_combined.merge(
+                    self.data[[index, h]], how="left", left_index=True, right_on=index
+                )
+                df_combined = df_combined.drop_duplicates()
+                df_combined.set_index(index, inplace=True)
+                df_combined.insert(i + 1, h, df_combined.pop(h))
 
         if show_total:
             d_total = {}

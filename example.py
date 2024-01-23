@@ -9,7 +9,6 @@ if __name__ == "__main__":
     a = DfAnalyzer(data=df, name="test", date_column="Date", period_interval=3)
     a = a.transform(
         period="MAT",
-        cols_grouper=["分子+年份+降幅", "CORPORATION", "PACKAGE", "数值类型"],
         cols_amount="数值",
     )
     pivoted = (

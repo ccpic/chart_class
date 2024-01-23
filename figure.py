@@ -16,11 +16,15 @@ from plots import (
     PlotHist,
     PlotBoxdot,
     PlotTreemap,
+    PlotPie,
+    PlotArea,
+    PlotBarh
 )
 import pandas as pd
 from color import CMAP_QUAL, CMAP_NORM, COLOR_DICT, Colors
 from itertools import cycle
 from annotation import Connection
+import inspect
 
 try:
     from typing import Literal
@@ -142,6 +146,7 @@ class GridFigure(Figure):
                 "show_legend": False,  # 是否展示画布图例
                 "legend_loc": "center left",  # 图例位置
                 "legend_ncol": 1,  # 图例列数
+                "bbox_to_anchor": (1, 0.5),  # 图例相对位置
             }
 
             """根据初始化参数更新默认风格字典，并循环生成类属性"""
@@ -155,7 +160,9 @@ class GridFigure(Figure):
             self.title(self._title, self._title_fontsize)
             self.ytitle(self._ytitle, self._ytitle_fontsize)
             if self._show_legend:
-                self.fig_legend(self._legend_loc, self._legend_ncol)
+                self.fig_legend(
+                    self._bbox_to_anchor, self._legend_loc, self._legend_ncol
+                )
             if self._label_outer:
                 self.label_outer()
 
@@ -193,12 +200,14 @@ class GridFigure(Figure):
 
         def fig_legend(
             self,
+            bbox_to_anchor: Tuple[float, float] = (1, 0.5),
             loc: Literal["center left", "lower center"] = "center left",
             ncol: int = 1,
         ) -> None:
             """汇总画布上所有ax的系列，生成一个总图例
 
             Args:
+                bbox_to_anchor (Tuple[float, float], optional): 图例相对位置. Defaults to (1, 0.5).
                 loc (Literal["center left", "lower center"], optional): 图例位置. Defaults to "center left".
                 ncol (int, optional): 图例列数. Defaults to 1.
             """
@@ -217,7 +226,7 @@ class GridFigure(Figure):
                 labels=labels,
                 loc=loc,
                 ncol=ncol,
-                bbox_to_anchor=(0.9, 0.5) if loc == "center left" else (0.5, 1),
+                bbox_to_anchor=bbox_to_anchor,
                 labelspacing=1,
                 frameon=False,
                 prop={"family": "Microsoft YaHei", "size": self._figure.fontsize},
@@ -239,6 +248,8 @@ class GridFigure(Figure):
             "hist",
             "heatmap",
             "wordcloud",
+            "pie",
+            "area",
         ],
         data: pd.DataFrame,
         fmt: str = "{:,.0f}",
@@ -246,6 +257,8 @@ class GridFigure(Figure):
         fontsize: Optional[float] = None,
         style: Dict[str, any] = {},
         color_dict: Optional[Dict[str, str]] = None,
+        cmap_qual: Optional[mpl.colors.Colormap] = None,
+        cmap_norm: Optional[mpl.colors.Colormap] = None,
         hue: Optional[str] = None,
         **kwargs,
     ) -> mpl.axes.Axes:
@@ -301,6 +314,7 @@ class GridFigure(Figure):
                 avg_linewidth (float, optional): 分隔线宽度. Defaults to 1,
                 avg_color (str, optional): 分隔线及数据标签颜色. Defaults to "black",
             heatmap:
+                cmap (Optional[Union[str, list]], optional): 自定义颜色方案，可以是cmap名或颜色列表. Defaults to None.
                 cbar (bool, optional): 是否添加colorbar. Defaults to True.
                 show_label (bool, optional): 是否往每个网格添加标签文本. Defaults to True.
             wordcloud:
@@ -333,6 +347,17 @@ class GridFigure(Figure):
                 order (Optional[Union[None, list]], optional): 类别按什么排序，如果为None则按照数据自动排序. Defaults to None.
                 dot_size (float): 散点大小. Defaults to 8.
                 jitter (float): 随机散开的间距. Defaults to 0.2
+            pie:
+                size (Optional[str], optional): 指定size列，如不指定则默认为第1列. Defaults to None.
+                donut (bool, optional): 甜甜圈图还是饼图. Defaults to False.
+                donut_title (Optional[str], optional): 甜甜圈图中间的文字. Defaults to None.
+                pct_distance (Optional[float]): 值标签和边界的距离. Defaults to 0.8,
+                start_angle (Optional[int]): 饼图的第一片扇叶从哪个角度开始. Defaults to 90,
+                counter_clock (Optional[bool]): 饼图扇叶顺序是顺时针还是逆时针. Defaults to False,
+                line_width (Optional[float]): 扇叶边线的宽度. Defaults to 3,
+                edgecolor (Optional[str]): 扇叶边线的颜色. Defaults to "white",
+                label_fontsize (Optional[float]): 值标签的字体大小. Defaults to self.fontsize,
+                circle_distance (Optional[float]): 如果生成甜甜圈图，指定宽度. Defaults to 0.7,
 
         Returns:
         mpl.axes.Axes: mpl ax
@@ -349,6 +374,8 @@ class GridFigure(Figure):
             fontsize=self.fontsize if fontsize is None else fontsize,
             style=style,
             color_dict=color_dict,
+            cmap_qual=cmap_qual,
+            cmap_norm=cmap_norm,
             hue=hue,
         ).plot(**kwargs).apply_style()
 
@@ -395,9 +422,14 @@ class GridFigure(Figure):
         self.style.apply_style()  # 应用风格，一些风格只能在绘图后生效
         self.gridspec.tight_layout(self)  # 自动调整子图参数，使之填充整个图像区域，但有时不生效
 
-        """保存图片"""
-        script_dir = os.path.dirname(__file__)
-        plot_dir = f"{script_dir}{self.savepath}"
+        # 该语句返回chart_class的文件夹而不是引用它的程序的文件夹
+        # script_dir = os.path.dirname(__file__)
+
+        # 获取调用当前脚本的脚本路径
+        calling_script_dir = os.path.dirname(
+            os.path.abspath(inspect.stack()[1].filename)
+        )
+        plot_dir = f"{calling_script_dir}{self.savepath}"
 
         # 保存
         if os.path.exists(plot_dir) is False:

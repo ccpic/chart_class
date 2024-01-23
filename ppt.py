@@ -19,7 +19,6 @@ except ImportError:
     from typing_extensions import Literal
 
 
-# Loc = namedtuple("Loc", ["left", "top"])
 class Loc:
     def __init__(self, left: Union[Inches, Cm, int], top: Union[Inches, Cm, int]):
         self.left = left
@@ -577,51 +576,78 @@ class SlideContent:
     def add_image(
         self,
         image_file: str,
-        width: Union[Inches, Cm, int],
-        height: Union[Inches, Cm, int],
-        loc: Loc,
-        anchor: Literal[
-            "center",
-            "top_left",
-            "left_top",
-            "top_right",
-            "right_top",
-            "top_mid",
-            "mid_top",
-            "top",
-            "bottom_right",
-            "right_bottom",
-            "bottom_left",
-            "left_bottom",
-            "bottom_mid",
-            "mid_bottom",
-            "bottom",
-            "mid_right",
-            "right_mid",
-            "right",
-            "mid_left",
-            "right_left",
-            "left",
+        width: Optional[Union[Inches, Cm, int]] = None,
+        height: Optional[Union[Inches, Cm, int]] = None,
+        top: Optional[Union[Inches, Cm, int]] = None,
+        left: Optional[Union[Inches, Cm, int]] = None,
+        loc: Optional[Loc] = None,
+        anchor: Optional[
+            Literal[
+                "center",
+                "top_left",
+                "left_top",
+                "top_right",
+                "right_top",
+                "top_mid",
+                "mid_top",
+                "top",
+                "bottom_right",
+                "right_bottom",
+                "bottom_left",
+                "left_bottom",
+                "bottom_mid",
+                "mid_bottom",
+                "bottom",
+                "mid_right",
+                "right_mid",
+                "right",
+                "mid_left",
+                "right_left",
+                "left",
+            ]
         ] = "center",
     ) -> Picture:
         # 先插入图片，方便获取图片长宽（插入图片时如不同时指定宽和高，pptx高会自动缩放尺寸），再调整位置
         image = self.slide.shapes.add_picture(
             image_file=image_file,
-            left=0,
-            top=0,
+            left=0 if left is None else left,
+            top=0 if top is None else top,
             width=width,
             height=height,
         )
 
-        left, top = AnchorLoc(loc.left, loc.top, width, height, anchor=anchor).loc
-        image.left = left
-        image.top = top
+        if loc is not None:
+            left, top = AnchorLoc(
+                loc.left, loc.top, image.width, image.height, anchor=anchor
+            ).loc
+            image.left = left
+            image.top = top
 
         return image
 
-    def set_title(self, title: str) -> Shape:
+    def set_title(
+        self, title: str, font_size: Optional[Union[Pt, Inches, Cm]] = None
+    ) -> Shape:
+        """设置幻灯片标题
+
+        Args:
+            title (str): 标题内容
+            font_size (Optional[Union[Pt, Inches, Cm]], optional): 标题字体大小. Defaults to None.
+
+        Returns:
+            Shape: 带有标题的形状
+        """
+
         title_shape = self.slide.shapes.title
         title_shape.text = title
+
+        # 设置字体大小
+        if font_size is not None:
+            text_frame = title_shape.text_frame
+            for paragraph in text_frame.paragraphs:
+                for run in paragraph.runs:
+                    run.font.size = font_size
+
         return title_shape
 
 
