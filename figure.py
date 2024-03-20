@@ -1,28 +1,26 @@
 from __future__ import annotations
-from re import T
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 import os
-from typing import Any, Callable, Dict, List, Tuple, Union, Optional
+from typing import Any, Dict, List, Tuple, Optional
 import matplotlib as mpl
 from plots import (
-    PlotBar,
-    PlotBubble,
-    PlotLine,
-    PlotHeatmap,
-    PlotWordcloud,
-    PlotStripdot,
-    PlotHist,
-    PlotBoxdot,
-    PlotTreemap,
-    PlotPie,
-    PlotArea,
-    PlotBarh
+    PlotBar,  # noqa: F401
+    PlotBubble,  # noqa: F401
+    PlotLine,  # noqa: F401
+    PlotHeatmap,  # noqa: F401
+    PlotWordcloud,  # noqa: F401
+    PlotStripdot,  # noqa: F401
+    PlotHist,  # noqa: F401
+    PlotBoxdot,  # noqa: F401
+    PlotTreemap,  # noqa: F401
+    PlotPie,  # noqa: F401
+    PlotArea,  # noqa: F401
+    PlotBarh  # noqa: F401
 )
 import pandas as pd
-from color import CMAP_QUAL, CMAP_NORM, COLOR_DICT, Colors
-from itertools import cycle
+from color import CMAP_QUAL, CMAP_NORM, COLOR_DICT
 from annotation import Connection
 import inspect
 
@@ -215,11 +213,11 @@ class GridFigure(Figure):
             # 删除已经存在的重复图例
             handles, labels = [], []
             for i, _ax in enumerate(self._figure.axes):
-                h, l = _ax.get_legend_handles_labels()
-                for hh, ll in zip(h[::-1], l[::-1]):
-                    if ll not in labels:
-                        handles.append(hh)
-                        labels.append(ll)
+                handles, labels = _ax.get_legend_handles_labels()
+                for handle, label in zip(handles[::-1], labels[::-1]):
+                    if label not in labels:
+                        handles.append(handle)
+                        labels.append(label)
 
             self._figure.legend(
                 handles=handles,
@@ -260,6 +258,7 @@ class GridFigure(Figure):
         cmap_qual: Optional[mpl.colors.Colormap] = None,
         cmap_norm: Optional[mpl.colors.Colormap] = None,
         hue: Optional[str] = None,
+        focus: Optional[List[str]] = None,
         **kwargs,
     ) -> mpl.axes.Axes:
         """在当前画布的指定ax绘制网格热力图
@@ -377,6 +376,7 @@ class GridFigure(Figure):
             cmap_qual=cmap_qual,
             cmap_norm=cmap_norm,
             hue=hue,
+            focus=focus,
         ).plot(**kwargs).apply_style()
 
         return ax

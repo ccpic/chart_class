@@ -1,10 +1,9 @@
 from __future__ import annotations
 from wordcloud import WordCloud
-from typing import Any, Callable, Dict, List, Tuple, Union, Optional, Sequence
+from typing import Any, Dict, List, Tuple, Union, Optional, Sequence
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from matplotlib.colors import ListedColormap
 import seaborn as sns
 import numpy as np
 import pandas as pd
@@ -499,7 +498,7 @@ class Plot:
                         handles + handles2,
                     )
                 )  # 和下放调用.values()/.keys()配合去除重复的图例，顺便倒序让图例与图表保持一致
-            except:
+            except Exception:
                 by_label = dict(
                     zip(
                         labels[::-1],
@@ -698,8 +697,8 @@ class PlotBubble(Plot):
                 i < label_limit
                 or (index_shown[i] in y.loc[index_shown].nlargest(label_topy).index)
                 or (index_shown[i] in label_mustshow)
-                or index_shown[i] in self.focus
-            ):  # 在label_limit内或者强制要求展示y值最大item的标签时
+                or (self.focus and index_shown[i] in self.focus)
+            ):  # 在label_limit内或者强制要求展示y值最大item的标签或者在特别关注列表时
                 d_label = {
                     "x": d_style.get("x_fmt").format(x.loc[index_shown][i]),
                     "y": d_style.get("y_fmt").format(y.loc[index_shown][i]),
@@ -893,17 +892,17 @@ class PlotBoxdot(Plot):
             mins = df_groupby.min().reindex(ax_xticklabels)  # 最低值
             medians = df_groupby.median().reindex(ax_xticklabels)  # 中位数
 
-            for l in [maxs, mins, medians]:
+            for metric in [maxs, mins, medians]:
                 for xtick in ax.get_xticks():
-                    if l is medians:
+                    if metric is medians:
                         posx = xtick + 0.4
                     else:
                         posx = xtick + 0.25
 
                     ax.text(
                         posx,
-                        l[xtick],
-                        self.fmt.format(l[xtick]),
+                        metric[xtick],
+                        self.fmt.format(metric[xtick]),
                         horizontalalignment="left",
                         verticalalignment="center",
                         size=self.fontsize,
@@ -1052,89 +1051,6 @@ class PlotLine(Plot):
 
         return self
 
-
-class PlotLine(Plot):
-    def plot(
-        self,
-        show_label: List[str] = [],
-        endpoint_label_only: bool = False,
-        **kwargs,
-    ) -> PlotLine:
-        """继承基本类，绘制线形图
-
-        Args:
-            show_label (List[str], optional): 指定要显示标签的系列. Defaults to [].
-            endpoint_label_only (bool, optional): 标签是全部显示还是只显示首尾节点. Defaults to False.
-
-        Kwargs:
-            linewidth (int, optional): 线宽. Defaults to 2.
-            marker(str,optional): 标记形状. Defaults to "o".
-            markersize(int, optional): 标记大小. Defaults to 5.
-
-        Returns:
-            PlotLine: 返回自身实例
-        """
-
-        df = self.data
-
-        d_style = {
-            "linewidth": 2,
-            "marker": "o",
-            "markersize": 5,
-        }
-        d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
-
-        for i, column in enumerate(df.columns):
-            # 如果有指定颜色就颜色，否则按预设列表选取
-            color = self._colors.get_color(column)
-
-            # 生成折线图
-            self.ax.plot(
-                df.index,
-                df[column],
-                color=color,
-                linewidth=d_style.get("linewidth"),
-                label=column,
-                marker=d_style.get("marker"),
-                markersize=d_style.get("markersize"),
-                markerfacecolor="white",
-                markeredgecolor=color,
-            )
-
-            # 标签
-            if column in show_label:
-                for k, idx in enumerate(df.index):
-                    if endpoint_label_only:
-                        if k == 0 or k == len(df.index) - 1:
-                            t = self.ax.text(
-                                idx,
-                                df.iloc[k, i],
-                                self.fmt.format(df.iloc[k, i]),
-                                ha="right" if k == 0 else "left",
-                                va="center",
-                                size=self.fontsize,
-                                color="white",
-                            )
-                    else:
-                        t = self.ax.text(
-                            idx,
-                            df.iloc[k, i],
-                            self.fmt.format(df.iloc[k, i]),
-                            ha="center",
-                            va="center",
-                            size=self.fontsize,
-                            color="white",
-                        )
-                    t.set_bbox(dict(facecolor=color, alpha=0.7, edgecolor=color))
-
-            # y轴标签格式
-            self.ax.yaxis.set_major_formatter(
-                FuncFormatter(lambda y, _: self.fmt.format(y))
-            )
-
-        return self
-
-
 class PlotArea(Plot):
     def plot(
         self,
@@ -1212,7 +1128,7 @@ class PlotArea(Plot):
             # 标签
             if column in show_label:
                 for k, idx in enumerate(df.index):
-                    if stacked == True:
+                    if stacked is True:
                         # 如果堆积，标签要挪到面积图中间
                         position_y = (
                             df.iloc[k, :i].sum() + df.iloc[k, : i + 1].sum()
@@ -1418,7 +1334,7 @@ class PlotBar(Plot):
                 for rect in patches:
                     height = rect.get_height()
                     # 负数则添加纹理
-                    if height < 0 or index in focus:
+                    if height < 0 or (focus and index in focus):
                         rect.set_hatch("//")
 
                 if show_gr_text:
@@ -1432,7 +1348,7 @@ class PlotBar(Plot):
                             ha="center",
                             va="center",
                             color=color,
-                            fontsize=self.fontsize,
+                            fontsize=d_style.get("label_fontsize"),
                             zorder=5,
                         )
                         bottom_gr += df.iloc[k - 1, i] + df.iloc[k, i]
@@ -1489,7 +1405,7 @@ class PlotBar(Plot):
             ax2 = self.ax.twinx()
 
             color_line = "darkorange"
-            line = ax2.plot(
+            ax2.plot(
                 df_gr.index,
                 df_gr.values,
                 label="GR(y-1)",
@@ -1929,7 +1845,7 @@ class PlotStripdot(Plot):
                 # self.style._show_legend = False  # 不再使用Plot类的通用方法生成图例
 
         index_range = range(1, len(df.index) + 1)
-        hlines = self.ax.hlines(
+        self.ax.hlines(
             y=index_range,
             xmin=start,
             xmax=end,
@@ -1937,7 +1853,7 @@ class PlotStripdot(Plot):
             alpha=d_style.get("alpha"),
         )  # 连接线
         if start is not None:
-            scatter_start = self.ax.scatter(
+            self.ax.scatter(
                 start,
                 index_range,
                 color=d_style.get("color_start"),
@@ -2021,7 +1937,7 @@ class PlotStripdot(Plot):
                     )
 
                 if v_diff != 0 and math.isnan(v_diff) is False:
-                    t = self.ax.text(
+                    self.ax.text(
                         self.ax.get_xlim()[1] * 0.99,
                         i,
                         fmt_diff.format(v_diff),

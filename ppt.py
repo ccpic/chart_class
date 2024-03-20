@@ -1,16 +1,13 @@
 from __future__ import annotations
 import os
-from pptx import presentation, Presentation
+from pptx import Presentation
 from pptx.util import Inches, Pt, Cm
-from pptx.shapes.base import BaseShape
 from pptx.shapes.autoshape import Shape
 from pptx.shapes.picture import Picture
 from pptx.enum.shapes import MSO_SHAPE, MSO_SHAPE_TYPE
 from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN, MSO_ANCHOR, MSO_VERTICAL_ANCHOR
 from pptx.slide import SlideLayout, Slide
-from typing import Any, Callable, Dict, List, Tuple, Union, Optional
-from collections import namedtuple
+from typing import List, Tuple, Union, Optional
 import math
 
 try:

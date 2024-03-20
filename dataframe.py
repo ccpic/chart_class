@@ -4,10 +4,7 @@ import numpy as np
 from typing import Callable, Dict, List, Union, Optional
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from figure import GridFigure
 import copy
-import matplotlib.pyplot as plt
-from dateutil.relativedelta import relativedelta
 from datetime import timedelta
 
 try:
@@ -261,7 +258,7 @@ class DfAnalyzer:
                 #     self._period_interval = 1
                 self.date_range = DateRange(self.date)
 
-            except:
+            except Exception:
                 raise DateError("时间戳字段解析失败")
 
         self.sorter = sorter
@@ -361,6 +358,7 @@ class DfAnalyzer:
             columns=columns,
             aggfunc=aggfunc,
         )
+        print(self.data)
         # pivot table对象转为默认df
         df = pd.DataFrame(df.to_records())
 
@@ -388,11 +386,11 @@ class DfAnalyzer:
             s = df.sum(axis=0).sort_values(ascending=sort_asc)
             df = df.loc[:, s.index]  # 列按照汇总总和大小排序
 
-        if type(columns) is not list:
+        if not isinstance(columns, list):
             if columns in self.sorter:
                 df = df.reindex(columns=self.sorter[columns])
 
-        if type(index) is not list:
+        if not isinstance(index, list):
             if index in self.sorter:
                 df = df.reindex(self.sorter[index])  # 对于部分变量有固定排序
 
