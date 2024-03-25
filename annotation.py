@@ -30,7 +30,7 @@ class Connection:
         self.y2 = y2
         self.y_max = max(self.y1, self.y2)
         self.text = text
-        if offset == None:
+        if offset is None:
             self.offset = (self._ax.get_ylim()[1] - self._ax.get_ylim()[0]) / 10
         else:
             self.offset = offset

@@ -17,6 +17,7 @@ import math
 from itertools import cycle
 import squarify
 from color import Colors
+from pywaffle import Waffle
 
 try:
     from typing import Literal
@@ -177,7 +178,11 @@ class Plot:
         self.fmt = fmt
         self._style = style
         self.style = self.Style(self, **self._style)
-        self._color_dict = self.figure._color_dict if color_dict is None else color_dict
+        self._color_dict = (
+            {**self.figure._color_dict, **color_dict}
+            if color_dict
+            else self.figure._color_dict
+        )
         self._cmap_qual = self.figure._cmap_qual if cmap_qual is None else cmap_qual
         self._cmap_norm = self.figure._cmap_norm if cmap_norm is None else cmap_norm
         self._colors = Colors(
@@ -190,7 +195,7 @@ class Plot:
         else:
             self.hue = None
         self.focus = focus
-        
+
     class Style:
         def __init__(self, plot, **kwargs) -> None:
             self._plot = plot
@@ -651,9 +656,11 @@ class PlotBubble(Plot):
                     loc=self.style._legend_loc,
                     frameon=False,
                     ncol=self.style._legend_ncol,
-                    bbox_to_anchor=(1, 0.5)
-                    if self.style._legend_loc == "center left"
-                    else (0.5, 1),
+                    bbox_to_anchor=(
+                        (1, 0.5)
+                        if self.style._legend_loc == "center left"
+                        else (0.5, 1)
+                    ),
                     prop={"family": "Microsoft YaHei", "size": self.fontsize},
                 )
                 self.style._show_legend = False  # 不再使用Plot类的通用方法生成图例
@@ -703,9 +710,9 @@ class PlotBubble(Plot):
                     "x": d_style.get("x_fmt").format(x.loc[index_shown][i]),
                     "y": d_style.get("y_fmt").format(y.loc[index_shown][i]),
                     "z": z.loc[index_shown][i],
-                    "hue": self.hue.loc[index_shown][i]
-                    if self.hue is not None
-                    else None,
+                    "hue": (
+                        self.hue.loc[index_shown][i] if self.hue is not None else None
+                    ),
                     "index": index_shown[i],
                 }
                 texts.append(
@@ -1051,6 +1058,7 @@ class PlotLine(Plot):
 
         return self
 
+
 class PlotArea(Plot):
     def plot(
         self,
@@ -1088,7 +1096,9 @@ class PlotArea(Plot):
             # 如果有指定颜色就颜色，否则按预设列表选取
             color = self._colors.get_color(column)
 
-            if stacked or i == 0:  # 仅在 stacked 为 True 或是第一个列时使用 fill_between
+            if (
+                stacked or i == 0
+            ):  # 仅在 stacked 为 True 或是第一个列时使用 fill_between
                 # 生成区域图
                 self.ax.fill_between(
                     df.index,
@@ -1180,7 +1190,6 @@ class PlotBar(Plot):
         label_threshold: float = 0.02,
         period_change: int = 1,
         focus: Optional[List[str]] = None,
-        *args,
         **kwargs,
     ) -> PlotBar:
         """继承基本Plot类，绘制柱状图
@@ -1294,7 +1303,9 @@ class PlotBar(Plot):
                     self.style._hide_top_right_spines = True
 
                 if show_label is True:
-                    if stacked is False or df.shape[1] == 1:  # 非堆叠图或只有一列数的情况（非堆叠）
+                    if (
+                        stacked is False or df.shape[1] == 1
+                    ):  # 非堆叠图或只有一列数的情况（非堆叠）
                         # 根据数据判断标签是否需要微调
                         if 0 <= v < max_v * 0.05:
                             pos_y = v * 1.1
@@ -1373,7 +1384,9 @@ class PlotBar(Plot):
                 for p, v in enumerate(total.values):
                     self.ax.text(
                         x=p,
-                        y=v * 1.05 if show_total_bar else v,  # 如果绘制整体外框则优化total值文本的位置
+                        y=(
+                            v * 1.05 if show_total_bar else v
+                        ),  # 如果绘制整体外框则优化total值文本的位置
                         s=self.fmt.format(float(v)),
                         fontsize=d_style.get("label_fontsize"),
                         ha="center",
@@ -1454,7 +1467,6 @@ class PlotBarh(Plot):
         label_formatter: str = "{abs}",
         label_threshold: float = 0.02,
         label_pos: Literal["smart", "center", "outer"] = "smart",
-        *args,
         **kwargs,
     ) -> PlotBar:
         """继承基本Plot类，绘制柱状图
@@ -1552,7 +1564,9 @@ class PlotBarh(Plot):
                 if show_label is True:
                     margin = self.ax.get_xlim()[1] * 0.02
                     if label_pos == "smart":
-                        if stacked is False or df.shape[1] == 1:  # 非堆叠图或只有一列数的情况（非堆叠）
+                        if (
+                            stacked is False or df.shape[1] == 1
+                        ):  # 非堆叠图或只有一列数的情况（非堆叠）
                             # 根据数据判断标签是否需要微调
                             if 0 <= v < max_v * 0.2:
                                 pos_x = v + margin
@@ -1633,6 +1647,7 @@ class PlotHist(Plot):
         show_metrics: bool = True,
         show_tiles: bool = False,
         ind: Optional[list] = None,
+        **kwargs,
     ) -> PlotHist:
         """继承基本类，绘制histogram直方图
 
@@ -1836,9 +1851,11 @@ class PlotStripdot(Plot):
                     loc=self.style._legend_loc,
                     frameon=False,
                     ncol=self.style._legend_ncol,
-                    bbox_to_anchor=(1, 0.5)
-                    if self.style._legend_loc == "center left"
-                    else (0.5, 1),
+                    bbox_to_anchor=(
+                        (1, 0.5)
+                        if self.style._legend_loc == "center left"
+                        else (0.5, 1)
+                    ),
                     prop={"family": "Microsoft YaHei", "size": self.fontsize},
                 )
                 self.ax.add_artist(hue_legend)
@@ -1970,6 +1987,7 @@ class PlotHeatmap(Plot):
         cmap: Optional[Union[str, list]] = None,
         cbar: bool = True,
         show_label: bool = True,
+        **kwargs,
     ) -> PlotHeatmap:
         """继承基本类，生成网格热力图类
 
@@ -2001,6 +2019,7 @@ class PlotTreemap(Plot):
         level1: str,
         size: str,
         level2: Optional[str] = None,
+        **kwargs,
     ) -> PlotTreemap:
         """使用squarify包生成矩形Treemap
 
@@ -2077,15 +2096,16 @@ class PlotTreemap(Plot):
                 "dy"
             ] > 0.01 * (self.figure.width * self.figure.height):
                 plt.text(
-                    r["x"] + r["dx"] / 2
-                    if level2 is None
-                    else r["x"]
-                    + r["dx"] * 0.05,  # 如无level2，则rect的水平中心，否则rect的left稍往右偏移
-                    r["y"] + r["dy"] / 2
-                    if level2 is None
-                    else r["y"]
-                    + r["dy"]
-                    - r["dx"] * 0.05,  # 如无level2，则rect的垂直中心，否则rect的Top稍往下偏移
+                    (
+                        r["x"] + r["dx"] / 2
+                        if level2 is None
+                        else r["x"] + r["dx"] * 0.05
+                    ),  # 如无level2，则rect的水平中心，否则rect的left稍往右偏移
+                    (
+                        r["y"] + r["dy"] / 2
+                        if level2 is None
+                        else r["y"] + r["dy"] - r["dx"] * 0.05
+                    ),  # 如无level2，则rect的垂直中心，否则rect的Top稍往下偏移
                     df_size1.index[i],
                     ha="center" if level2 is None else "left",
                     va="center",
@@ -2169,7 +2189,6 @@ class PlotPie(Plot):
         label_formatter: str = "{abs}",
         donut: bool = False,
         donut_title: Optional[str] = None,
-        *args,
         **kwargs,
     ) -> PlotPie:
         """继承基本类，绘制饼图
@@ -2254,5 +2273,67 @@ class PlotPie(Plot):
             self.ax.add_artist(my_circle)  # 用白色圆圈覆盖饼图，变成圈图
 
         self.style._show_legend = False  # Pie图默认不显示图例
+
+        return self
+
+
+# 继承基本类, 绘制华夫图waffle plot
+
+
+class PlotWaffle(Plot):
+    def plot(
+        self,
+        rows: int = 10,
+        columns: int = 10,
+        size: Optional[str] = None,
+        colors: Optional[List[str]] = None,
+        vertical: bool = True,
+        block_arranging_style: Literal["snake", "new-line"] = "snake",
+        icons: Optional[Union[List[str], str]] = None,
+        **kwargs,
+    ) -> PlotWaffle:
+        """继承基本类，绘制华夫图
+
+        Args:
+            rows (int, optional): 行数. Defaults to 10.
+            columns (int, optional): 列数. Defaults to 10.
+            size (Optional[str], optional): 指定size列，如不指定则默认为第1列. Defaults to None.
+            colors (Optional[List[str]], optional): 指定颜色列表，如不指定将使用默认颜色方案. Defaults to None.
+            vertical (bool, optional): 分类按垂直发展. Defaults to True.
+            block_arranging_style (Literal["snake", "new"], optional): 每个分类如何起始，"snake"为紧接上类末尾，"new-line"为每类新起一行. Defaults to "snake".
+            icons (Optional[Union[List[str], str]], optional): 指定矢量图形，为Font Awesome字符串. Defaults to None.
+
+        Returns:
+            PlotWaffle: 返回一个自身实例
+        """
+        df = self.data
+
+        # 如果不指定，则分别读取df第1列为size
+        size = df.iloc[:, 0] if size is None else df.loc[:, size]
+        share = (
+            size.transform(lambda x: x / x.sum()).mul(100).astype(int).values.tolist()
+        )
+
+        if colors is None:
+            colors = []
+            for idx in size.index:
+                if idx in self._color_dict.keys():
+                    colors.append(self._colors.get_color(idx))
+                else:
+                    colors.append(next(self._colors.iter_colors))
+
+        self.ax.set_aspect(aspect="equal")
+        Waffle.make_waffle(
+            ax=self.ax,  # pass axis to make_waffle
+            rows=rows,
+            columns=columns,
+            values=share,
+            colors=colors,
+            rounding_rule="ceil",
+            vertical=vertical,
+            block_arranging_style=block_arranging_style,
+            icons=icons,
+            **kwargs,
+        )
 
         return self

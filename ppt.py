@@ -649,11 +649,8 @@ class SlideContent:
 
 
 class PPT:
-    def __init__(self, template_path: str, save_path: str = None) -> None:
+    def __init__(self, template_path: str) -> None:
         self.template_path = template_path
-        self.save_path = (
-            save_path or f"{os.path.dirname(self.template_path)}presentation.pptx"
-        )
         self.prs = Presentation(template_path)
         """初始化一个PPT类
 
@@ -686,9 +683,11 @@ class PPT:
         content = SlideContent(self.prs, slide)
         return content
 
-    def save(self):
-        self.prs.save(self.save_path)
-        print(f"{self.save_path} has been saved")
+    def save(self, save_path:Optional[str]=None) -> None:
+        if save_path is None:
+            save_path = f"{os.path.dirname(self.template_path)}/presentation.pptx"
+        self.prs.save(save_path)
+        print(f"{save_path} has been saved")
 
 
 if __name__ == "__main__":
@@ -704,7 +703,7 @@ if __name__ == "__main__":
         fill_color="F0CB46",
     )
     c.add_image(
-        "D:\PyProjects\chart_class\plots\肾性贫血市场分治疗大类PTD滚动年趋势.png",
+        "D:\PyProjects\chart_class\plots\柱状图.png",
         width=c.body.width * 0.8,
         height=None,
         loc=c.body.center,

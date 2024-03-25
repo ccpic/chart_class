@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 
 COLOR_DICT = {
+    "未填写": "grey",
     "100MG * 1": "#6F8DB9",
     "100MG * 2": "#6F8DB9",
     "10MG": "slateblue",

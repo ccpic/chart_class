@@ -4,6 +4,7 @@ from dataframe import DfAnalyzer
 import matplotlib.pyplot as plt
 from figure import GridFigure
 
+
 if __name__ == "__main__":
     df = pd.read_excel("data.xlsx", engine="openpyxl")
     a = DfAnalyzer(data=df, name="test", date_column="Date", period_interval=3)
@@ -23,6 +24,31 @@ if __name__ == "__main__":
         .set_index("药品名称")
     )
     print(pivoted)
+
+    """绘制华夫图
+    """
+    f = plt.figure(
+        FigureClass=GridFigure,
+        nrows=2,
+        ncols=5,
+        width=16,
+        height=5,
+        fontsize=11,
+        style={
+            "title": "华夫图",
+        },
+    )
+    for i, col in enumerate(pivoted.columns[-10:]):
+        f.plot(
+            kind="waffle",
+            data=pivoted,
+            ax_index=i,
+            style={"title": col},
+            size=col,
+            icons="user",
+        )
+
+    f.save()
 
     """绘制Treemap
     """

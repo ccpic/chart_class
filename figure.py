@@ -17,7 +17,8 @@ from plots import (
     PlotTreemap,  # noqa: F401
     PlotPie,  # noqa: F401
     PlotArea,  # noqa: F401
-    PlotBarh  # noqa: F401
+    PlotBarh,  # noqa: F401
+    PlotWaffle,  # noqa: F401
 )
 import pandas as pd
 from color import CMAP_QUAL, CMAP_NORM, COLOR_DICT
@@ -248,6 +249,7 @@ class GridFigure(Figure):
             "wordcloud",
             "pie",
             "area",
+            "waffle",
         ],
         data: pd.DataFrame,
         fmt: str = "{:,.0f}",
@@ -357,7 +359,14 @@ class GridFigure(Figure):
                 edgecolor (Optional[str]): 扇叶边线的颜色. Defaults to "white",
                 label_fontsize (Optional[float]): 值标签的字体大小. Defaults to self.fontsize,
                 circle_distance (Optional[float]): 如果生成甜甜圈图，指定宽度. Defaults to 0.7,
-
+            waffle:
+                rows (int, optional): 行数. Defaults to 10.
+                columns (int, optional): 列数. Defaults to 10.
+                size (Optional[str], optional): 指定size列，如不指定则默认为第1列. Defaults to None.
+                colors (Optional[List[str]], optional): 指定颜色列表，如不指定将使用默认颜色方案. Defaults to None.
+                vertical (bool, optional): 分类按垂直发展. Defaults to True.
+                block_arranging_style (Literal["snake", "new"], optional): 每个分类如何起始，"snake"为紧接上类末尾，"new-line"为每类新起一行. Defaults to "snake".
+                icons (Optional[Union[List[str], str]], optional): 指定矢量图形，为Font Awesome字符串. Defaults to None.
         Returns:
         mpl.axes.Axes: mpl ax
         """
