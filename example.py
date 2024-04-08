@@ -43,9 +43,11 @@ if __name__ == "__main__":
             kind="waffle",
             data=pivoted,
             ax_index=i,
-            style={"title": col},
+            style={
+                "title": col,
+            },
             size=col,
-            icons="user",
+            # icons="user",
         )
 
     f.save()

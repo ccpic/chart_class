@@ -2323,6 +2323,8 @@ class PlotWaffle(Plot):
                     colors.append(next(self._colors.iter_colors))
 
         self.ax.set_aspect(aspect="equal")
+        # self.style._show_legend = False  # 不再使用Plot类的通用方法生成图例
+        
         Waffle.make_waffle(
             ax=self.ax,  # pass axis to make_waffle
             rows=rows,
@@ -2333,6 +2335,12 @@ class PlotWaffle(Plot):
             vertical=vertical,
             block_arranging_style=block_arranging_style,
             icons=icons,
+            # legend={
+            #     "labels": [k for k in size.index],
+            #     "loc": "lower left",
+            #     "bbox_to_anchor": (0, -0.4),
+            #     "fontsize": self.fontsize,
+            # },
             **kwargs,
         )
 

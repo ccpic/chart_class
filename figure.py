@@ -212,17 +212,17 @@ class GridFigure(Figure):
             """
 
             # 删除已经存在的重复图例
-            handles, labels = [], []
+            fig_handles, fig_labels = [], []
             for i, _ax in enumerate(self._figure.axes):
                 handles, labels = _ax.get_legend_handles_labels()
                 for handle, label in zip(handles[::-1], labels[::-1]):
-                    if label not in labels:
-                        handles.append(handle)
-                        labels.append(label)
+                    if label not in fig_labels:
+                        fig_handles.append(handle)
+                        fig_labels.append(label)
 
             self._figure.legend(
-                handles=handles,
-                labels=labels,
+                handles=fig_handles,
+                labels=fig_labels,
                 loc=loc,
                 ncol=ncol,
                 bbox_to_anchor=bbox_to_anchor,
