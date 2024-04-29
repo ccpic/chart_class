@@ -600,10 +600,11 @@ class PlotBubble(Plot):
         z = df.iloc[:, 2] if z is None else df.loc[:, z]
 
         # z列标准化并乘以系数以得到一般情况下都合适的气泡大小
-        if z.max() != z.min():
-            z = (z - z.min()) / (z.max() - z.min())
-        z = (z * 100) ** 1.8 * bubble_scale
-        print(z)
+        # max_normed = 1
+        # min_normed = z.min() / z.max()
+        # if z.max() != z.min():
+        #     z = min_normed + (z - z.min()) * (max_normed - min_normed) / (z.max() - z.min())
+        z = (z/z.max() * 100) ** 1.8 * bubble_scale
 
         # 设置默认风格，并根据kwargs更新
         d_style = {
@@ -2324,7 +2325,7 @@ class PlotWaffle(Plot):
 
         self.ax.set_aspect(aspect="equal")
         # self.style._show_legend = False  # 不再使用Plot类的通用方法生成图例
-        
+
         Waffle.make_waffle(
             ax=self.ax,  # pass axis to make_waffle
             rows=rows,
