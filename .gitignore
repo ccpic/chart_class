@@ -1,5 +1,7 @@
 /__pycache__
+/example/__pycache__
 /.venv
 /plots
 *.pptx
 *.xlsx
+*.png

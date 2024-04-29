@@ -181,7 +181,6 @@ COLOR_DICT = {
     "依那普利（YAZ）": "saddlebrown",
     "依那普利拉": "olivedrab",
     "依降钙素": "olivedrab",
-    "信立坦": "purple",
     "信立坦": "teal",
     "信立坦（SI6）": "teal",
     "信立明": "teal",
@@ -614,7 +613,6 @@ COLOR_LIST = [
 CMAP_QUAL = ListedColormap(COLOR_LIST)
 CMAP_NORM = plt.get_cmap("PiYG")
 RANDOM_CMAP = mpl.colors.ListedColormap(np.random.rand(256, 3))
-
 
 class Colors:
     def __init__(

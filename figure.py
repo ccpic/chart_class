@@ -109,18 +109,16 @@ class GridFigure(Figure):
         self.set_size_inches(self.width, self.height)
 
         # Grid
-        if self.gridspec is not None:
-            for i, axes in enumerate(self.gridspec):
-                if i == 0:
-                    main_ax = self.add_subplot(axes)
-                else:
-                    self.add_subplot(
-                        axes,
-                        sharex=main_ax if sharex else None,  # 多个子图共享x轴
-                        sharey=main_ax if sharey else None,  # 多个子图共享y轴
-                    )
-        else:
-            self.add_subplot(111)
+        for i, axes in enumerate(self.gridspec):
+            if i == 0:
+                main_ax = self.add_subplot(axes)
+            else:
+                self.add_subplot(
+                    axes,
+                    sharex=main_ax if sharex else None,  # 多个子图共享x轴
+                    sharey=main_ax if sharey else None,  # 多个子图共享y轴
+                )
+
 
     class Style:
         def __init__(self, figure: mpl.figure.Figure, **kwargs) -> None:
@@ -447,7 +445,7 @@ class GridFigure(Figure):
         # 根据图表标题设置保存文件名
         path = "%s%s.png" % (
             plot_dir,
-            "test"
+            "无标题"
             if self.style._title is None
             else self.style._title.replace("/", "_"),
         )
