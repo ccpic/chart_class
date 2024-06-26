@@ -23,7 +23,8 @@ if __name__ == "__main__":
         data=df,
         ax_index=0,
         style={"minor_grid": {}, "xticklabel_rotation": 90},
-        show_label=df.columns[1],
+        show_label=df.columns,
+        endpoint_label_only=True, 
     )
 
     f.annotate(x1=2, x2=19, text="啦啦啦啦")

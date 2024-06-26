@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.ticker import FuncFormatter, MultipleLocator
 import matplotlib.patches as patches
+from matplotlib.collections import PatchCollection
 from adjustText import adjust_text
 import scipy.stats as stats
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -604,7 +605,7 @@ class PlotBubble(Plot):
         # min_normed = z.min() / z.max()
         # if z.max() != z.min():
         #     z = min_normed + (z - z.min()) * (max_normed - min_normed) / (z.max() - z.min())
-        z = (z/z.max() * 100) ** 1.8 * bubble_scale
+        z = (z / z.max() * 100) ** 1.8 * bubble_scale
 
         # 设置默认风格，并根据kwargs更新
         d_style = {
@@ -1215,11 +1216,15 @@ class PlotBar(Plot):
 
         d_style = {
             "bar_width": 0.8,
-            "label_fontsize": self.fontsize,
+            "label_fontsize": kwargs.get("label_fontsize", self.fontsize),
+            "bbox": None,
         }
         d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
 
         # 绝对值bar图和增长率标注
+
+        # bar宽度
+        bar_width = d_style.get("bar_width")
         for k, index in enumerate(df.index):
             bottom_pos = 0
             bottom_neg = 0
@@ -1247,15 +1252,18 @@ class PlotBar(Plot):
                 }
 
                 # 如果有指定颜色就颜色，否则按预设列表选取
-                if stacked:
-                    if col in self._color_dict.keys():
-                        color = self._colors.get_color(col)
-                    elif index in self._color_dict.keys():
-                        color = self._colors.get_color(index)
+                if kwargs.get("bar_color"):
+                    color = kwargs.get("bar_color")
+                else:
+                    if stacked:
+                        if col in self._color_dict.keys():
+                            color = self._colors.get_color(col)
+                        elif index in self._color_dict.keys():
+                            color = self._colors.get_color(index)
+                        else:
+                            color = next(self._colors.iter_colors)
                     else:
                         color = next(self._colors.iter_colors)
-                else:
-                    color = next(self._colors.iter_colors)
 
                 # # 如果是关注的index，则特定着色
                 # if index == focus:
@@ -1268,9 +1276,6 @@ class PlotBar(Plot):
                         bottom = bottom_neg
                 else:
                     bottom = 0
-
-                # bar宽度
-                bar_width = d_style.get("bar_width")
 
                 # bar x轴位置
                 if stacked:
@@ -1311,11 +1316,15 @@ class PlotBar(Plot):
                         if 0 <= v < max_v * 0.05:
                             pos_y = v * 1.1
                             va = "bottom"
-                            fontcolor = color
+                            fontcolor = (
+                                color if d_style.get("bbox") is None else "white"
+                            )
                         elif min_v * 0.05 < v < 0:
                             pos_y = v * 0.9
                             va = "top"
-                            fontcolor = color
+                            fontcolor = (
+                                color if d_style.get("bbox") is None else "white"
+                            )
                         else:
                             pos_y = v / 2
                             va = "center"
@@ -1336,18 +1345,19 @@ class PlotBar(Plot):
                             ha="center",
                             fontsize=d_style.get("label_fontsize"),
                             zorder=5,
+                            bbox=d_style.get("bbox"),
                         )
                 if v >= 0:
                     bottom_pos += v
                 else:
                     bottom_neg += v
 
-                patches = self.ax.patches
-                for rect in patches:
-                    height = rect.get_height()
-                    # 负数则添加纹理
-                    if height < 0 or (focus and index in focus):
-                        rect.set_hatch("//")
+                # patches = self.ax.patches
+                # for rect in patches:
+                #     height = rect.get_height()
+                #     # 负数则添加纹理
+                #     if height < 0 or (focus and index in focus):
+                #         rect.set_hatch("//")
 
                 if show_gr_text:
                     if k > 0:
@@ -1492,17 +1502,16 @@ class PlotBarh(Plot):
 
         d_style = {
             "bar_height": 0.8,
-            "label_fontsize": self.fontsize,
+            "label_fontsize": kwargs.get("label_fontsize", self.fontsize),
         }
         d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
 
         # 绝对值bar图和增长率标注
+        max_v = np.nanmax(df.values)
+        min_v = np.nanmin(df.values)
         for k, index in enumerate(df.index):
             left_pos = 0
             left_neg = 0
-
-            max_v = df.values.max()
-            min_v = df.values.min()
 
             self._colors.iter_colors = cycle(
                 self._colors.cmap_qual(i) for i in range(self._colors.cmap_qual.N)
@@ -1524,15 +1533,19 @@ class PlotBarh(Plot):
                 }
 
                 # 如果有指定颜色就颜色，否则按预设列表选取
-                if stacked:
-                    if col in self._color_dict.keys():
-                        color = self._colors.get_color(col)
-                    elif index in self._color_dict.keys():
-                        color = self._colors.get_color(index)
+                # 如果有指定颜色就颜色，否则按预设列表选取
+                if kwargs.get("bar_color"):
+                    color = kwargs.get("bar_color")
+                else:
+                    if stacked:
+                        if col in self._color_dict.keys():
+                            color = self._colors.get_color(col)
+                        elif index in self._color_dict.keys():
+                            color = self._colors.get_color(index)
+                        else:
+                            color = next(self._colors.iter_colors)
                     else:
                         color = next(self._colors.iter_colors)
-                else:
-                    color = next(self._colors.iter_colors)
 
                 if stacked:
                     if v >= 0:
@@ -1572,11 +1585,15 @@ class PlotBarh(Plot):
                             if 0 <= v < max_v * 0.2:
                                 pos_x = v + margin
                                 ha = "left"
-                                fontcolor = color
+                                fontcolor = (
+                                    color if d_style.get("bbox") is None else "white"
+                                )
                             elif min_v * 0.2 < v < 0:
                                 pos_x = v - margin
                                 ha = "right"
-                                fontcolor = color
+                                fontcolor = (
+                                    color if d_style.get("bbox") is None else "white"
+                                )
                             else:
                                 pos_x = v / 2
                                 ha = "center"
@@ -1636,13 +1653,15 @@ class PlotBarh(Plot):
         )
         self.ax.axvline(0, color="black", linewidth=0.5)  # x轴为0的竖线
 
+        self.ax.invert_yaxis()  # 翻转y轴，最上方显示排名靠前的序列
+
         return self
 
 
 class PlotHist(Plot):
     def plot(
         self,
-        bins: int = 100,
+        bins: int = 10,
         tiles: int = 10,
         show_kde: bool = True,
         show_metrics: bool = True,
@@ -1653,7 +1672,7 @@ class PlotHist(Plot):
         """继承基本类，绘制histogram直方图
 
         Args:
-            bins (int, optional): 直方图柱的个数. Defaults to 100.
+            bins (int, optional): 直方图柱的个数. Defaults to 10.
             tiles (int, optional): 等分线的个数. Defaults to 10.
             show_kde (bool, optional): 是否显示核密度估计曲线. Defaults to True.
             show_metrics (bool, optional): 是否显示均值和中位数. Defaults to True.
@@ -1665,18 +1684,34 @@ class PlotHist(Plot):
         """
 
         df = self.data
+
+        # 设置默认风格，并根据kwargs更新
+        d_style = {
+            "color_hist": "grey",
+            "color_kde": "darkorange",
+            "color_mean": "purple",
+            "color_median": "crimson",
+        }
+        d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
+
         df.plot(
             kind="hist",
             density=True,
             bins=bins,
             ax=self.ax,
-            color="grey",
+            color=d_style.get("color_hist"),
             legend=None,
             alpha=0.5,
         )
         if show_kde:
             ax_kde = self.ax.twinx()
-            df.plot(kind="kde", ax=ax_kde, color="darkorange", legend=None, ind=ind)
+            df.plot(
+                kind="kde",
+                ax=ax_kde,
+                color=d_style.get("color_kde"),
+                legend=None,
+                ind=ind,
+            )
             # ax_kde.get_legend().remove()
             ax_kde.set_yticks([])  # 删除y轴刻度
             ax_kde.set_ylabel(None)
@@ -1732,8 +1767,8 @@ class PlotHist(Plot):
 
         # 添加均值、中位数等信息
         if show_metrics:
-            median = np.median(df.values)  # 计算中位数
-            mean = np.mean(df.values)  # 计算平均数
+            median = np.nanmedian(df.values)  # 计算中位数
+            mean = np.nanmean(df.values)  # 计算平均数
             # if self.text_diff is not None:
             #     median_diff = self.text_diff[j]["中位数"]  # 计算对比中位数
             #     mean_diff = self.text_diff[j]["平均数"]  # 计算对比平均数
@@ -1749,31 +1784,59 @@ class PlotHist(Plot):
                 pos_median = "right"
                 pos_mean = "left"
 
-            self.ax.axvline(median, color="crimson", linestyle=":")
+            self.ax.axvline(median, color=d_style.get("color_median"), linestyle=":")
             self.ax.text(
                 median,
                 self.ax.get_ylim()[1] * yindex_median,
                 f"中位数：{self.fmt.format(median)}",
                 ha=pos_median,
-                color="crimson",
+                color="white",
                 fontsize=self.fontsize,
+                bbox=dict(
+                    boxstyle="round,pad=0.5",
+                    facecolor=d_style.get("color_median"),
+                    edgecolor=d_style.get("color_median"),
+                    linewidth=1,
+                    alpha=0.7,
+                ),
+                zorder=100,
             )
 
-            self.ax.axvline(mean, color="purple", linestyle=":")
+            self.ax.axvline(mean, color=d_style.get("color_mean"), linestyle=":")
             self.ax.text(
                 mean,
                 self.ax.get_ylim()[1] * yindex_mean,
                 f"平均数：{self.fmt.format(mean)}",
                 ha=pos_mean,
-                color="purple",
+                color="white",
                 fontsize=self.fontsize,
+                bbox=dict(
+                    boxstyle="round,pad=0.5",
+                    facecolor=d_style.get("color_mean"),
+                    edgecolor=d_style.get("color_mean"),
+                    linewidth=1,
+                    alpha=0.7,
+                ),
+                zorder=100,
             )
 
         # 去除ticks
         self.ax.get_yaxis().set_ticks([])
+        # self.ax.xaxis.set_major_formatter(ticker.StrMethodFormatter(self.fmt))
 
         # 轴标题
         self.ax.set_ylabel("频次", fontsize=self.fontsize)
+
+        # x轴显示范围
+        if isinstance(df, pd.DataFrame):
+            self.ax.set_xlim(df.min().min(), df.max().max())
+        else:
+            self.ax.set_xlim(df.min(), df.max())
+
+        ax_kde.spines["right"].set_visible(False)
+        ax_kde.spines["top"].set_visible(False)
+        ax_kde.yaxis.set_ticks_position("left")
+        ax_kde.xaxis.set_ticks_position("bottom")
 
         return self
 
@@ -2345,4 +2408,96 @@ class PlotWaffle(Plot):
             **kwargs,
         )
 
+        return self
+
+
+class PlotFunnel(Plot):
+    def plot(
+        self, size: Optional[str] = None, height: Optional[float] = 0.7, **kwargs
+    ) -> PlotFunnel:
+        df = self.data
+
+        # 设置默认风格，并根据kwargs更新
+        d_style = {
+            "color": "navy",
+            "bbox": dict(
+                boxstyle="round,pad=0.5",
+                facecolor="grey",
+                edgecolor="black",
+                linewidth=1,
+                alpha=0.5,
+            ),
+            "label_ha": "center",  # "center", "right", "left
+            "show_label": True,
+        }
+        d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
+
+        labels = df.index
+        size = df.iloc[:, 0] if size is None else df.loc[:, size]
+        max = size[0]
+        dummy1 = [max / 2 - i / 2 for i in size]  # 为了形成漏斗两侧的留白
+        dummy2 = [
+            i + j for i, j in zip(size, dummy1)
+        ]  # 原始值+留白，使漏斗bar出现在图片中间
+
+        self.ax.barh(
+            labels[::-1], dummy2[::-1], color=d_style.get("color"), height=height
+        )
+        self.ax.barh(labels[::-1], dummy1[::-1], color="white", height=height)
+        self.ax.axis("off")
+
+        polygons = []
+        for i in range(len(size)):
+            # 标签
+            if d_style.get("show_label"):
+                self.ax.text(
+                    max * (-0.1),
+                    i,
+                    labels[::-1][i],
+                    ha=d_style.get("label_ha"),
+                    va="center",
+                    multialignment="center",
+                    fontsize=self.fontsize * 1.2,
+                    bbox=d_style.get("bbox"),
+                )
+
+            # 数量
+            self.ax.text(
+                dummy2[0] / 2,
+                i,
+                self.fmt.format(size[::-1][i]),
+                ha="center",
+                va="center",
+                multialignment="center",
+                fontsize=self.fontsize,
+                color="white",
+            )
+
+            # 转化率
+            if i < (len(size) - 1):
+                self.ax.text(
+                    dummy2[0] / 2,
+                    len(size) - 1.5 - i,
+                    "{:.1%}".format(size[i + 1] / size[i]),
+                    ha="center",
+                    va="center",
+                    multialignment="center",
+                    fontsize=self.fontsize,
+                )
+
+                polygons.append(
+                    patches.Polygon(
+                        xy=np.array(
+                            [
+                                (dummy1[i + 1], len(size) - 2 + height / 2 - i),
+                                (dummy2[i + 1], len(size) - 2 + height / 2 - i),
+                                (dummy2[i], len(size) - 1 - height / 2 - i),
+                                (dummy1[i], len(size) - 1 - height / 2 - i),
+                            ]
+                        )
+                    )
+                )
+        self.ax.add_collection(
+            PatchCollection(polygons, facecolor=d_style.get("color"), alpha=0.5)
+        )
         return self

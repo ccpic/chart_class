@@ -19,11 +19,13 @@ from plots import (
     PlotArea,  # noqa: F401
     PlotBarh,  # noqa: F401
     PlotWaffle,  # noqa: F401
+    PlotFunnel,  # noqa: F401
 )
 import pandas as pd
 from color import CMAP_QUAL, CMAP_NORM, COLOR_DICT
 from annotation import Connection
 import inspect
+import re
 
 try:
     from typing import Literal
@@ -50,7 +52,7 @@ class GridFigure(Figure):
         width: int = 15,
         height: int = 6,
         fontsize: int = 14,
-        color_dict: Dict[str, str] = COLOR_DICT,
+        color_dict: Dict[str, str] = {},
         cmap_qual: mpl.colors.Colormap = CMAP_QUAL,
         cmap_norm: mpl.colors.Colormap = CMAP_NORM,
         style: Dict[str, Any] = {},
@@ -66,8 +68,8 @@ class GridFigure(Figure):
             height_ratios (Optional[List[float]], optional): 子图高度比. Defaults to None.
             wspace (float, optional): 子图水平间距. Defaults to 0.1.
             hspace (float, optional): 子图垂直间距. Defaults to 0.1.
-            share_x (bool, optional): 子图是否共享x轴. Defaults to False.
-            share_y (bool, optional): 子图是否共享y轴. Defaults to False.
+            sharex (bool, optional): 子图是否共享x轴. Defaults to False.
+            sharey (bool, optional): 子图是否共享y轴. Defaults to False.
             savepath (str, optional): 绘图文件保存路径. Defaults to "/plots/".
             width (int, optional): 总宽度. Defaults to 15.
             height (int, optional): 总高度. Defaults to 6.
@@ -99,7 +101,7 @@ class GridFigure(Figure):
         self.width = width
         self.height = height
         self.fontsize = fontsize
-        self._color_dict = COLOR_DICT if color_dict is None else color_dict
+        self._color_dict = color_dict
         self._cmap_qual = cmap_qual
         self._cmap_norm = cmap_norm
         self._style = style
@@ -118,7 +120,6 @@ class GridFigure(Figure):
                     sharex=main_ax if sharex else None,  # 多个子图共享x轴
                     sharey=main_ax if sharey else None,  # 多个子图共享y轴
                 )
-
 
     class Style:
         def __init__(self, figure: mpl.figure.Figure, **kwargs) -> None:
@@ -248,6 +249,7 @@ class GridFigure(Figure):
             "pie",
             "area",
             "waffle",
+            "funnel",
         ],
         data: pd.DataFrame,
         fmt: str = "{:,.0f}",
@@ -372,7 +374,7 @@ class GridFigure(Figure):
         cls = globals()[f"Plot{kind.capitalize()}"]
         # 根据ax_index确定ax
         ax = self.axes[ax_index]
-
+        
         cls(
             data=data,
             fmt=fmt,
@@ -415,10 +417,13 @@ class GridFigure(Figure):
 
         return ax
 
-    def save(self, transparent: bool = True, dpi: int = 300) -> str:
+    def save(
+        self, tight_layout: bool = True, transparent: bool = True, dpi: int = 300
+    ) -> str:
         """保存图片
 
         Args:
+            tight_layout (bool, optional): 是否自动调整子图参数，使之填充整个图像区域. Defaults to True.
             transparent (bool, optional): 背景是否透明. Defaults to True.
             dpi (int, optional): _description_. Defaults to 600.
 
@@ -427,7 +432,10 @@ class GridFigure(Figure):
         """
 
         self.style.apply_style()  # 应用风格，一些风格只能在绘图后生效
-        self.gridspec.tight_layout(self)  # 自动调整子图参数，使之填充整个图像区域，但有时不生效
+        if tight_layout:
+            self.gridspec.tight_layout(
+                self
+            )  # 自动调整子图参数，使之填充整个图像区域，但有时不生效
 
         # 该语句返回chart_class的文件夹而不是引用它的程序的文件夹
         # script_dir = os.path.dirname(__file__)
@@ -445,14 +453,17 @@ class GridFigure(Figure):
         # 根据图表标题设置保存文件名
         path = "%s%s.png" % (
             plot_dir,
-            "无标题"
-            if self.style._title is None
-            else self.style._title.replace("/", "_"),
+            (
+                "无标题"
+                if self.style._title is None
+                else re.sub(r"[\n/]", "_", self.style._title)
+            ),
         )
         self.savefig(
             path,
             format="png",
             bbox_inches="tight",
+            pad_inches=0.1,
             transparent=transparent,
             dpi=dpi,
         )

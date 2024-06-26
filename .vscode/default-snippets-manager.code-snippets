@@ -1,0 +1,58 @@
+{
+	"bar": {
+		"prefix": "bar",
+		"description": "bar",
+		"scope": "python",
+		"body": [
+			"    f = plt.figure(\r",
+			"        FigureClass=GridFigure,\r",
+			"        width=15,\r",
+			"        height=6,\r",
+			"        ncols=1,\r",
+			"        fontsize=11,\r",
+			"        style={\r",
+			"            \"title\": \"柱状图\",\r",
+			"        },\r",
+			"    )\r",
+			"\r",
+			"    f.plot(\r",
+			"        kind=\"bar\",\r",
+			"        data=df,\r",
+			"        ax_index=0,\r",
+			"        style={\"xticklabel_rotation\": 90},\r",
+			"        color_dict={\"奥拉帕利片\": \"darkorange\"},\r",
+			"        show_total_label=True,\r",
+			"    )\r",
+			"\r",
+			"    f.save()"
+		]
+	},
+	"plot_bar": {
+		"prefix": "plot_bar",
+		"description": "plot_bar",
+		"scope": "python",
+		"body": [
+			"    f = plt.figure(\r",
+			"        FigureClass=GridFigure,\r",
+			"        width=15,\r",
+			"        height=6,\r",
+			"        ncols=1,\r",
+			"        fontsize=11,\r",
+			"        style={\r",
+			"            \"title\": \"柱状图\",\r",
+			"        },\r",
+			"    )\r",
+			"\r",
+			"    f.plot(\r",
+			"        kind=\"bar\",\r",
+			"        data=df,\r",
+			"        ax_index=0,\r",
+			"        style={\"xticklabel_rotation\": 90},\r",
+			"        color_dict={\"奥拉帕利片\": \"darkorange\"},\r",
+			"        show_total_label=True,\r",
+			"    )\r",
+			"\r",
+			"    f.save()"
+		]
+	}
+}
