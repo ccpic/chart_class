@@ -23,7 +23,7 @@ from plots import (
 )
 import pandas as pd
 from color import CMAP_QUAL, CMAP_NORM, COLOR_DICT
-from annotation import Connection
+from components.annotation import Connection
 import inspect
 import re
 
@@ -52,7 +52,7 @@ class GridFigure(Figure):
         width: int = 15,
         height: int = 6,
         fontsize: int = 14,
-        color_dict: Dict[str, str] = {},
+        color_dict: Dict[str, str] = COLOR_DICT,
         cmap_qual: mpl.colors.Colormap = CMAP_QUAL,
         cmap_norm: mpl.colors.Colormap = CMAP_NORM,
         style: Dict[str, Any] = {},

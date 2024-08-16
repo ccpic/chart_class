@@ -369,6 +369,7 @@ class DfAnalyzer:
 
         # 如果index是日期格式，则根据格式转换为字符串
         if index == self.date_column:
+            df.index = pd.to_datetime(df.index)
             df.index = df.index.strftime(self._strftime)
 
         if columns == self.date_column:

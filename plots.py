@@ -695,7 +695,6 @@ class PlotBubble(Plot):
                 warnings.warn("画布存在colorbar，label_outer风格不生效", UserWarning)
 
         # 添加系列标签
-        np.random.seed(0)
         texts = []
         x_shown = x if xlim is None else x[x.between(xlim[0], xlim[1])]
         y_shown = y if ylim is None else y[y.between(ylim[0], ylim[1])]
@@ -731,10 +730,11 @@ class PlotBubble(Plot):
 
         # 用adjust_text包保证标签互不重叠
         if label_limit > 1:
+            np.random.seed(0)
             adjust_text(
                 texts,
                 ax=self.ax,
-                force_text=0.5,
+                # force_text=0.5,
                 arrowprops=dict(arrowstyle="->", color="black"),
             )
 
@@ -864,7 +864,10 @@ class PlotBoxdot(Plot):
             order=order,
         )
 
+        # 确保绘制完成后获取 x 轴标签
+        self.figure.canvas.draw()
         ax_xticklabels = [t.get_text() for t in ax.get_xticklabels()]  # 获取x轴标签列表
+
         # 添加数据点标签
 
         labels = []
@@ -879,6 +882,7 @@ class PlotBoxdot(Plot):
                 ]  # 获得散点图的坐标，因为有jitter，不能直接用原始数
 
                 if point[1] > label_threshold:  # y值大于某阈值的才显示
+
                     labels.append(
                         plt.text(
                             point[0],
@@ -993,7 +997,9 @@ class PlotLine(Plot):
             endpoint_label_only (bool, optional): 标签是全部显示还是只显示首尾节点. Defaults to False.
 
         Kwargs:
+            adjust_labels (bool, optional): 是否自动调整标签位置. Defaults to True.
             linewidth (int, optional): 线宽. Defaults to 2.
+            linestyle(str, optional): 线型. Defaults to "-".
             marker(str,optional): 标记形状. Defaults to "o".
             markersize(int, optional): 标记大小. Defaults to 5.
 
@@ -1004,27 +1010,41 @@ class PlotLine(Plot):
         df = self.data
 
         d_style = {
-            "linewidth": 2,
-            "marker": "o",
-            "markersize": 5,
+            "adjust_labels": True,
+            "linewidth": 2,  # 线条粗细
+            "linestyle": "-",  # 线条样式
+            "marker": "o",  # 标记点样式
+            "markersize": 5,  # 标记点大小
         }
         d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
 
+        lines = []
+        texts = []
         for i, column in enumerate(df.columns):
             # 如果有指定颜色就颜色，否则按预设列表选取
             color = self._colors.get_color(column)
 
             # 生成折线图
-            self.ax.plot(
-                df.index,
-                df[column],
-                color=color,
-                linewidth=d_style.get("linewidth"),
-                label=column,
-                marker=d_style.get("marker"),
-                markersize=d_style.get("markersize"),
-                markerfacecolor="white",
-                markeredgecolor=color,
+            lines.append(
+                self.ax.plot(
+                    df.index,
+                    df[column],
+                    color=color,
+                    linestyle=d_style.get("linestyle"),
+                    linewidth=(
+                        2
+                        if self.focus is not None and column in self.focus
+                        else d_style.get("linewidth")
+                    ),
+                    label=column,
+                    marker=d_style.get("marker"),
+                    markersize=d_style.get("markersize"),
+                    markerfacecolor="white",
+                    markeredgecolor=color,
+                    zorder=(
+                        100 if self.focus is not None and column in self.focus else 10
+                    ),
+                )
             )
 
             # 标签
@@ -1032,31 +1052,55 @@ class PlotLine(Plot):
                 for k, idx in enumerate(df.index):
                     if endpoint_label_only:
                         if k == 0 or k == len(df.index) - 1:
-                            t = self.ax.text(
+                            texts.append(
+                                self.ax.text(
+                                    idx,
+                                    df.iloc[k, i],
+                                    self.fmt.format(df.iloc[k, i]),
+                                    ha="right" if k == 0 else "left",
+                                    va="center",
+                                    size=self.fontsize,
+                                    color="white",
+                                    bbox=dict(
+                                        facecolor=color, alpha=0.7, edgecolor=color
+                                    ),
+                                    zorder=100 if self.focus is not None and column in self.focus else 10,
+                                )
+                            )
+                    else:
+                        texts.append(
+                            self.ax.text(
                                 idx,
                                 df.iloc[k, i],
                                 self.fmt.format(df.iloc[k, i]),
-                                ha="right" if k == 0 else "left",
+                                ha="center",
                                 va="center",
                                 size=self.fontsize,
                                 color="white",
+                                bbox=dict(facecolor=color, alpha=0.7, edgecolor=color),
+                                zorder=(
+                                    100
+                                    if self.focus is not None and column in self.focus
+                                    else 10
+                                ),
                             )
-                    else:
-                        t = self.ax.text(
-                            idx,
-                            df.iloc[k, i],
-                            self.fmt.format(df.iloc[k, i]),
-                            ha="center",
-                            va="center",
-                            size=self.fontsize,
-                            color="white",
                         )
-                    t.set_bbox(dict(facecolor=color, alpha=0.7, edgecolor=color))
 
-            # y轴标签格式
-            self.ax.yaxis.set_major_formatter(
-                FuncFormatter(lambda y, _: self.fmt.format(y))
+        # 优化标签位置
+        if d_style.get("adjust_labels") is True:
+            np.random.seed(0)
+            adjust_text(
+                texts,
+                ax=self.ax,
+                only_move={"text": "y", "static": "y", "explode": "y", "pull": "y"},
+                arrowprops=dict(arrowstyle="-"),
+                max_move=(1, 1),
             )
+
+        # y轴标签格式
+        self.ax.yaxis.set_major_formatter(
+            FuncFormatter(lambda y, _: self.fmt.format(y))
+        )
 
         return self
 
@@ -1189,9 +1233,9 @@ class PlotBar(Plot):
         show_total_label: bool = False,
         show_gr_text: bool = False,
         show_gr_line: bool = False,
+        show_avg_line: bool = False,
         label_threshold: float = 0.02,
         period_change: int = 1,
-        focus: Optional[List[str]] = None,
         **kwargs,
     ) -> PlotBar:
         """继承基本Plot类，绘制柱状图
@@ -1213,11 +1257,17 @@ class PlotBar(Plot):
         df = self.data
         df_share = df.div(df.sum(axis=1), axis=0)
         df_gr = self.data.pct_change(axis=0, periods=period_change)
+        if df.shape[1] == 1:
+            avg = df.mean().values[0]
 
         d_style = {
-            "bar_width": 0.8,
-            "label_fontsize": kwargs.get("label_fontsize", self.fontsize),
-            "bbox": None,
+            "bar_width": 0.8,  # 柱宽
+            "bar_color": None,  # 柱指定颜色
+            "label_fontsize": self.fontsize,  # 标签字体大小
+            "bbox": None,  # 标签背景
+            "fmt_abs": self.fmt,  # 绝对值标签格式
+            "fmt_share": "{:.1%}",  # 占比标签格式
+            "fmt_gr": "{:+.1%}",  # 增长率标签格式
         }
         d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
 
@@ -1230,8 +1280,9 @@ class PlotBar(Plot):
             bottom_neg = 0
             bottom_gr = 0
 
-            max_v = df.values.max()
-            min_v = df.values.min()
+            max_v = np.nanmax(df.values)
+            min_v = np.nanmin(df.values)
+            range_v = max_v - min_v
 
             self._colors.iter_colors = cycle(
                 self._colors.cmap_qual(i) for i in range(self._colors.cmap_qual.N)
@@ -1243,22 +1294,28 @@ class PlotBar(Plot):
                 gr = df_gr.loc[index, col]
                 total_gr = df.iloc[k, :].sum() / df.iloc[k - 1, :].sum() - 1
                 d_label = {
-                    "abs": kwargs.get("fmt_abs", self.fmt).format(v),
-                    "share": kwargs.get("fmt_share", "{:.1%}").format(share),
-                    "gr": kwargs.get("fmt_gr", "{:+.1%}").format(gr),
-                    "total_gr": kwargs.get("fmt_gr", "{:+.1%}").format(total_gr),
+                    "abs": d_style.get("fmt_abs").format(v),
+                    "share": d_style.get("fmt_share").format(share),
+                    "gr": d_style.get("fmt_gr").format(gr),
+                    "total_gr": d_style.get("fmt_gr").format(total_gr),
                     "index": index,
                     "col": col,
                 }
 
                 # 如果有指定颜色就颜色，否则按预设列表选取
-                if kwargs.get("bar_color"):
-                    color = kwargs.get("bar_color")
+                if d_style.get("bar_color"):
+                    color = d_style.get("bar_color")
                 else:
                     if stacked:
-                        if col in self._color_dict.keys():
+                        if (
+                            self._color_dict is not None
+                            and col in self._color_dict.keys()
+                        ):
                             color = self._colors.get_color(col)
-                        elif index in self._color_dict.keys():
+                        elif (
+                            self._color_dict is not None
+                            and index in self._color_dict.keys()
+                        ):
                             color = self._colors.get_color(index)
                         else:
                             color = next(self._colors.iter_colors)
@@ -1313,18 +1370,25 @@ class PlotBar(Plot):
                         stacked is False or df.shape[1] == 1
                     ):  # 非堆叠图或只有一列数的情况（非堆叠）
                         # 根据数据判断标签是否需要微调
-                        if 0 <= v < max_v * 0.05:
+                        if abs(v) <= range_v * 0.05:
                             pos_y = v * 1.1
-                            va = "bottom"
+                            va = "bottom" if v >= 0 else "top"
                             fontcolor = (
                                 color if d_style.get("bbox") is None else "white"
                             )
-                        elif min_v * 0.05 < v < 0:
-                            pos_y = v * 0.9
-                            va = "top"
-                            fontcolor = (
-                                color if d_style.get("bbox") is None else "white"
-                            )
+
+                        # if 0 <= v < max_v * 0.05:
+                        #     pos_y = v * 1.1
+                        #     va = "bottom"
+                        #     fontcolor = (
+                        #         color if d_style.get("bbox") is None else "white"
+                        #     )
+                        # elif min_v * 0.05 < v < 0:
+                        #     pos_y = v * 0.9
+                        #     va = "top"
+                        #     fontcolor = (
+                        #         color if d_style.get("bbox") is None else "white"
+                        #     )
                         else:
                             pos_y = v / 2
                             va = "center"
@@ -1440,8 +1504,8 @@ class PlotBar(Plot):
                 markersize=3,
                 markerfacecolor="white",
             )
-            if "y2lim" in kwargs:
-                ax2.set_ylim(kwargs["y2lim"][0], kwargs["y2lim"][1])
+            # if "y2lim" in kwargs:
+            #     ax2.set_ylim(kwargs["y2lim"][0], kwargs["y2lim"][1])
 
             for i in range(len(df_gr)):
                 if float(df_gr.values[i]) <= ax2.get_ylim()[1]:
@@ -1466,6 +1530,25 @@ class PlotBar(Plot):
 
             # # x轴标签
             # ax2.get_xaxis().set_ticks(range(0, len(df.index)), labels=df.index)
+
+        if show_avg_line and df.shape[1] == 1:
+            self.ax.axhline(
+                avg,
+                linestyle="dashed",
+                linewidth=0.5,
+                color="red",
+                zorder=100,
+            )
+            self.ax.text(
+                self.ax.get_xlim()[1],
+                avg,
+                f"平均：{self.fmt.format(avg)}",
+                ha="right",
+                va="bottom",
+                color="red",
+                fontsize=self.fontsize,
+                zorder=100,
+            )
 
         return self
 
@@ -1501,8 +1584,13 @@ class PlotBarh(Plot):
         df_share_total = df.div(df.sum())
 
         d_style = {
-            "bar_height": 0.8,
-            "label_fontsize": kwargs.get("label_fontsize", self.fontsize),
+            "bar_height": 0.8,  # bar高度
+            "bar_color": None,  # 柱指定颜色
+            "label_fontsize": self.fontsize,  # 标签字体大小
+            "bbox": None,  # 标签背景
+            "fmt_abs": self.fmt,  # 绝对值标签格式
+            "fmt_share": "{:.1%}",  # 占比标签格式
+            "fmt_gr": "{:+.1%}",  # 增长率标签格式
         }
         d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
 
@@ -1523,19 +1611,17 @@ class PlotBarh(Plot):
                 share_total = df_share_total.loc[index, col]
 
                 d_label = {
-                    "abs": kwargs.get("fmt_abs", self.fmt).format(v),
-                    "share": kwargs.get("fmt_share", "{:.1%}").format(share),
-                    "share_total": kwargs.get("fmt_share", "{:.1%}").format(
-                        share_total
-                    ),
+                    "abs": d_style.get("fmt_abs").format(v),
+                    "share": d_style.get("fmt_share").format(share),
+                    "share_total": d_style.get("fmt_share").format(share_total),
                     "index": index,
                     "col": col,
                 }
 
                 # 如果有指定颜色就颜色，否则按预设列表选取
                 # 如果有指定颜色就颜色，否则按预设列表选取
-                if kwargs.get("bar_color"):
-                    color = kwargs.get("bar_color")
+                if d_style.get("bar_color"):
+                    color = d_style.get("bar_color")
                 else:
                     if stacked:
                         if col in self._color_dict.keys():
