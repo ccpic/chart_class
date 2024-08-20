@@ -20,6 +20,8 @@ from plots import (
     PlotBarh,  # noqa: F401
     PlotWaffle,  # noqa: F401
     PlotFunnel,  # noqa: F401
+    PlotVenn2,  # noqa: F401
+    PlotVenn3,  # noqa: F401
 )
 import pandas as pd
 from color import CMAP_QUAL, CMAP_NORM, COLOR_DICT
@@ -397,6 +399,7 @@ class GridFigure(Figure):
         text: str,
         offset: Optional[float] = None,
         ax_index: int = 0,
+        **kwargs
     ) -> mpl.axes.Axes:
         """在指定ax画注释文本和线条
 
@@ -409,11 +412,13 @@ class GridFigure(Figure):
         # 根据ax_index确定ax
         ax = self.axes[ax_index]
 
-        plot_data = ax.get_lines()[0].get_ydata()
+        plot_data = []
+        for artist in ax.containers:
+            plot_data.append(artist[0].get_height())
         y1 = plot_data[x1]
         y2 = plot_data[x2]
 
-        Connection(ax, x1, x2, y1, y2, text, offset).draw()
+        Connection(ax, x1, x2, y1, y2, text, offset).draw(**kwargs)
 
         return ax
 

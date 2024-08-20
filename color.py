@@ -7,6 +7,13 @@ import pandas as pd
 import numpy as np
 
 COLOR_DICT = {
+    "爱瑞卓恩那罗共同目标": "darkorange",
+    "恩那罗独有目标": "#BB2549",
+    "爱瑞卓独有目标": "darkgreen",
+    "恩那罗目标": "#BB2549",
+    "恩那罗非目标": "grey",
+    "恩那罗": "#BB2549",
+    "爱瑞卓": "darkgreen",
     "地奥氨贝": "navy",
     "贝那普利氨氯地平片": "navy",
     "百安新": "crimson",

@@ -19,6 +19,7 @@ from itertools import cycle
 import squarify
 from color import Colors
 from pywaffle import Waffle
+from matplotlib_venn import venn2, venn2_circles, venn3, venn3_circles
 
 try:
     from typing import Literal
@@ -74,7 +75,7 @@ def regression_band(
     ax: mpl.axes.Axes,
     x: Sequence,
     y: Sequence,
-    n: int,
+    # n: int,
     show_ci: bool = True,
     show_pi: bool = False,
 ) -> None:
@@ -1064,7 +1065,12 @@ class PlotLine(Plot):
                                     bbox=dict(
                                         facecolor=color, alpha=0.7, edgecolor=color
                                     ),
-                                    zorder=100 if self.focus is not None and column in self.focus else 10,
+                                    zorder=(
+                                        100
+                                        if self.focus is not None
+                                        and column in self.focus
+                                        else 10
+                                    ),
                                 )
                             )
                     else:
@@ -2428,8 +2434,6 @@ class PlotPie(Plot):
 
 
 # 继承基本类, 绘制华夫图waffle plot
-
-
 class PlotWaffle(Plot):
     def plot(
         self,
@@ -2497,6 +2501,7 @@ class PlotWaffle(Plot):
         return self
 
 
+# 继承基本类, 绘制漏斗图
 class PlotFunnel(Plot):
     def plot(
         self, size: Optional[str] = None, height: Optional[float] = 0.7, **kwargs
@@ -2586,4 +2591,79 @@ class PlotFunnel(Plot):
         self.ax.add_collection(
             PatchCollection(polygons, facecolor=d_style.get("color"), alpha=0.5)
         )
+        return self
+
+
+# 继承基本类, 绘制2组数据的Venn图
+class PlotVenn2(Plot):
+
+    def plot(
+        self,
+        set1: Optional[set] = None,
+        set2: Optional[set] = None,
+        set_labels: tuple = None,
+        **kwargs,
+    ) -> PlotVenn2:
+        """继承基本类，绘制2组数据的Venn图
+
+        Args:
+            set1 (Optional[set], optional): 第1组原始数据，如果不提供则计算data参数传来的值. Defaults to None.
+            set2 (Optional[set], optional): 第2组原始数据，如果不提供则计算data参数传来的值. Defaults to None.
+            set_labels (tuple, optional): 组别标签. Defaults to None.
+
+        Returns:
+            PlotVenn2: 返回一个自身实例
+        """
+        if all((set1, set2)):
+            v = venn2(subsets=(set1, set2), set_labels=set_labels, ax=self.ax)
+            venn2_circles(subsets=(set1, set2), ax=self.ax)
+        else:
+            v = venn2(subsets=self.data, set_labels=set_labels, ax=self.ax)
+            venn2_circles(subsets=self.data, ax=self.ax)
+
+        # 获取并设置所有文本对象的字体大小
+        for text in self.ax.texts:
+            text.set_fontsize(self.fontsize)
+
+        # 颜色
+        if color:=kwargs.get("color"):
+            v.get_patch_by_id("10").set_color(color[0])
+            v.get_patch_by_id("01").set_color(color[1])
+            v.get_patch_by_id("11").set_color(color[2])
+                
+        return self
+
+
+class PlotVenn3(Plot):
+
+    def plot(
+        self,
+        set1: Optional[set] = None,
+        set2: Optional[set] = None,
+        set3: Optional[set] = None,
+        set_labels: tuple = None,
+        **kwargs,
+    ) -> PlotVenn2:
+        """继承基本类，绘制2组数据的Venn图
+
+        Args:
+            set1 (Optional[set], optional): 第1组原始数据，如果不提供则计算data参数传来的值. Defaults to None.
+            set2 (Optional[set], optional): 第2组原始数据，如果不提供则计算data参数传来的值. Defaults to None.
+            set3 (Optional[set], optional): 第3组原始数据，如果不提供则计算data参数传来的值. Defaults to None.
+            set_labels (tuple, optional): 组别标签. Defaults to None.
+
+        Returns:
+            PlotVenn3: 返回一个自身实例
+        """
+        if all((set1, set2, set3)):
+            venn3(subsets=(set1, set2, set3), set_labels=set_labels, ax=self.ax)
+            venn3_circles(subsets=(set1, set2, set3), ax=self.ax)
+        else:
+            venn3(subsets=self.data, set_labels=set_labels, ax=self.ax)
+            venn3_circles(subsets=self.data, ax=self.ax)
+
+        # 获取并设置所有文本对象的字体大小
+        for text in self.ax.texts:
+            text.set_fontsize(self.fontsize)
+
         return self
