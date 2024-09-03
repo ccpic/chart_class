@@ -1016,6 +1016,7 @@ class PlotLine(Plot):
             "linestyle": "-",  # 线条样式
             "marker": "o",  # 标记点样式
             "markersize": 5,  # 标记点大小
+            "line_color": None,  # 线条颜色
         }
         d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
 
@@ -1023,7 +1024,7 @@ class PlotLine(Plot):
         texts = []
         for i, column in enumerate(df.columns):
             # 如果有指定颜色就颜色，否则按预设列表选取
-            color = self._colors.get_color(column)
+            color = self._colors.get_color(column) if d_style.get("line_color") is None else d_style.get("line_color")
 
             # 生成折线图
             lines.append(
@@ -2626,11 +2627,11 @@ class PlotVenn2(Plot):
             text.set_fontsize(self.fontsize)
 
         # 颜色
-        if color:=kwargs.get("color"):
+        if color := kwargs.get("color"):
             v.get_patch_by_id("10").set_color(color[0])
             v.get_patch_by_id("01").set_color(color[1])
             v.get_patch_by_id("11").set_color(color[2])
-                
+
         return self
 
 

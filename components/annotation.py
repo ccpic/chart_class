@@ -16,7 +16,7 @@ class Connection:
         y1: float,
         y2: float,
         text: str,
-        offset: float = None,
+        offset: Optional[float] = None,
     ) -> None:
         """_summary_
 
