@@ -7,13 +7,25 @@ import pandas as pd
 import numpy as np
 
 COLOR_DICT = {
-    "爱瑞卓恩那罗共同目标": "darkorange",
-    "恩那罗独有目标": "#BB2549",
-    "爱瑞卓独有目标": "darkgreen",
-    "恩那罗目标": "#BB2549",
-    "恩那罗非目标": "grey",
+    "未开户": "grey",
+    "R>0但N=0": "crimson",
+    "N/R比=0%": "crimson",
+    "N/R比0-15%": "darkorange",
+    "N/R比15%-30%": "olivedrab",
+    "N/R比>30%": "darkgreen",
+    "爱瑞卓恩那罗共同自营": "darkorange",
+    "恩那罗独有自营": "#BB2549",
+    "爱瑞卓独有自营": "darkgreen",
+    "恩那罗自营": "#BB2549",
+    "恩那罗自营医院": "#BB2549",
+    "恩那罗非自营": "grey",
+    "恩那罗非自营医院": "grey",
     "恩那罗": "#BB2549",
     "爱瑞卓": "darkgreen",
+    "恩那罗H1月均": "purple",
+    "恩那罗M7单月": "#BB2549",
+    "恩那罗M78月均": "#BB2549",
+    "爱瑞卓H1月均": "darkgreen",
     "地奥氨贝": "navy",
     "贝那普利氨氯地平片": "navy",
     "百安新": "crimson",
@@ -61,8 +73,10 @@ COLOR_DICT = {
     "B03A 补血药，铁剂": "navy",
     "B03C 红细胞生成素": "crimson",
     "B03D HIF-PH抑制剂": "darkgreen",
-    "ESA": "darkorange",
-    "HIF-PHI": "darkgreen",
+    "ESA": "crimson",
+    "补血中药":"darkorange",
+    "铁剂": "navy",
+    "HIF-PHI": "teal",
     "BAI AN XIN (GRU)": "darkgreen",
     "BAYASPIRIN (BAY)": "navy",
     "BB": "crimson",
@@ -137,6 +151,7 @@ COLOR_DICT = {
     "Top-Mid20%": "olivedrab",
     "Top20%": "darkgreen",
     "趋势-P12M": "crimson",
+    "趋势-P9M": "deepskyblue",
     "趋势-P3M": "darkorange",
     "趋势-P6M": "olivedrab",
     "TUO PING (ZHT)": "deepskyblue",
@@ -657,7 +672,7 @@ class Colors:
 
     def get_colors(
         self,
-        n: int,
+        labels: pd.Series,
         color: str = None,
         hue: pd.Series = None,
         random_color: bool = True,
@@ -670,7 +685,7 @@ class Colors:
                 cmap = RANDOM_CMAP
             else:
                 cmap = ListedColormap([color])
-            colors = [cmap(i) for i in range(n)]
+            colors = [self.color_dict.get(labels[i], cmap(i)) for i in range(len(labels))]
         else:
             # 如果hue字段是numeric
             if pd.api.types.is_numeric_dtype(hue.dtype):

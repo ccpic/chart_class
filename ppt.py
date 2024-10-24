@@ -406,9 +406,23 @@ def is_light_color(color: Optional[Union[RGBColor, str]]) -> bool:
 
 
 class SlideContent:
-    def __init__(self, prs: Presentation, slide: Slide) -> None:
+    def __init__(
+        self,
+        prs: Presentation,
+        slide: Slide,
+        header_height: Cm = Cm(2.72),
+        body_top: Cm = Cm(2.91),
+        body_height: Cm = Cm(13.81),
+        footer_top: Cm = Cm(17.36),
+        footer_height: Cm = Cm(1.71),
+    ) -> None:
         self.prs = prs
         self.slide = slide
+        self.header_height = header_height
+        self.body_top = body_top
+        self.body_height = body_height
+        self.footer_top = footer_top
+        self.footer_height = footer_height
 
     @property
     def header(self) -> Section:
@@ -418,7 +432,7 @@ class SlideContent:
             Section: 返回一个Section对象
         """
         return Section(
-            left=Cm(0), top=Cm(0), width=self.prs.slide_width, height=Cm(2.72)
+            left=Cm(0), top=Cm(0), width=self.prs.slide_width, height=self.header_height
         )
 
     @property
@@ -429,7 +443,10 @@ class SlideContent:
             Section: 返回一个Section对象
         """
         return Section(
-            left=Cm(0), top=Cm(2.91), width=self.prs.slide_width, height=Cm(13.81)
+            left=Cm(0),
+            top=self.body_top,
+            width=self.prs.slide_width,
+            height=self.body_height,
         )
 
     @property
@@ -440,7 +457,10 @@ class SlideContent:
             Section: 返回一个Section对象
         """
         return Section(
-            left=Cm(5.6), top=Cm(17.36), width=self.prs.slide_width, height=Cm(1.71)
+            left=Cm(5.6),
+            top=self.footer_top,
+            width=self.prs.slide_width,
+            height=self.footer_height,
         )
 
     def add_text(
@@ -553,6 +573,7 @@ class SlideContent:
 
         # 设置字体
         font = run.font
+        font.name = "微软雅黑"
         font.size = font_size if isinstance(font_size, Pt) else Pt(font_size)
         font.bold = font_bold
         font.italic = font_italic
@@ -650,17 +671,14 @@ class SlideContent:
 
 class PPT:
     def __init__(self, template_path: str) -> None:
-        self.template_path = template_path
-        self.prs = Presentation(template_path)
         """初始化一个PPT类
 
         Args:
             template_path (str): 模板文件路径
             save_path (str): 保存路径，默认为和模板路径同一文件夹下的presentation.pptx文件. Defaults to None.
-            
-        Returns:
-            _type_: _description_
         """
+        self.template_path = template_path
+        self.prs = Presentation(template_path)
 
     @property
     def parent_slide(self) -> SlideLayout:
@@ -677,17 +695,46 @@ class PPT:
     def add_content_slide(
         self,
         layout_style: int = 0,
+        header_height: Cm = Cm(2.72),
+        body_top: Cm = Cm(2.91),
+        body_height: Cm = Cm(13.81),
+        footer_top: Cm = Cm(17.36),
+        footer_height: Cm = Cm(1.71),
     ) -> SlideContent:
         slide = self.prs.slides.add_slide(self.prs.slide_layouts[layout_style])
         print(f"已添加第{self.prs.slides.index(slide)}页.")
-        content = SlideContent(self.prs, slide)
+        content = SlideContent(
+            self.prs,
+            slide,
+            header_height,
+            body_top,
+            body_height,
+            footer_top,
+            footer_height,
+        )
         return content
 
-    def save(self, save_path:Optional[str]=None) -> None:
+    def remove_slide(self, index: int) -> None:
+        """删除指定索引的幻灯片
+
+        Args:
+            index (int): 幻灯片索引
+        """
+
+        # 检查索引是否有效
+        if index < 0 or index >= len(self.prs.slides):
+            raise ValueError("幻灯片索引超出范围")
+        
+        rId = self.prs.slides._sldIdLst[index].rId
+        self.prs.part.drop_rel(rId)
+        del self.prs.slides._sldIdLst[index]
+        print(f"已删除第{index+1}页.")
+
+    def save(self, save_path: Optional[str] = None) -> None:
         if save_path is None:
             save_path = f"{os.path.dirname(self.template_path)}/presentation.pptx"
         self.prs.save(save_path)
-        print(f"{save_path} has been saved")
+        print(f"{save_path}已保存.")
 
 
 if __name__ == "__main__":

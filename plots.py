@@ -1,6 +1,6 @@
 from __future__ import annotations
 from wordcloud import WordCloud
-from typing import Any, Dict, List, Tuple, Union, Optional, Sequence
+from typing import Any, Dict, List, Tuple, Union, Optional, Sequence, Literal
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -20,11 +20,7 @@ import squarify
 from color import Colors
 from pywaffle import Waffle
 from matplotlib_venn import venn2, venn2_circles, venn3, venn3_circles
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from plottable import ColumnDefinition, Table
 
 
 def scatter_hist(ax: mpl.axes.Axes, x: Sequence, y: Sequence) -> mpl.axes.Axes:
@@ -634,7 +630,7 @@ class PlotBubble(Plot):
             ax_legend = self.ax
 
         cmap, colors = self._colors.get_colors(
-            n=df.shape[0], hue=self.hue, random_color=d_style["random_color"]
+            labels=df.index, hue=self.hue, random_color=d_style["random_color"]
         )
 
         if self.style._show_legend is True and self.hue is not None:
@@ -702,6 +698,7 @@ class PlotBubble(Plot):
         index_shown = x_shown.index.intersection(y_shown.index)
 
         for i in range(len(index_shown)):
+            # print(index_shown[i])
             if (
                 i < label_limit
                 or (index_shown[i] in y.loc[index_shown].nlargest(label_topy).index)
@@ -709,18 +706,18 @@ class PlotBubble(Plot):
                 or (self.focus and index_shown[i] in self.focus)
             ):  # 在label_limit内或者强制要求展示y值最大item的标签或者在特别关注列表时
                 d_label = {
-                    "x": d_style.get("x_fmt").format(x.loc[index_shown][i]),
-                    "y": d_style.get("y_fmt").format(y.loc[index_shown][i]),
-                    "z": z.loc[index_shown][i],
+                    "x": d_style.get("x_fmt").format(x.loc[index_shown].iloc[i]),
+                    "y": d_style.get("y_fmt").format(y.loc[index_shown].iloc[i]),
+                    "z": z.loc[index_shown].iloc[i],
                     "hue": (
-                        self.hue.loc[index_shown][i] if self.hue is not None else None
+                        self.hue.loc[index_shown].iloc[i] if self.hue is not None else None
                     ),
                     "index": index_shown[i],
                 }
                 texts.append(
                     self.ax.text(
-                        x.loc[index_shown][i],
-                        y.loc[index_shown][i],
+                        x.loc[index_shown].iloc[i],
+                        y.loc[index_shown].iloc[i],
                         label_formatter.format(**d_label),
                         ha="center",
                         va="center",
@@ -782,7 +779,7 @@ class PlotBubble(Plot):
             self.ax.text(
                 self.ax.get_xlim()[1],
                 y_avg,
-                d_style.get("y_fmt").format(y_avg),
+                kwargs.get("y_avg_label", d_style.get("y_fmt").format(y_avg)),
                 ha="right",
                 va="top",
                 color=d_style.get("avg_color"),
@@ -1024,7 +1021,11 @@ class PlotLine(Plot):
         texts = []
         for i, column in enumerate(df.columns):
             # 如果有指定颜色就颜色，否则按预设列表选取
-            color = self._colors.get_color(column) if d_style.get("line_color") is None else d_style.get("line_color")
+            color = (
+                self._colors.get_color(column)
+                if d_style.get("line_color") is None
+                else d_style.get("line_color")
+            )
 
             # 生成折线图
             lines.append(
@@ -1377,7 +1378,7 @@ class PlotBar(Plot):
                         stacked is False or df.shape[1] == 1
                     ):  # 非堆叠图或只有一列数的情况（非堆叠）
                         # 根据数据判断标签是否需要微调
-                        if abs(v) <= range_v * 0.05:
+                        if abs(v) <= range_v * 0.2:
                             pos_y = v * 1.1
                             va = "bottom" if v >= 0 else "top"
                             fontcolor = (
@@ -1981,7 +1982,7 @@ class PlotStripdot(Plot):
         # 颜色方案，如果有hue则按hue着色，如果没有则使用self.itercolors的
 
         cmap, colors = self._colors.get_colors(
-            n=df.shape[0],
+            labels=df.index,
             hue=self.hue,
             color=d_style.get("color_end"),
             random_color=d_style["random_color"],
@@ -2189,7 +2190,7 @@ class PlotTreemap(Plot):
 
         df = self.data
 
-        colors = self._colors.get_colors(n=df.shape[0], hue=self.hue)[1]
+        colors = self._colors.get_colors(labels=df.index, hue=self.hue)[1]
 
         df_size1 = pd.pivot_table(
             data=df, index=level1, columns=None, values=size, aggfunc=sum
@@ -2628,9 +2629,8 @@ class PlotVenn2(Plot):
 
         # 颜色
         if color := kwargs.get("color"):
-            v.get_patch_by_id("10").set_color(color[0])
-            v.get_patch_by_id("01").set_color(color[1])
-            v.get_patch_by_id("11").set_color(color[2])
+            for i, id in enumerate(["10", "01", "11"]):
+                v.get_patch_by_id(id).set_color(color[i])
 
         return self
 
@@ -2657,14 +2657,69 @@ class PlotVenn3(Plot):
             PlotVenn3: 返回一个自身实例
         """
         if all((set1, set2, set3)):
-            venn3(subsets=(set1, set2, set3), set_labels=set_labels, ax=self.ax)
+            v = venn3(subsets=(set1, set2, set3), set_labels=set_labels, ax=self.ax)
             venn3_circles(subsets=(set1, set2, set3), ax=self.ax)
         else:
-            venn3(subsets=self.data, set_labels=set_labels, ax=self.ax)
+            v = venn3(subsets=self.data, set_labels=set_labels, ax=self.ax)
             venn3_circles(subsets=self.data, ax=self.ax)
 
         # 获取并设置所有文本对象的字体大小
         for text in self.ax.texts:
             text.set_fontsize(self.fontsize)
+
+        # 颜色
+        if color := kwargs.get("color"):
+            for i, id in enumerate(["100", "010", "110", "001", "101", "011", "111"]):
+                try:
+                    v.get_patch_by_id(id).set_color(color[i])
+                except IndexError:
+                    pass
+                
+        return self
+
+
+class PlotTable(Plot):
+    def plot(
+        self, col_defs: Optional[List[ColumnDefinition]] = None, **kwargs
+    ) -> PlotTable:
+        """继承基本类，使用Plottable库绘制表格
+
+        Args:
+            col_defs (Optional[List[ColumnDefinition]]): 列样式定义, defaults to None.
+
+        Returns:
+            PlotTable: 返回一个自身实例
+        """
+        df = self.data
+
+        table = Table(
+            df=df,
+            ax=self.ax,
+            column_definitions=col_defs,
+            row_dividers=True,
+            footer_divider=True,
+            textprops={
+                "fontsize": self.fontsize,
+            },
+            even_row_color="#eeeeee",
+            row_divider_kw={"linewidth": 1, "linestyle": (0, (1, 5))},
+            col_label_divider_kw={"linewidth": 1, "linestyle": "-"},
+            col_label_cell_kw={"height": 2},
+            column_border_kw={"linewidth": 1, "linestyle": "-"},
+        ).autoset_fontcolors(colnames=df.columns)
+        
+        # 指定行背景色
+        if kwargs.get("row_facecolors") is not None:
+            row_facecolors = kwargs.get("row_facecolors")
+            for i, row in enumerate(df.index):
+                if row in row_facecolors.keys():
+                    table.rows[i].set_facecolor(row_facecolors[row])
+        
+        # 指定行字体色
+        if kwargs.get("row_fontcolors") is not None:
+            row_fontcolors = kwargs.get("row_fontcolors")
+            for i, row in enumerate(df.index):
+                if row in row_fontcolors.keys():
+                    table.rows[i].set_fontcolor(row_fontcolors[row])
 
         return self

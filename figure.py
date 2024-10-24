@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 import os
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Tuple, Optional, Literal
 import matplotlib as mpl
 from plots import (
     PlotBar,  # noqa: F401
@@ -22,17 +22,13 @@ from plots import (
     PlotFunnel,  # noqa: F401
     PlotVenn2,  # noqa: F401
     PlotVenn3,  # noqa: F401
+    PlotTable,  # noqa: F401
 )
 import pandas as pd
 from color import CMAP_QUAL, CMAP_NORM, COLOR_DICT
 from components.annotation import Connection
 import inspect
 import re
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
 mpl.rcParams["font.sans-serif"] = ["Microsoft YaHei"]
 mpl.rcParams["font.serif"] = ["Microsoft YaHei"]
@@ -273,8 +269,8 @@ class GridFigure(Figure):
             fmt (str): 主数据格式，用于显示标签等的默认格式. Defaults to "{:,.0f}"
             ax_index (int, optional): ax索引. Defaults to 0.
             fontsize (Optional[float], optional): 绘图字号，如不提供则使用画布字号. Defaults to None.
-            style (Dict[str, any], optional): 风格字典. Defaults to {}.
-            color_dict= Optional[Dict[str,str]]: 颜色字典，如没有指定则使用默认. Defaults to None.
+            style (Optional[Dict[str, any]], optional): 风格字典. Defaults to {}.
+            color_dict (Optional[Dict[str,str], optional): 颜色字典，如没有指定则使用默认. Defaults to None.
             hue (Optional[str], optional): 指定颜色映射字段. Defaults to None.
 
         **kwargs: 其他参数，具体见各绘图类型:
@@ -369,6 +365,18 @@ class GridFigure(Figure):
                 vertical (bool, optional): 分类按垂直发展. Defaults to True.
                 block_arranging_style (Literal["snake", "new"], optional): 每个分类如何起始，"snake"为紧接上类末尾，"new-line"为每类新起一行. Defaults to "snake".
                 icons (Optional[Union[List[str], str]], optional): 指定矢量图形，为Font Awesome字符串. Defaults to None.
+            venn2:
+                set1 (Optional[set], optional): 第1组原始数据，如果不提供则计算data参数传来的值. Defaults to None.
+                set2 (Optional[set], optional): 第2组原始数据，如果不提供则计算data参数传来的值. Defaults to None.
+                set_labels (tuple, optional): 组别标签. Defaults to None.
+            venn3:
+                set1 (Optional[set], optional): 第1组原始数据，如果不提供则计算data参数传来的值. Defaults to None.
+                set2 (Optional[set], optional): 第2组原始数据，如果不提供则计算data参数传来的值. Defaults to None.
+                set3 (Optional[set], optional): 第3组原始数据，如果不提供则计算data参数传来的值. Defaults to None.
+                set_labels (tuple, optional): 组别标签. Defaults to None.
+            table:
+                col_defs (Optional[List[ColumnDefinition]]): 列样式定义, defaults to None.
+
         Returns:
         mpl.axes.Axes: mpl ax
         """
@@ -376,7 +384,7 @@ class GridFigure(Figure):
         cls = globals()[f"Plot{kind.capitalize()}"]
         # 根据ax_index确定ax
         ax = self.axes[ax_index]
-        
+
         cls(
             data=data,
             fmt=fmt,
@@ -399,7 +407,7 @@ class GridFigure(Figure):
         text: str,
         offset: Optional[float] = None,
         ax_index: int = 0,
-        **kwargs
+        **kwargs,
     ) -> mpl.axes.Axes:
         """在指定ax画注释文本和线条
 
