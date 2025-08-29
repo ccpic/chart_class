@@ -7,9 +7,11 @@ from pptx.shapes.picture import Picture
 from pptx.enum.shapes import MSO_SHAPE, MSO_SHAPE_TYPE
 from pptx.dml.color import RGBColor
 from pptx.slide import SlideLayout, Slide
+from pptx.table import Table
 from typing import List, Tuple, Union, Optional
 import math
 import inspect
+import pandas as pd
 
 try:
     from typing import Literal
@@ -669,6 +671,255 @@ class SlideContent:
 
         return title_shape
 
+    def add_table(
+        self,
+        df: pd.DataFrame,
+        width: Optional[Union[Inches, Cm, int]] = None,
+        height: Optional[Union[Inches, Cm, int]] = None,
+        top: Optional[Union[Inches, Cm, int]] = None,
+        left: Optional[Union[Inches, Cm, int]] = None,
+        loc: Optional[Loc] = None,
+        anchor: Optional[
+            Literal[
+                "center",
+                "top_left",
+                "left_top",
+                "top_right",
+                "right_top",
+                "top_mid",
+                "mid_top",
+                "top",
+                "bottom_right",
+                "right_bottom",
+                "bottom_left",
+                "left_bottom",
+                "bottom_mid",
+                "mid_bottom",
+                "bottom",
+                "mid_right",
+                "right_mid",
+                "right",
+                "mid_left",
+                "right_left",
+                "left",
+            ]
+        ] = "center",
+        **kwargs,
+    ) -> Table:
+        """将pandas DataFrame添加为PowerPoint表格
+
+        Args:
+            df (pd.DataFrame): 要转换的DataFrame
+            width (Optional[Union[Inches, Cm, int]], optional): 表格宽度. Defaults to None.
+            height (Optional[Union[Inches, Cm, int]], optional): 表格高度. Defaults to None.
+            top (Optional[Union[Inches, Cm, int]], optional): 表格顶部位置. Defaults to None.
+            left (Optional[Union[Inches, Cm, int]], optional): 表格左侧位置. Defaults to None.
+            loc (Optional[Loc], optional): 表格位置. Defaults to None.
+            anchor (Optional[Literal[...]], optional): 锚点位置. Defaults to "center".
+
+        Keyword Args:
+            show_index (bool): 是否显示DataFrame的索引，默认为True
+            header_bg_color (Union[RGBColor, str]): 表头背景颜色
+            header_font_color (Union[RGBColor, str]): 表头字体颜色
+            header_font_size (Union[Pt, int]): 表头字体大小
+            header_font_bold (bool): 表头是否粗体
+            body_bg_color (Union[RGBColor, str]): 表格主体背景颜色
+            body_font_color (Union[RGBColor, str]): 表格主体字体颜色
+            body_font_size (Union[Pt, int]): 表格主体字体大小
+            border_color (Union[RGBColor, str]): 边框颜色
+            border_width (Union[Pt, int]): 边框宽度
+            row_height (Union[Inches, Cm, int]): 行高
+            col_width (Union[Inches, Cm, int]): 列宽
+            first_row_bold (bool): 第一行是否加粗
+            zebra_stripes (bool): 是否启用斑马纹
+            zebra_color (Union[RGBColor, str]): 斑马纹颜色
+
+        Returns:
+            Table: PowerPoint表格对象
+        """
+        # 获取DataFrame的行数和列数
+        rows, cols = df.shape
+
+        # 检查是否需要显示索引
+        show_index = kwargs.get("show_index", True)
+
+        # 如果显示索引，列数需要+1
+        if show_index:
+            cols += 1
+
+        # 设置默认尺寸
+        if width is None:
+            width = Cm(15)  # 默认宽度15厘米
+        if height is None:
+            height = Cm(rows * 0.8 + 1)  # 根据行数计算默认高度
+
+        # 计算默认位置
+        if loc is None and top is None and left is None:
+            loc = self.body.center
+            anchor = "center"
+
+        # 创建表格
+        table = self.slide.shapes.add_table(
+            rows=rows + 1,  # +1 for header
+            cols=cols,
+            left=0 if left is None else left,
+            top=0 if top is None else top,
+            width=width,
+            height=height,
+        ).table
+
+        # 设置表头
+        col_offset = 0
+        if show_index:
+            # 第一列显示索引名称
+            index_name = df.index.name if df.index.name else "索引"
+            cell = table.cell(0, 0)
+            cell.text = str(index_name)
+            col_offset = 1
+
+        # 设置数据列的表头
+        for col_idx, col_name in enumerate(df.columns):
+            cell = table.cell(0, col_idx + col_offset)
+            cell.text = str(col_name)
+
+        # 填充数据
+        for row_idx in range(rows):
+            if show_index:
+                # 第一列显示索引值
+                cell = table.cell(row_idx + 1, 0)
+                cell.text = str(df.index[row_idx])
+
+            # 填充数据列
+            for col_idx in range(len(df.columns)):
+                cell = table.cell(row_idx + 1, col_idx + col_offset)
+                cell.text = str(df.iloc[row_idx, col_idx])
+
+        # 应用样式设置
+        self._apply_table_styling(table, **kwargs)
+
+        # 调整位置（如果需要）
+        if loc is not None:
+            left, top = AnchorLoc(loc.left, loc.top, width, height, anchor=anchor).loc
+            # 获取表格的图形对象来设置位置
+            # 通过表格的图形对象来设置位置
+            table_shape = table._graphic_frame
+            table_shape.left = left
+            table_shape.top = top
+
+        return table
+
+    def _apply_table_styling(self, table: Table, **kwargs):
+        """应用表格样式设置
+
+        Args:
+            table (Table): PowerPoint表格对象
+            **kwargs: 样式参数
+        """
+        # 获取样式参数
+        header_bg_color = kwargs.get("header_bg_color", RGBColor(68, 114, 196))
+        header_font_color = kwargs.get("header_font_color", RGBColor(255, 255, 255))
+        header_font_size = kwargs.get("header_font_size", Pt(12))
+        header_font_bold = kwargs.get("header_font_bold", True)
+
+        body_bg_color = kwargs.get("body_bg_color", RGBColor(255, 255, 255))
+        body_font_color = kwargs.get("body_font_color", RGBColor(0, 0, 0))
+        body_font_size = kwargs.get("body_font_size", Pt(10))
+
+        border_color = kwargs.get("border_color", RGBColor(217, 217, 217))
+        border_width = kwargs.get("border_width", Pt(1))
+
+        row_height = kwargs.get("row_height", Cm(0.8))
+        col_width = kwargs.get("col_width", None)
+
+        first_row_bold = kwargs.get("first_row_bold", True)
+        zebra_stripes = kwargs.get("zebra_stripes", False)
+        zebra_color = kwargs.get("zebra_color", RGBColor(242, 242, 242))
+
+        # 设置表头样式
+        for col_idx in range(len(table.columns)):
+            cell = table.cell(0, col_idx)
+            # 背景色
+            cell.fill.solid()
+            cell.fill.fore_color.rgb = (
+                header_bg_color
+                if isinstance(header_bg_color, RGBColor)
+                else RGBColor.from_string(header_bg_color)
+            )
+            # 字体
+            paragraph = cell.text_frame.paragraphs[0]
+            run = paragraph.runs[0] if paragraph.runs else paragraph.add_run()
+            font = run.font
+            font.size = (
+                header_font_size
+                if isinstance(header_font_size, Pt)
+                else Pt(header_font_size)
+            )
+            font.bold = header_font_bold
+            font.color.rgb = (
+                header_font_color
+                if isinstance(header_font_color, RGBColor)
+                else RGBColor.from_string(header_font_color)
+            )
+
+        # 设置表格主体样式
+        for row_idx in range(1, len(table.rows)):
+            for col_idx in range(len(table.columns)):
+                cell = table.cell(row_idx, col_idx)
+
+                # 背景色（斑马纹）
+                if zebra_stripes and row_idx % 2 == 1:
+                    cell.fill.solid()
+                    cell.fill.fore_color.rgb = (
+                        zebra_color
+                        if isinstance(zebra_color, RGBColor)
+                        else RGBColor.from_string(zebra_color)
+                    )
+                else:
+                    cell.fill.solid()
+                    cell.fill.fore_color.rgb = (
+                        body_bg_color
+                        if isinstance(body_bg_color, RGBColor)
+                        else RGBColor.from_string(body_bg_color)
+                    )
+
+                # 字体
+                paragraph = cell.text_frame.paragraphs[0]
+                run = paragraph.runs[0] if paragraph.runs else paragraph.add_run()
+                font = run.font
+                font.size = (
+                    body_font_size
+                    if isinstance(body_font_size, Pt)
+                    else Pt(body_font_size)
+                )
+                font.bold = first_row_bold and row_idx == 1
+                font.color.rgb = (
+                    body_font_color
+                    if isinstance(body_font_color, RGBColor)
+                    else RGBColor.from_string(body_font_color)
+                )
+
+        # 设置边框 - 通过表格的边框属性来设置
+        # 注意：pptx库中单元格没有直接的border属性，需要通过表格的边框设置
+        # 这里我们设置表格的整体边框样式
+        for row in table.rows:
+            for cell in row.cells:
+                # 设置单元格填充
+                if not cell.fill.fore_color.rgb:  # 如果没有设置填充色，设置默认填充
+                    cell.fill.solid()
+                    cell.fill.fore_color.rgb = (
+                        body_bg_color
+                        if isinstance(body_bg_color, RGBColor)
+                        else RGBColor.from_string(body_bg_color)
+                    )
+
+        # 设置行高和列宽
+        for row in table.rows:
+            row.height = row_height if isinstance(row_height, int) else int(row_height)
+
+        if col_width is not None:
+            for col in table.columns:
+                col.width = col_width if isinstance(col_width, int) else int(col_width)
+
 
 class PPT:
     def __init__(self, template_path: str) -> None:
@@ -725,7 +976,7 @@ class PPT:
         # 检查索引是否有效
         if index < 0 or index >= len(self.prs.slides):
             raise ValueError("幻灯片索引超出范围")
-        
+
         rId = self.prs.slides._sldIdLst[index].rId
         self.prs.part.drop_rel(rId)
         del self.prs.slides._sldIdLst[index]
