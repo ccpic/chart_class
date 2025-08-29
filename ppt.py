@@ -9,6 +9,7 @@ from pptx.dml.color import RGBColor
 from pptx.slide import SlideLayout, Slide
 from typing import List, Tuple, Union, Optional
 import math
+import inspect
 
 try:
     from typing import Literal
@@ -730,9 +731,17 @@ class PPT:
         del self.prs.slides._sldIdLst[index]
         print(f"已删除第{index+1}页.")
 
-    def save(self, save_path: Optional[str] = None) -> None:
-        if save_path is None:
-            save_path = f"{os.path.dirname(self.template_path)}/presentation.pptx"
+    def save(self, save_path: str) -> None:
+        # 获取调用当前脚本的脚本路径
+        calling_script_dir = os.path.dirname(
+            os.path.abspath(inspect.stack()[1].filename)
+        )
+        ppt_dir = f"{calling_script_dir}"
+
+        # 保存
+        if os.path.exists(ppt_dir) is False:
+            os.makedirs(ppt_dir)
+
         self.prs.save(save_path)
         print(f"{save_path}已保存.")
 

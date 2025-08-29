@@ -372,7 +372,7 @@ class DfAnalyzer:
             df.index = pd.to_datetime(df.index)
             df.index = df.index.strftime(self._strftime)
 
-        if columns == self.date_column:
+        if columns is not None and columns == self.date_column:
             df.columns = pd.to_datetime(df.columns)
             df.columns = df.columns.strftime(self._strftime)
 

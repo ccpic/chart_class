@@ -1,10 +1,11 @@
 from __future__ import annotations
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-from matplotlib.gridspec import GridSpec
+from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 import os
 from typing import Any, Dict, List, Tuple, Optional, Literal
 import matplotlib as mpl
+from color import is_color_dark
 from plots import (
     PlotBar,  # noqa: F401
     PlotBubble,  # noqa: F401
@@ -36,6 +37,7 @@ mpl.rcParams["axes.unicode_minus"] = False
 
 
 class GridFigure(Figure):
+
     def __init__(
         self,
         nrows: int = 1,
@@ -44,6 +46,7 @@ class GridFigure(Figure):
         height_ratios: Optional[List[float]] = None,
         wspace: float = 0.1,
         hspace: float = 0.1,
+        nested: Optional[Dict[Tuple[int, int], dict]] = None,
         sharex: bool = False,
         sharey: bool = False,
         savepath: str = "/plots/",
@@ -80,9 +83,10 @@ class GridFigure(Figure):
 
         super().__init__(*args, **kwargs)
 
-        # 根据nrows, ncols, width_ratios和height_ratios, wspace, hspace生成一个GridSpec
+        # 根据nrows, ncols, width_ratios和height_ratios, wspace, hspace生成一个GridSpec，额外支持nested
         self.nrows = nrows
         self.ncols = ncols
+        self.nested = nested or {}
         width_ratios = [1] * ncols if width_ratios is None else width_ratios
         height_ratios = [1] * nrows if height_ratios is None else height_ratios
 
@@ -94,6 +98,53 @@ class GridFigure(Figure):
             wspace=wspace,
             hspace=hspace,
         )
+        # 支持嵌套GridSpec的布局
+        self._axes = []
+        main_ax = None
+        first = True
+        for i in range(nrows):
+            for j in range(ncols):
+                if (i, j) in self.nested:
+                    sub_spec = self.nested[(i, j)]
+                    sub_gs = GridSpecFromSubplotSpec(
+                        nrows=sub_spec.get("nrows", 1),
+                        ncols=sub_spec.get("ncols", 1),
+                        subplot_spec=self.gridspec[i, j],
+                        width_ratios=sub_spec.get(
+                            "width_ratios", [1] * sub_spec.get("ncols", 1)
+                        ),
+                        height_ratios=sub_spec.get(
+                            "height_ratios", [1] * sub_spec.get("nrows", 1)
+                        ),
+                        wspace=sub_spec.get("wspace", 0.1),
+                        hspace=sub_spec.get("hspace", 0.1),
+                    )
+                    for sub_i in range(sub_spec.get("nrows", 1)):
+                        for sub_j in range(sub_spec.get("ncols", 1)):
+                            # 如果是第一个子图，则设为主轴，在sharex或sharey时共享
+                            if first:
+                                ax = self.add_subplot(sub_gs[sub_i, sub_j])
+                                main_ax = ax
+                                first = False
+                            else:
+                                ax = self.add_subplot(
+                                    sub_gs[sub_i, sub_j],
+                                    sharex=main_ax if sharex else None,
+                                    sharey=main_ax if sharey else None,
+                                )
+                            self._axes.append(ax)
+                else:
+                    if first:
+                        ax = self.add_subplot(self.gridspec[i, j])
+                        main_ax = ax
+                        first = False
+                    else:
+                        ax = self.add_subplot(
+                            self.gridspec[i, j],
+                            sharex=main_ax if sharex else None,
+                            sharey=main_ax if sharey else None,
+                        )
+                    self._axes.append(ax)
 
         self.savepath = savepath
         self.width = width
@@ -108,16 +159,16 @@ class GridFigure(Figure):
         # 宽高
         self.set_size_inches(self.width, self.height)
 
-        # Grid
-        for i, axes in enumerate(self.gridspec):
-            if i == 0:
-                main_ax = self.add_subplot(axes)
-            else:
-                self.add_subplot(
-                    axes,
-                    sharex=main_ax if sharex else None,  # 多个子图共享x轴
-                    sharey=main_ax if sharey else None,  # 多个子图共享y轴
-                )
+        # # Grid
+        # for i, axes in enumerate(self.gridspec):
+        #     if i == 0:
+        #         main_ax = self.add_subplot(axes)
+        #     else:
+        #         self.add_subplot(
+        #             axes,
+        #             sharex=main_ax if sharex else None,  # 多个子图共享x轴
+        #             sharey=main_ax if sharey else None,  # 多个子图共享y轴
+        #         )
 
     class Style:
         def __init__(self, figure: mpl.figure.Figure, **kwargs) -> None:
@@ -161,6 +212,8 @@ class GridFigure(Figure):
                 )
             if self._label_outer:
                 self.label_outer()
+
+            # self._figure.autofmt_xdate()
 
         def title(
             self, title: Optional[str] = None, fontsize: Optional[float] = None
@@ -383,7 +436,7 @@ class GridFigure(Figure):
         # 根据kind确定绘图类
         cls = globals()[f"Plot{kind.capitalize()}"]
         # 根据ax_index确定ax
-        ax = self.axes[ax_index]
+        ax = self._axes[ax_index]
 
         cls(
             data=data,
@@ -418,7 +471,7 @@ class GridFigure(Figure):
             mpl.axes.Axes: mpl ax
         """
         # 根据ax_index确定ax
-        ax = self.axes[ax_index]
+        ax = self._axes[ax_index]
 
         plot_data = []
         for artist in ax.containers:
@@ -430,8 +483,107 @@ class GridFigure(Figure):
 
         return ax
 
+    def add_table(
+        self,
+        data: pd.DataFrame,
+        ax_index: int = 0,
+        fontsize: Optional[int] = None,
+        loc: str = "bottom",
+        cell_loc: str = "center",
+        bbox: Optional[List[float]] = None,
+        row_labels: Optional[List[str]] = None,
+        col_labels: Optional[List[str]] = None,
+        row_label_bgcolors: Optional[List[str]] = None,
+        col_label_bgcolors: Optional[List[str]] = None,
+        **kwargs,
+    ) -> mpl.axes.Axes:
+        """
+        在指定ax下方添加表格，支持行/列标签着色。
+
+        Args:
+            data (pd.DataFrame): 需要展示的表格数据
+            ax_index (int): axes索引，指定在哪个子图上绘制表格，默认0
+            fontsize (int): 字体大小
+            loc (str): 表格在子图中的位置，默认"bottom"
+            height (float): 表格高度，默认0.2
+            cell_loc (str): 单元格内容对齐方式（'center', 'left', 'right'）
+            bbox (list, optional): table的边界框，格式如 [left, bottom, width, height]
+            row_labels (List[str], optional): 行名，如果不指定用data的index
+            col_labels (List[str], optional): 列名，如果不指定用data的columns
+            row_label_bgcolors (List[str] or str, optional): 行标签单元格背景颜色列表或单色
+            col_label_bgcolors (List[str] or str, optional): 列标签单元格背景颜色列表或单色
+            kwargs: 传递给ax.table的其他参数
+
+        Returns:
+            mpl.axes.Axes: 返回绘制表格的ax对象
+        """
+        ax = self._axes[ax_index]
+        if col_labels is None:
+            col_labels = list(map(str, data.columns))
+        if row_labels is None:
+            row_labels = list(map(str, data.index))
+
+        # 默认在底部自动设置bbox
+        if bbox is None and loc == "bottom":
+            bbox = [0, -0.3, 1, 0.2]
+
+        table = ax.table(
+            cellText=data.values,
+            colLabels=col_labels,
+            rowLabels=row_labels,
+            cellLoc=cell_loc,
+            loc="center" if bbox is not None else loc,
+            bbox=bbox,
+            **kwargs,
+        )
+
+        # 设置行标签背景色及字体
+        if row_label_bgcolors is not None:
+            if isinstance(row_label_bgcolors, dict):
+                bgcolors = [row_label_bgcolors.get(label, None) for label in row_labels]
+            elif isinstance(row_label_bgcolors, str):
+                bgcolors = [row_label_bgcolors] * len(row_labels)
+            else:
+                bgcolors = list(row_label_bgcolors)
+            for i, color in enumerate(bgcolors):
+                if color is not None:
+                    key = (i + 1, -1)
+                    if key in table.get_celld():
+                        cell = table.get_celld()[key]
+                        cell.set_facecolor(color)
+                        cell.get_text().set_color(
+                            "white" if is_color_dark(color) else "black"
+                        )
+        # 设置列标签背景色及字体
+        if col_label_bgcolors is not None:
+            if isinstance(col_label_bgcolors, dict):
+                bgcolors = [col_label_bgcolors.get(label, None) for label in col_labels]
+            elif isinstance(col_label_bgcolors, str):
+                bgcolors = [col_label_bgcolors] * len(col_labels)
+            else:
+                bgcolors = list(col_label_bgcolors)
+            for j, color in enumerate(bgcolors):
+                if color is not None:
+                    key = (0, j)
+                    if key in table.get_celld():
+                        cell = table.get_celld()[key]
+                        cell.set_facecolor(color)
+                        cell.get_text().set_color(
+                            "white" if is_color_dark(color) else "black"
+                        )
+
+        # 设置字体大小
+        table.auto_set_font_size(False)  # 关闭自动字体缩放
+        table.set_fontsize(fontsize if fontsize is not None else self.fontsize)
+
+        return ax
+
     def save(
-        self, tight_layout: bool = True, transparent: bool = True, dpi: int = 300
+        self,
+        savepath: str = None,
+        tight_layout: bool = True,
+        transparent: bool = True,
+        dpi: int = 300,
     ) -> str:
         """保存图片
 
@@ -464,27 +616,28 @@ class GridFigure(Figure):
             os.makedirs(plot_dir)
 
         # 根据图表标题设置保存文件名
-        path = "%s%s.png" % (
-            plot_dir,
-            (
-                "无标题"
-                if self.style._title is None
-                else re.sub(r"[\n/]", "_", self.style._title)
-            ),
-        )
+        if savepath is None:
+            savepath = "%s%s.png" % (
+                plot_dir,
+                (
+                    "无标题"
+                    if self.style._title is None
+                    else re.sub(r"[\n/<>]", "_", self.style._title)
+                ),
+            )
         self.savefig(
-            path,
+            savepath,
             format="png",
             bbox_inches="tight",
             pad_inches=0.1,
             transparent=transparent,
             dpi=dpi,
         )
-        print(path + " has been saved...")
+        print(savepath + " has been saved...")
 
         # Close
         plt.clf()
         plt.cla()
         plt.close()
 
-        return path
+        return savepath

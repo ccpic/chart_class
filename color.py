@@ -1,18 +1,48 @@
 from matplotlib.colors import ListedColormap
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 from itertools import cycle
 from typing import Dict
 import pandas as pd
 import numpy as np
 
 COLOR_DICT = {
+    "纯自营地级市": "purple",
+    "纯招商地级市": "darkorange",
+    "自营+招商地级市": "deepskyblue",
+    "未覆盖地级市": "grey",
+    "自营": "purple",
+    "自营-双坦均开户": "darkgreen",
+    "自营-仅信立坦开户": "purple",
+    "自营-仅复立坦开户": "crimson",
+    "自营-双坦均未开户": "saddlebrown",   
+    # "自营": "#BB2549",
+    "自营-已开户": "#BB2549",
+    "自营-未开户": "#C9516D",
+    "招商-已开户": "deepskyblue",
+    "招商-未开户": "#33CCFF",
+    "非目标": "grey",
+    "HIF市场潜力贡献": "#00a1b2",
+    "诺欣妥销售盒数贡献": "darkorange",
+    "双坦销售盒数贡献": "purple",
+    "双坦自营销售盒数贡献": "thistle",
+    "恩那罗盒数贡献": "#BB2549",
+    "爱瑞卓盒数贡献": "darkgreen",
+    "双坦_自营": "purple",
+    "双坦_招商": "plum",
+    "恩那罗_自营": "#BB2549",
+    "恩那罗_招商": "pink",
+    # "自营": "deepskyblue",
+    "招商": "darkorange",
+    "未覆盖": "grey",
     "未开户": "grey",
     "R>0但N=0": "crimson",
     "N/R比=0%": "crimson",
     "N/R比0-15%": "darkorange",
     "N/R比15%-30%": "olivedrab",
     "N/R比>30%": "darkgreen",
+    "博固泰": "darkgreen",
     "爱瑞卓恩那罗共同自营": "darkorange",
     "恩那罗独有自营": "#BB2549",
     "爱瑞卓独有自营": "darkgreen",
@@ -52,9 +82,9 @@ COLOR_DICT = {
     "50MG * 2": "#BD2843",
     "75MG7片装": "darkorange",
     "A+C FDC": "Purple",
-    "A+C": "navy",
+    "A+C": "Purple",
     "A+D FDC": "Violet",
-    "A+D": "darkorange",
+    "A+D": "Violet",
     "ACEI": "olivedrab",
     "ACEI+C": "darkorange",
     "ACEI+D": "darkorange",
@@ -74,7 +104,7 @@ COLOR_DICT = {
     "B03C 红细胞生成素": "crimson",
     "B03D HIF-PH抑制剂": "darkgreen",
     "ESA": "crimson",
-    "补血中药":"darkorange",
+    "补血中药": "darkorange",
     "铁剂": "navy",
     "HIF-PHI": "teal",
     "BAI AN XIN (GRU)": "darkgreen",
@@ -176,7 +206,8 @@ COLOR_DICT = {
     "YOU LI WEI (NJ2)": "gold",
     "ZHEN GU (S60)": "crimson",
     "ZHEN GU VIAL DRY 200IU 1": "crimson",
-    "珍固": "crimson",
+    "珍固粉针": "crimson",
+    "珍固水针": "pink",
     "α糖苷酶抑制剂": "olivedrab",
     "β受体阻断剂": "teal",
     "一线城市": "navy",
@@ -559,6 +590,7 @@ COLOR_DICT = {
     "阿仑膦酸钠维生素D3": "darkgreen",
     "阿利沙坦": "teal",
     "阿利沙坦酯": "Deepskyblue",
+    "阿利沙坦酯氨氯地平": "Violet",
     "阿卡波糖咀嚼片": "deepskyblue",
     "阿卡波糖片剂": "navy",
     "阿司匹林": "navy",
@@ -573,7 +605,6 @@ COLOR_DICT = {
     "阿托伐他汀钙分散片（G6B）": "gold",
     "阿格列汀": "darkgreen",
     "阿罗洛尔": "darkgreen",
-    "阿罗洛尔": "darkorange",
     "阿齐沙坦": "saddlebrown",
     "降钙素": "crimson",
     "雅施达": "saddlebrown",
@@ -652,6 +683,20 @@ COLOR_LIST = [
 CMAP_QUAL = ListedColormap(COLOR_LIST)
 CMAP_NORM = plt.get_cmap("PiYG")
 RANDOM_CMAP = mpl.colors.ListedColormap(np.random.rand(256, 3))
+
+
+def is_color_dark(color: str) -> bool:
+    """
+    判断一个颜色是深色还是浅色。
+    参数:
+        color (str): 可以是英文色名、hex字符串、rgb字符串等matplotlib支持的颜色格式
+    返回:
+        bool: 深色返回True，浅色返回False
+    """
+    rgb = mcolors.to_rgb(color)  # 转为0-1区间的r,g,b
+    # 亮度算法（加权平均，符合人眼感知）
+    luminance = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
+    return luminance < 0.5
 
 
 class Colors:

@@ -10,6 +10,7 @@ import pandas as pd
 from matplotlib.ticker import FuncFormatter, MultipleLocator
 import matplotlib.patches as patches
 from matplotlib.collections import PatchCollection
+import matplotlib.dates as mdates
 from adjustText import adjust_text
 import scipy.stats as stats
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -230,6 +231,7 @@ class Plot:
                 "show_legend": True,  # 是否展示ax图例
                 "legend_loc": "center left",  # 图例位置
                 "legend_ncol": 1,  # 图例列数
+                "legend_bbox_to_anchor": (1, 0.5),  # 图例位置
             }
 
             """根据初始化参数更新默认风格字典，并循环生成类属性"""
@@ -273,7 +275,7 @@ class Plot:
             if self._minor_grid is not None:
                 self.minor_grid(**self._minor_grid)
             if self._show_legend:
-                self.legend(self._legend_loc, self._legend_ncol)
+                self.legend(self._legend_loc, self._legend_ncol, self._legend_bbox_to_anchor)
 
         def title(
             self, title: Optional[str] = None, fontsize: Optional[float] = None
@@ -474,6 +476,7 @@ class Plot:
             self,
             loc: Literal["center left", "lower center"] = "center left",
             ncol: int = 1,
+            bbox_to_anchor: Tuple[float, float] = (1, 0.5),
         ):
             """生成ax图例
 
@@ -519,7 +522,7 @@ class Plot:
                 by_label.keys(),
                 loc=loc,
                 ncol=ncol,
-                bbox_to_anchor=(1, 0.5) if loc == "center left" else (0.5, 1),
+                bbox_to_anchor=bbox_to_anchor,
                 frameon=False,
                 prop={"family": "Microsoft YaHei", "size": self._plot.fontsize},
             )
@@ -550,7 +553,7 @@ class PlotBubble(Plot):
         label_limit: int = 15,
         label_formatter: str = "{index}",
         label_topy: int = 0,
-        label_mustshow: List[str] = [],
+        # label_mustshow: List[str] = [],
         bubble_scale: float = 1,
         show_reg: bool = False,
         show_hist: bool = False,
@@ -570,7 +573,7 @@ class PlotBubble(Plot):
             label_limit (int, optional): 限制显示标签的个数. Defaults to 15.
             label_formatter (str, optional): 标签文字的格式，支持{index}, {x}, {y}, {z}, {hue}. Defaults to "{index}".
             label_topy (int, optional): 如>0则强制显示y轴值最高的n个item的标签. Defaults to 0.
-            label_mustshow (List[str], optional): 强制显示该列表中的标签. Defaults to [].
+            # label_mustshow (List[str], optional): 强制显示该列表中的标签. Defaults to [].
             bubble_scale (float, optional): 气泡大小系数. Defaults to 1.
             show_reg (bool, optional): 是否显示x,y的拟合趋势及置信区间. Defaults to False.
             show_reg (bool, optional): 是否显示x,y的分布histogram Defaults to False.
@@ -649,17 +652,19 @@ class PlotBubble(Plot):
                     for i, c in enumerate(categories)
                 ]
                 handles = sorted(handles, key=lambda h: h.get_label())
+                bbox_to_anchor = {
+                    "center left": (1, 0.5),
+                    "lower center": (0.5, -0.1),
+                    "upper center": (0.5, -0.1),
+                }
+
                 ax_legend.legend(
                     handles=handles,
                     title=self.hue.name,
                     loc=self.style._legend_loc,
                     frameon=False,
                     ncol=self.style._legend_ncol,
-                    bbox_to_anchor=(
-                        (1, 0.5)
-                        if self.style._legend_loc == "center left"
-                        else (0.5, 1)
-                    ),
+                    bbox_to_anchor=bbox_to_anchor.get(self.style._legend_loc, (0.5, 1)),
                     prop={"family": "Microsoft YaHei", "size": self.fontsize},
                 )
                 self.style._show_legend = False  # 不再使用Plot类的通用方法生成图例
@@ -701,19 +706,33 @@ class PlotBubble(Plot):
             # print(index_shown[i])
             if (
                 i < label_limit
-                or (index_shown[i] in y.loc[index_shown].nlargest(label_topy).index)
-                or (index_shown[i] in label_mustshow)
+                or (
+                    not pd.api.types.is_categorical_dtype(y)  # 判断y轴不为category
+                    and index_shown[i] in y.loc[index_shown].nlargest(label_topy).index
+                )
+                # or (index_shown[i] in label_mustshow)
                 or (self.focus and index_shown[i] in self.focus)
             ):  # 在label_limit内或者强制要求展示y值最大item的标签或者在特别关注列表时
                 d_label = {
-                    "x": d_style.get("x_fmt").format(x.loc[index_shown].iloc[i]),
-                    "y": d_style.get("y_fmt").format(y.loc[index_shown].iloc[i]),
+                    "x": (
+                        d_style.get("x_fmt").format(x.loc[index_shown].iloc[i])
+                        if isinstance(x.loc[index_shown].iloc[i], str) is False
+                        else x.loc[index_shown].iloc[i]
+                    ),
+                    "y": (
+                        d_style.get("y_fmt").format(y.loc[index_shown].iloc[i])
+                        if isinstance(y.loc[index_shown].iloc[i], str) is False
+                        else y.loc[index_shown].iloc[i]
+                    ),
                     "z": z.loc[index_shown].iloc[i],
                     "hue": (
-                        self.hue.loc[index_shown].iloc[i] if self.hue is not None else None
+                        self.hue.loc[index_shown].iloc[i]
+                        if self.hue is not None
+                        else None
                     ),
                     "index": index_shown[i],
                 }
+
                 texts.append(
                     self.ax.text(
                         x.loc[index_shown].iloc[i],
@@ -722,7 +741,12 @@ class PlotBubble(Plot):
                         ha="center",
                         va="center",
                         multialignment="center",
-                        fontsize=self.fontsize,
+                        fontsize=kwargs.get("label_fontsize", self.fontsize),
+                        color=(
+                            "red"
+                            if (self.focus and (index_shown[i] in self.focus))
+                            else "black"
+                        ),
                     )
                 )
 
@@ -734,6 +758,7 @@ class PlotBubble(Plot):
                 ax=self.ax,
                 # force_text=0.5,
                 arrowprops=dict(arrowstyle="->", color="black"),
+                # only_move="x"
             )
 
         # 添加轴label
@@ -1274,7 +1299,7 @@ class PlotBar(Plot):
             "label_fontsize": self.fontsize,  # 标签字体大小
             "bbox": None,  # 标签背景
             "fmt_abs": self.fmt,  # 绝对值标签格式
-            "fmt_share": "{:.1%}",  # 占比标签格式
+            "fmt_share": kwargs.get("fmt_share", "{:.1%}"),  # 占比标签格式
             "fmt_gr": "{:+.1%}",  # 增长率标签格式
         }
         d_style = {k: kwargs[k] if k in kwargs else v for k, v in d_style.items()}
@@ -1434,32 +1459,35 @@ class PlotBar(Plot):
                 if show_gr_text:
                     if k > 0:
                         # 各系列增长率标注
-                        self.ax.text(
-                            x=k - 0.5,
-                            y=(bottom_gr + df.iloc[k - 1, i] / 2 + df.iloc[k, i] / 2)
-                            / 2,
-                            s=d_label["gr"],
-                            ha="center",
-                            va="center",
-                            color=color,
-                            fontsize=d_style.get("label_fontsize"),
-                            zorder=5,
-                        )
+                        if not np.isinf(gr) and not np.isnan(gr):
+                            self.ax.text(
+                                x=k - 0.5,
+                                y=(bottom_gr + df.iloc[k - 1, i] / 2 + df.iloc[k, i] / 2)
+                                / 2,
+                                s=d_label["gr"],
+                                ha="center",
+                                va="center",
+                                color=color,
+                                fontsize=d_style.get("label_fontsize"),
+                                zorder=5,
+                            )
                         bottom_gr += df.iloc[k - 1, i] + df.iloc[k, i]
 
                         # 绘制总体增长率
                         if show_total_label:
-                            self.ax.text(
-                                x=k - 0.5,
-                                y=(df.iloc[k, :].sum() + df.iloc[k - 1, :].sum())
-                                / 2
-                                * 1.05,
-                                s=d_label["total_gr"],
-                                ha="center",
-                                va="bottom",
-                                color="black",
-                                fontsize=d_style.get("label_fontsize"),
-                            )
+                            total_gr_val = total_gr
+                            if not np.isinf(total_gr_val) and not np.isnan(total_gr_val):
+                                self.ax.text(
+                                    x=k - 0.5,
+                                    y=(df.iloc[k, :].sum() + df.iloc[k - 1, :].sum())
+                                    / 2
+                                    * 1.05,
+                                    s=d_label["total_gr"],
+                                    ha="center",
+                                    va="bottom",
+                                    color="black",
+                                    fontsize=d_style.get("label_fontsize"),
+                                )
 
             # 在柱状图顶端添加total值
             if show_total_label:
@@ -1760,6 +1788,7 @@ class PlotHist(Plot):
         show_kde: bool = True,
         show_metrics: bool = True,
         show_tiles: bool = False,
+        show_label: bool = False,
         ind: Optional[list] = None,
         **kwargs,
     ) -> PlotHist:
@@ -1913,7 +1942,7 @@ class PlotHist(Plot):
                 ),
                 zorder=100,
             )
-
+        
         # 去除ticks
         self.ax.get_yaxis().set_ticks([])
         # self.ax.xaxis.set_major_formatter(ticker.StrMethodFormatter(self.fmt))
@@ -2672,9 +2701,9 @@ class PlotVenn3(Plot):
             for i, id in enumerate(["100", "010", "110", "001", "101", "011", "111"]):
                 try:
                     v.get_patch_by_id(id).set_color(color[i])
-                except IndexError:
+                except Exception:
                     pass
-                
+
         return self
 
 
@@ -2692,7 +2721,7 @@ class PlotTable(Plot):
         """
         df = self.data
 
-        table = Table(
+        self.table = Table(
             df=df,
             ax=self.ax,
             column_definitions=col_defs,
@@ -2702,24 +2731,24 @@ class PlotTable(Plot):
                 "fontsize": self.fontsize,
             },
             even_row_color="#eeeeee",
-            row_divider_kw={"linewidth": 1, "linestyle": (0, (1, 5))},
+            row_divider_kw={"linewidth": 0.5, "linestyle": (0, (1, 5))},
             col_label_divider_kw={"linewidth": 1, "linestyle": "-"},
             col_label_cell_kw={"height": 2},
             column_border_kw={"linewidth": 1, "linestyle": "-"},
-        ).autoset_fontcolors(colnames=df.columns)
-        
+        ).autoset_fontcolors(colnames=[df.index.name] + list(df.columns))
+
         # 指定行背景色
         if kwargs.get("row_facecolors") is not None:
             row_facecolors = kwargs.get("row_facecolors")
             for i, row in enumerate(df.index):
                 if row in row_facecolors.keys():
-                    table.rows[i].set_facecolor(row_facecolors[row])
-        
+                    self.table.rows[i].set_facecolor(row_facecolors[row])
+
         # 指定行字体色
         if kwargs.get("row_fontcolors") is not None:
             row_fontcolors = kwargs.get("row_fontcolors")
             for i, row in enumerate(df.index):
                 if row in row_fontcolors.keys():
-                    table.rows[i].set_fontcolor(row_fontcolors[row])
+                    self.table.rows[i].set_fontcolor(row_fontcolors[row])
 
         return self
