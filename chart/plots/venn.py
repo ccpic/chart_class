@@ -3,7 +3,7 @@ Plot classes for chart types.
 """
 
 from __future__ import annotations
-from typing import Optional
+from typing import Any, Optional
 
 from matplotlib_venn import venn2, venn2_circles, venn3, venn3_circles
 
@@ -11,13 +11,17 @@ from chart.plots.base import Plot
 
 
 class PlotVenn2(Plot):
+    """二元韦恩图绘制类
+
+    使用 matplotlib_venn 绘制2组数据的韦恩图。
+    """
 
     def plot(
         self,
         set1: Optional[set] = None,
         set2: Optional[set] = None,
-        set_labels: tuple = None,
-        **kwargs,
+        set_labels: Optional[tuple] = None,
+        **kwargs: Any,
     ) -> PlotVenn2:
         """继承基本类，绘制2组数据的Venn图
 
@@ -49,15 +53,19 @@ class PlotVenn2(Plot):
 
 
 class PlotVenn3(Plot):
+    """三元韦恩图绘制类
+
+    使用 matplotlib_venn 绘制3组数据的韦恩图。
+    """
 
     def plot(
         self,
         set1: Optional[set] = None,
         set2: Optional[set] = None,
         set3: Optional[set] = None,
-        set_labels: tuple = None,
-        **kwargs,
-    ) -> PlotVenn2:
+        set_labels: Optional[tuple] = None,
+        **kwargs: Any,
+    ) -> PlotVenn3:
         """继承基本类，绘制2组数据的Venn图
 
         Args:

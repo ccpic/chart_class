@@ -3,13 +3,18 @@ Plot classes for bar chart types.
 """
 
 from __future__ import annotations
-from typing import Literal
+from typing import Any, Literal
 from matplotlib.ticker import FuncFormatter
 import numpy as np
 from chart.plots.base import Plot
 
 
 class PlotBar(Plot):
+    """柱状图绘制类
+
+    支持堆积/并列柱状图、数据标签、增长率线、平均线等功能。
+    """
+
     def plot(
         self,
         stacked: bool = True,
@@ -22,7 +27,7 @@ class PlotBar(Plot):
         show_avg_line: bool = False,
         label_threshold: float = 0.02,
         period_change: int = 1,
-        **kwargs,
+        **kwargs: Any,
     ) -> PlotBar:
         """继承基本Plot类，绘制柱状图
 
@@ -340,6 +345,11 @@ class PlotBar(Plot):
 
 
 class PlotBarh(Plot):
+    """横向柱状图绘制类
+
+    支持堆积/并列横向柱状图，标签智能定位功能。
+    """
+
     def plot(
         self,
         stacked: bool = True,
@@ -347,8 +357,8 @@ class PlotBarh(Plot):
         label_formatter: str = "{abs}",
         label_threshold: float = 0.02,
         label_pos: Literal["smart", "center", "outer"] = "smart",
-        **kwargs,
-    ) -> PlotBar:
+        **kwargs: Any,
+    ) -> PlotBarh:
         """继承基本Plot类，绘制柱状图
 
         Args:

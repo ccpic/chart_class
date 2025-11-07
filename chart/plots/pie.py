@@ -3,19 +3,24 @@ Plot class for Pie chart.
 """
 
 from __future__ import annotations
-from typing import Optional
+from typing import Any, Optional
 import matplotlib.pyplot as plt
 from chart.plots.base import Plot
 
 
 class PlotPie(Plot):
+    """饼图/甜甜圈图绘制类
+
+    支持标准饼图和甜甜圈图两种样式。
+    """
+
     def plot(
         self,
         size: Optional[str] = None,
         label_formatter: str = "{abs}",
         donut: bool = False,
         donut_title: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> PlotPie:
         """继承基本类，绘制饼图
 

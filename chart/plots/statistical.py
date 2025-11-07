@@ -3,7 +3,7 @@ Plot classes for chart types.
 """
 
 from __future__ import annotations
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,6 +15,11 @@ from chart.plots.base import Plot
 
 
 class PlotHist(Plot):
+    """直方图绘制类
+
+    支持核密度估计曲线、统计指标、等分线等功能。
+    """
+
     def plot(
         self,
         bins: int = 10,
@@ -24,7 +29,7 @@ class PlotHist(Plot):
         show_tiles: bool = False,
         show_label: bool = False,
         ind: Optional[list] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> PlotHist:
         """继承基本类，绘制histogram直方图
 
@@ -201,6 +206,11 @@ class PlotHist(Plot):
 
 
 class PlotBoxdot(Plot):
+    """带数据点的箱型图绘制类
+
+    结合箱型图和散点图，展示数据分布和个体值。
+    """
+
     def plot(
         self,
         x: Optional[str] = None,
@@ -209,7 +219,7 @@ class PlotBoxdot(Plot):
         label_threshold: float = 0,
         show_stats: bool = True,
         order: Optional[Union[None, list]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> PlotBoxdot:
         """继承基本类，绘制带数据点的箱型图
 

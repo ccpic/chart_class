@@ -12,21 +12,48 @@ from chart.color import Colors
 
 
 class Plot:
+    """所有绘图类的基类，提供通用的绘图工具方法和样式管理。
+
+    Attributes:
+        data (pd.DataFrame): 绘图数据
+        ax (mpl.axes.Axes): matplotlib axes对象
+        fontsize (int): 字体大小
+        figure (mpl.figure.Figure): matplotlib figure对象
+        fmt (str): 数字格式化字符串
+        style (Plot.Style): 样式管理对象
+        hue (Optional[pd.Series]): 颜色映射列
+        focus (Optional[List[str]]): 重点关注的索引列表
+    """
+
     def __init__(
         self,
-        data,  # 原始数
-        ax=None,
-        fontsize: int = 14,  # 字体大小
-        fmt: str = "{:,.0f}",  # 基本数字格式
-        style: Dict[str, Any] = {},  # 风格字典
-        color_dict: Optional[Dict[str, str]] = None,  # 颜色字典
-        cmap_qual: Optional[mpl.colors.Colormap] = None,  # 分类颜色映射
-        cmap_norm: Optional[mpl.colors.Colormap] = None,  # 正态分布颜色映射
-        hue: Optional[str] = None,  # 颜色映射列名
-        focus: Optional[List[str]] = None,  # 重点关注的index，可依此做后续操作
-        *args,
-        **kwargs,
-    ):
+        data: Union[pd.DataFrame, pd.Series],
+        ax: Optional[mpl.axes.Axes] = None,
+        fontsize: int = 14,
+        fmt: str = "{:,.0f}",
+        style: Dict[str, Any] = {},
+        color_dict: Optional[Dict[str, str]] = None,
+        cmap_qual: Optional[mpl.colors.Colormap] = None,
+        cmap_norm: Optional[mpl.colors.Colormap] = None,
+        hue: Optional[str] = None,
+        focus: Optional[List[str]] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """初始化Plot基类。
+
+        Args:
+            data: 原始数据，支持DataFrame或Series
+            ax: matplotlib axes对象，如不提供则使用当前axes
+            fontsize: 字体大小，默认14
+            fmt: 数字格式化字符串，默认"{:,.0f}"
+            style: 风格字典，用于自定义图表样式
+            color_dict: 颜色字典，映射名称到颜色
+            cmap_qual: 分类变量的colormap
+            cmap_norm: 连续变量的colormap
+            hue: 颜色映射列名
+            focus: 重点关注的index列表
+        """
         self.data = (
             data.to_frame() if isinstance(data, pd.Series) else data
         )  # 把pd.Series也转化为pd.Dataframe处理

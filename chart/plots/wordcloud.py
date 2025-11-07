@@ -3,19 +3,25 @@ Plot class for word cloud chart type.
 """
 
 from __future__ import annotations
-from typing import Optional, Literal
+from typing import Any, Optional, Literal
 import numpy as np
 from chart.plots.base import Plot
 from wordcloud import WordCloud
 
 
 class PlotWordcloud(Plot):
+    """词云图绘制类
+
+    使用 wordcloud 库绘制文字云，支持矩形和圆形两种形状。
+    """
+
     def plot(
         self,
         col_freq: Optional[str] = None,
         mask_shape: Literal["rectangle", "circle"] = "rectangle",
         mask_width: int = 800,
         mask_height: int = 600,
+        **kwargs: Any,
     ) -> PlotWordcloud:
         """继承基本类，绘制文字云图
 

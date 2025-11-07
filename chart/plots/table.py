@@ -3,17 +3,22 @@ Plot class for table chart type.
 """
 
 from __future__ import annotations
-from typing import List, Optional
+from typing import Any, List, Optional
 from chart.plots.base import Plot
 from plottable import ColumnDefinition, Table
 
 
 class PlotTable(Plot):
+    """表格绘制类
+
+    使用 plottable 库绘制美化表格，支持自定义列样式。
+    """
+
     def plot(
         self,
         col_defs: Optional[List[ColumnDefinition]] = None,
         exclude_plot_rows: Optional[List[str]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> PlotTable:
         """继承基本类，使用Plottable库绘制表格
 

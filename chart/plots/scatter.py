@@ -3,7 +3,7 @@ Plot classes for scatter chart types.
 """
 
 from __future__ import annotations
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import numpy as np
@@ -15,6 +15,11 @@ import math
 
 
 class PlotBubble(Plot):
+    """气泡图绘制类
+
+    支持三维数据可视化、分隔线、回归线、分布直方图等功能。
+    """
+
     def plot(
         self,
         x: Optional[str] = None,
@@ -32,7 +37,7 @@ class PlotBubble(Plot):
         show_reg: bool = False,
         show_hist: bool = False,
         corr: Optional[float] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> PlotBubble:
         """继承基本类，绘制散点图
 
@@ -291,12 +296,17 @@ class PlotBubble(Plot):
 
 
 class PlotStripdot(Plot):
+    """算珠图（点线图）绘制类
+
+    用于展示起点和终点之间的变化，支持差值标签。
+    """
+
     def plot(
         self,
         start: Optional[str] = None,
         end: Optional[str] = None,
         text_diff: bool = True,
-        **kwargs,
+        **kwargs: Any,
     ) -> PlotStripdot:
         """继承基本Plot类，绘制算珠图（也称点线图，泡泡糖图）
 

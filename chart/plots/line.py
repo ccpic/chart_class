@@ -3,18 +3,23 @@ Plot classes for line and area chart types.
 """
 
 from __future__ import annotations
-from typing import List
+from typing import Any, List
 import numpy as np
 from chart.plots.base import Plot
 from adjustText import adjust_text
 
 
 class PlotLine(Plot):
+    """折线图绘制类
+
+    支持多系列折线图、数据标签、标签智能调整功能。
+    """
+
     def plot(
         self,
         show_label: List[str] = [],
         endpoint_label_only: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> PlotLine:
         """继承基本类，绘制线形图
 
@@ -143,13 +148,18 @@ class PlotLine(Plot):
 
 
 class PlotArea(Plot):
+    """面积图绘制类
+
+    支持堆积/并列面积图、数据标签功能。
+    """
+
     def plot(
         self,
         stacked: bool = True,
         show_label: List[str] = [],
         endpoint_label_only: bool = False,
-        **kwargs,
-    ) -> PlotLine:
+        **kwargs: Any,
+    ) -> PlotArea:
         """继承基本类，绘制区域图
 
         Args:

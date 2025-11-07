@@ -4,7 +4,7 @@ Plot classes for specialty chart types.
 """
 
 from __future__ import annotations
-from typing import List, Optional, Union, Literal
+from typing import Any, List, Optional, Union, Literal
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -19,14 +19,17 @@ from chart.plots.base import Plot
 
 
 class PlotTreemap(Plot):
-    """矩形树图类"""
+    """矩形树图绘制类
+
+    使用 squarify 算法绘制层级数据的矩形树图。
+    """
 
     def plot(
         self,
         level1: str,
         size: str,
         level2: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> PlotTreemap:
         """使用squarify包生成矩形Treemap
 
@@ -147,14 +150,17 @@ class PlotTreemap(Plot):
 
 
 class PlotHeatmap(Plot):
-    """热力图类"""
+    """热力图绘制类
+
+    使用 seaborn 绘制网格热力图，支持数据标签和颜色方案自定义。
+    """
 
     def plot(
         self,
         cmap: Optional[Union[str, list]] = None,
         cbar: bool = True,
         show_label: bool = True,
-        **kwargs,
+        **kwargs: Any,
     ) -> PlotHeatmap:
         """继承基本类，生成网格热力图类
 
@@ -180,7 +186,10 @@ class PlotHeatmap(Plot):
 
 
 class PlotWaffle(Plot):
-    """华夫饼图类"""
+    """华夫饼图绘制类
+
+    使用 pywaffle 绘制华夫图，支持图标和不同排列方式。
+    """
 
     def plot(
         self,
@@ -191,7 +200,7 @@ class PlotWaffle(Plot):
         vertical: bool = True,
         block_arranging_style: Literal["snake", "new-line"] = "snake",
         icons: Optional[Union[List[str], str]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> PlotWaffle:
         """继承基本类，绘制华夫图
 
@@ -238,10 +247,13 @@ class PlotWaffle(Plot):
 
 
 class PlotFunnel(Plot):
-    """漏斗图类"""
+    """漏斗图绘制类
+
+    绘制漏斗形状的图表，用于展示流程转化数据。
+    """
 
     def plot(
-        self, size: Optional[str] = None, height: Optional[float] = 0.7, **kwargs
+        self, size: Optional[str] = None, height: Optional[float] = 0.7, **kwargs: Any
     ) -> PlotFunnel:
         """继承基本类，绘制漏斗图
 

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 import os
-from typing import Any, Dict, List, Tuple, Optional, Literal
+from typing import Any, Dict, List, Tuple, Optional, Literal, Union
 import matplotlib as mpl
 from chart.color import is_color_dark
 from chart.plots.bar import PlotBar, PlotBarh  # noqa: F401
@@ -285,29 +285,34 @@ class GridFigure(Figure):
         self,
         kind: Literal[
             "bar",
+            "barh",
             "line",
+            "area",
             "bubble",
             "stripdot",
             "boxdot",
             "hist",
             "heatmap",
+            "treemap",
             "wordcloud",
             "pie",
-            "area",
             "waffle",
             "funnel",
+            "table",
+            "venn2",
+            "venn3",
         ],
         data: pd.DataFrame,
         fmt: str = "{:,.0f}",
         ax_index: int = 0,
         fontsize: Optional[float] = None,
-        style: Dict[str, any] = {},
+        style: Dict[str, Any] = {},
         color_dict: Optional[Dict[str, str]] = None,
         cmap_qual: Optional[mpl.colors.Colormap] = None,
         cmap_norm: Optional[mpl.colors.Colormap] = None,
         hue: Optional[str] = None,
         focus: Optional[List[str]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> mpl.axes.Axes:
         """在当前画布的指定ax绘制网格热力图
 
@@ -455,7 +460,7 @@ class GridFigure(Figure):
         text: str,
         offset: Optional[float] = None,
         ax_index: int = 0,
-        **kwargs,
+        **kwargs: Any,
     ) -> mpl.axes.Axes:
         """在指定ax画注释文本和线条
 
@@ -488,9 +493,9 @@ class GridFigure(Figure):
         bbox: Optional[List[float]] = None,
         row_labels: Optional[List[str]] = None,
         col_labels: Optional[List[str]] = None,
-        row_label_bgcolors: Optional[List[str]] = None,
-        col_label_bgcolors: Optional[List[str]] = None,
-        **kwargs,
+        row_label_bgcolors: Optional[Union[List[str], Dict[str, str], str]] = None,
+        col_label_bgcolors: Optional[Union[List[str], Dict[str, str], str]] = None,
+        **kwargs: Any,
     ) -> mpl.axes.Axes:
         """
         在指定ax下方添加表格，支持行/列标签着色。
@@ -575,7 +580,7 @@ class GridFigure(Figure):
 
     def save(
         self,
-        savepath: str = None,
+        savepath: Optional[str] = None,
         tight_layout: bool = True,
         transparent: bool = True,
         dpi: int = 300,
