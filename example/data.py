@@ -1,7 +1,8 @@
 import sys
+import os
 
 sys.path.insert(0, sys.path[0] + "/../")
-from dataframe import DfAnalyzer
+from utils import DfAnalyzer
 import pandas as pd
 
 
@@ -11,7 +12,9 @@ def test_data() -> pd.DataFrame:
     Returns:
         pd.DataFrame: 示例数据的pandas df
     """
-    df = pd.read_excel("data.xlsx", engine="openpyxl")
+    # 使用相对于项目根目录的路径
+    data_path = os.path.join(os.path.dirname(__file__), "..", "data", "data.xlsx")
+    df = pd.read_excel(data_path, engine="openpyxl")
     a = DfAnalyzer(data=df, name="test", date_column="Date", period_interval=3)
     a = a.transform(
         period="MAT",

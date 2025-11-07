@@ -1,6 +1,6 @@
 from data import test_data
 import matplotlib.pyplot as plt
-from figure import GridFigure
+from chart import GridFigure
 
 if __name__ == "__main__":
     df = test_data()
@@ -19,12 +19,12 @@ if __name__ == "__main__":
     for i, col in enumerate(df.columns[-10:]):
         f.plot(
             kind="venn2",
-            data=(100,50,30),
+            data=(100, 50, 30),
             ax_index=i,
             style={
                 "title": col,
             },
-            set_labels=('A', 'B'),
+            set_labels=("A", "B"),
         )
 
     f.save()

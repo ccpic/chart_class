@@ -1,6 +1,6 @@
 from data import test_data
 import matplotlib.pyplot as plt
-from figure import GridFigure
+from chart import GridFigure
 
 if __name__ == "__main__":
     df = test_data()

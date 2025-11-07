@@ -5,22 +5,24 @@ from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 import os
 from typing import Any, Dict, List, Tuple, Optional, Literal
 import matplotlib as mpl
-from color import is_color_dark
-from plots.bar import PlotBar, PlotBarh  # noqa: F401
-from plots.line import PlotLine, PlotArea  # noqa: F401
-from plots.scatter import PlotBubble, PlotStripdot  # noqa: F401
-from plots.statistical import PlotHist, PlotBoxdot  # noqa: F401
-from plots.heatmap import PlotHeatmap  # noqa: F401
-from plots.treemap import PlotTreemap  # noqa: F401
-from plots.pie import PlotPie  # noqa: F401
-from plots.waffle import PlotWaffle  # noqa: F401
-from plots.funnel import PlotFunnel  # noqa: F401
-from plots.wordcloud import PlotWordcloud  # noqa: F401
-from plots.table import PlotTable  # noqa: F401
-from plots.venn import PlotVenn2, PlotVenn3  # noqa: F401
+from chart.color import is_color_dark
+from chart.plots.bar import PlotBar, PlotBarh  # noqa: F401
+from chart.plots.line import PlotLine, PlotArea  # noqa: F401
+from chart.plots.scatter import PlotBubble, PlotStripdot  # noqa: F401
+from chart.plots.statistical import PlotHist, PlotBoxdot  # noqa: F401
+from chart.plots.specialty import (
+    PlotHeatmap,
+    PlotTreemap,
+    PlotWaffle,
+    PlotFunnel,
+)  # noqa: F401
+from chart.plots.pie import PlotPie  # noqa: F401
+from chart.plots.wordcloud import PlotWordcloud  # noqa: F401
+from chart.plots.table import PlotTable  # noqa: F401
+from chart.plots.venn import PlotVenn2, PlotVenn3  # noqa: F401
 import pandas as pd
-from color import CMAP_QUAL, CMAP_NORM, COLOR_DICT
-from components.annotation import Connection
+from chart.color import CMAP_QUAL, CMAP_NORM, COLOR_DICT
+from chart.components.annotation import Connection
 import inspect
 import re
 

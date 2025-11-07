@@ -1,6 +1,6 @@
 from data import test_data
 import matplotlib.pyplot as plt
-from figure import GridFigure
+from chart import GridFigure
 
 if __name__ == "__main__":
     df = test_data()
@@ -8,7 +8,7 @@ if __name__ == "__main__":
     df = df.sum(axis=1)
 
     print(df)
-    
+
     f = plt.figure(
         FigureClass=GridFigure,
         width=12,

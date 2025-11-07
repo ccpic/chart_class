@@ -1,6 +1,6 @@
 from data import test_data
 import matplotlib.pyplot as plt
-from figure import GridFigure
+from chart import GridFigure
 
 if __name__ == "__main__":
     df = test_data()
@@ -24,7 +24,7 @@ if __name__ == "__main__":
         ax_index=0,
         style={"minor_grid": {}, "xticklabel_rotation": 90},
         show_label=df.columns,
-        endpoint_label_only=True, 
+        endpoint_label_only=True,
     )
 
     f.annotate(x1=2, x2=19, text="啦啦啦啦")
