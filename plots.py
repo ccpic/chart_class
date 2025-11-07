@@ -275,7 +275,9 @@ class Plot:
             if self._minor_grid is not None:
                 self.minor_grid(**self._minor_grid)
             if self._show_legend:
-                self.legend(self._legend_loc, self._legend_ncol, self._legend_bbox_to_anchor)
+                self.legend(
+                    self._legend_loc, self._legend_ncol, self._legend_bbox_to_anchor
+                )
 
         def title(
             self, title: Optional[str] = None, fontsize: Optional[float] = None
@@ -1462,7 +1464,11 @@ class PlotBar(Plot):
                         if not np.isinf(gr) and not np.isnan(gr):
                             self.ax.text(
                                 x=k - 0.5,
-                                y=(bottom_gr + df.iloc[k - 1, i] / 2 + df.iloc[k, i] / 2)
+                                y=(
+                                    bottom_gr
+                                    + df.iloc[k - 1, i] / 2
+                                    + df.iloc[k, i] / 2
+                                )
                                 / 2,
                                 s=d_label["gr"],
                                 ha="center",
@@ -1476,7 +1482,9 @@ class PlotBar(Plot):
                         # 绘制总体增长率
                         if show_total_label:
                             total_gr_val = total_gr
-                            if not np.isinf(total_gr_val) and not np.isnan(total_gr_val):
+                            if not np.isinf(total_gr_val) and not np.isnan(
+                                total_gr_val
+                            ):
                                 self.ax.text(
                                     x=k - 0.5,
                                     y=(df.iloc[k, :].sum() + df.iloc[k - 1, :].sum())
@@ -1942,7 +1950,7 @@ class PlotHist(Plot):
                 ),
                 zorder=100,
             )
-        
+
         # 去除ticks
         self.ax.get_yaxis().set_ticks([])
         # self.ax.xaxis.set_major_formatter(ticker.StrMethodFormatter(self.fmt))
@@ -2709,19 +2717,96 @@ class PlotVenn3(Plot):
 
 class PlotTable(Plot):
     def plot(
-        self, col_defs: Optional[List[ColumnDefinition]] = None, **kwargs
+        self,
+        col_defs: Optional[List[ColumnDefinition]] = None,
+        exclude_plot_rows: Optional[List[str]] = None,
+        **kwargs,
     ) -> PlotTable:
         """继承基本类，使用Plottable库绘制表格
 
         Args:
             col_defs (Optional[List[ColumnDefinition]]): 列样式定义, defaults to None.
+            exclude_plot_rows (Optional[List[str]]): 跳过条形图的行索引列表，这些行仍会应用formatter, defaults to None.
 
         Returns:
             PlotTable: 返回一个自身实例
         """
         df = self.data
 
-        self.table = Table(
+        # 如果指定了要跳过条形图的行，创建自定义Table类
+        if exclude_plot_rows:
+            from plottable.cell import create_cell, ColumnType, Row
+
+            class CustomTable(Table):
+                """自定义 Table 类，跳过指定行的 plot_fn"""
+
+                def _get_row(self, idx: int, content: list) -> Row:
+                    widths = self._get_column_widths()
+                    x = 0
+                    row = Row(cells=[], index=idx)
+
+                    # 检查当前行是否应该跳过条形图
+                    row_name = df.index[idx] if idx < len(df.index) else None
+                    should_exclude_plot = row_name in exclude_plot_rows
+
+                    for col_idx, (colname, width, _content) in enumerate(
+                        zip(self.column_names, widths, content)
+                    ):
+                        col_def = self.column_definitions[colname]
+
+                        # 如果当前行应该跳过条形图且有 plot_fn，则跳过 plot_fn，使用普通文本单元格
+                        if "plot_fn" in col_def and not should_exclude_plot:
+                            plot_fn = col_def.get("plot_fn")
+                            plot_kw = col_def.get("plot_kw", {})
+
+                            cell = create_cell(
+                                column_type=ColumnType.SUBPLOT,
+                                xy=(x, idx),
+                                content=_content,
+                                plot_fn=plot_fn,
+                                plot_kw=plot_kw,
+                                row_idx=idx,
+                                col_idx=col_idx,
+                                width=width,
+                                rect_kw=self.cell_kw,
+                                ax=self.ax,
+                            )
+                        else:
+                            textprops = self._get_column_textprops(col_def)
+
+                            # 如果当前行应该跳过条形图且有 plot_fn，需要从 plot_kw 中提取 formatter
+                            if should_exclude_plot and "plot_fn" in col_def:
+                                plot_kw = col_def.get("plot_kw", {})
+                                if "formatter" in plot_kw:
+                                    # 将 formatter 添加到 col_def 中，这样 _apply_column_formatters 就能处理它
+                                    col_def["formatter"] = plot_kw["formatter"]
+
+                            cell = create_cell(
+                                column_type=ColumnType.STRING,
+                                xy=(x, idx),
+                                content=_content,
+                                row_idx=idx,
+                                col_idx=col_idx,
+                                width=width,
+                                rect_kw=self.cell_kw,
+                                textprops=textprops,
+                                ax=self.ax,
+                            )
+
+                        row.append(cell)
+                        self.columns[colname].append(cell)
+                        self.cells[(idx, col_idx)] = cell
+                        cell.draw()
+
+                        x += width
+
+                    return row
+
+            table_class = CustomTable
+        else:
+            table_class = Table
+
+        self.table = table_class(
             df=df,
             ax=self.ax,
             column_definitions=col_defs,

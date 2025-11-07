@@ -6,25 +6,14 @@ import os
 from typing import Any, Dict, List, Tuple, Optional, Literal
 import matplotlib as mpl
 from color import is_color_dark
-from plots import (
-    PlotBar,  # noqa: F401
-    PlotBubble,  # noqa: F401
-    PlotLine,  # noqa: F401
-    PlotHeatmap,  # noqa: F401
-    PlotWordcloud,  # noqa: F401
-    PlotStripdot,  # noqa: F401
-    PlotHist,  # noqa: F401
-    PlotBoxdot,  # noqa: F401
-    PlotTreemap,  # noqa: F401
-    PlotPie,  # noqa: F401
-    PlotArea,  # noqa: F401
-    PlotBarh,  # noqa: F401
-    PlotWaffle,  # noqa: F401
-    PlotFunnel,  # noqa: F401
-    PlotVenn2,  # noqa: F401
-    PlotVenn3,  # noqa: F401
-    PlotTable,  # noqa: F401
-)
+from plots.bar import PlotBar, PlotBarh  # noqa: F401
+from plots.line import PlotLine, PlotArea  # noqa: F401
+from plots.scatter import PlotBubble, PlotStripdot  # noqa: F401
+from plots.statistical import PlotHist, PlotBoxdot  # noqa: F401
+from plots.heatmap import PlotHeatmap  # noqa: F401
+from plots.specialty import PlotTreemap, PlotPie, PlotWaffle, PlotFunnel  # noqa: F401
+from plots.text import PlotWordcloud, PlotTable  # noqa: F401
+from plots.venn import PlotVenn2, PlotVenn3  # noqa: F401
 import pandas as pd
 from color import CMAP_QUAL, CMAP_NORM, COLOR_DICT
 from components.annotation import Connection

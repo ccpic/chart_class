@@ -8,6 +8,8 @@ import pandas as pd
 import numpy as np
 
 COLOR_DICT = {
+    "心血管销售事业部": "deepskyblue",
+    "肾病销售事业部": "pink",
     "纯自营地级市": "purple",
     "纯招商地级市": "darkorange",
     "自营+招商地级市": "deepskyblue",
