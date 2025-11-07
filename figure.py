@@ -11,8 +11,12 @@ from plots.line import PlotLine, PlotArea  # noqa: F401
 from plots.scatter import PlotBubble, PlotStripdot  # noqa: F401
 from plots.statistical import PlotHist, PlotBoxdot  # noqa: F401
 from plots.heatmap import PlotHeatmap  # noqa: F401
-from plots.specialty import PlotTreemap, PlotPie, PlotWaffle, PlotFunnel  # noqa: F401
-from plots.text import PlotWordcloud, PlotTable  # noqa: F401
+from plots.treemap import PlotTreemap  # noqa: F401
+from plots.pie import PlotPie  # noqa: F401
+from plots.waffle import PlotWaffle  # noqa: F401
+from plots.funnel import PlotFunnel  # noqa: F401
+from plots.wordcloud import PlotWordcloud  # noqa: F401
+from plots.table import PlotTable  # noqa: F401
 from plots.venn import PlotVenn2, PlotVenn3  # noqa: F401
 import pandas as pd
 from color import CMAP_QUAL, CMAP_NORM, COLOR_DICT
