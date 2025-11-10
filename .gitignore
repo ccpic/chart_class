@@ -1,5 +1,6 @@
 /__pycache__
 /example/__pycache__
+/frontend/node_modules
 /.venv
 /plots
 *.pptx
