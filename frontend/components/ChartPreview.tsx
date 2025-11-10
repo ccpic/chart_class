@@ -1,3 +1,5 @@
+import { AlertCircle, BarChart3 } from 'lucide-react';
+
 interface Props {
   imageUrl: string | null;
   isLoading: boolean;
@@ -16,7 +18,7 @@ export default function ChartPreview({ imageUrl, isLoading, error }: Props) {
 
       {error && (
         <div className="text-center text-red-600">
-          <p className="text-xl mb-2">⚠️</p>
+          <AlertCircle className="h-8 w-8 mx-auto mb-2" />
           <p>{error}</p>
         </div>
       )}
@@ -31,7 +33,7 @@ export default function ChartPreview({ imageUrl, isLoading, error }: Props) {
 
       {!imageUrl && !isLoading && !error && (
         <div className="text-center text-gray-400">
-          <p className="text-xl mb-2">📊</p>
+          <BarChart3 className="h-12 w-12 mx-auto mb-2" />
           <p>输入数据后点击"渲染图表"</p>
         </div>
       )}

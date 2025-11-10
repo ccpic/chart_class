@@ -26,10 +26,17 @@
 - ✅ 支持 M×N 网格布局（如 2×2, 1×3, 3×2 等）
 - ✅ 每个子图独立配置数据和参数
 - ✅ 支持多种图表类型组合（bar + line + pie 等）
-- ✅ 可视化网格编辑器（拖拽、添加、删除子图）
+- ✅ 简单网格编辑器（点击添加/删除子图，无拖拽）
+- ✅ **画布级别配置**：
+  - 画布总标题 (suptitle)
+  - Y轴总标题 (supylabel)
+  - 画布总图例 (fig_legend)
+  - label_outer（仅显示外围刻度标签）
+  - 子图间距 (wspace, hspace)
 - ✅ 保持桥接层隔离，不修改原有 chart_class2 代码
 
 **非目标**（暂不实现）**：
+- ❌ 拖拽布局调整 - 保持简单，按顺序填充网格
 - ❌ 跨行跨列（rowspan/colspan）- 留待后续 Phase
 - ❌ 数据库持久化 - 仍使用前端状态
 - ❌ 项目保存/加载 - 留待后续 Phase
@@ -92,7 +99,25 @@ class CanvasConfigModel(BaseModel):
     height: float = Field(6, description="画布高度")
     rows: int = Field(1, ge=1, le=6, description="网格行数")
     cols: int = Field(1, ge=1, le=6, description="网格列数")
-    style: Optional[Dict[str, Any]] = Field(None, description="全局样式")
+    wspace: float = Field(0.1, description="子图水平间距")
+    hspace: float = Field(0.1, description="子图垂直间距")
+    
+    # 画布级别样式
+    title: Optional[str] = Field(None, description="画布总标题")
+    title_fontsize: Optional[float] = Field(None, description="总标题字体大小")
+    ytitle: Optional[str] = Field(None, description="Y轴总标题")
+    ytitle_fontsize: Optional[float] = Field(None, description="Y轴总标题字体大小")
+    
+    # 图例配置
+    show_legend: bool = Field(False, description="是否显示画布总图例")
+    legend_loc: str = Field("center left", description="图例位置")
+    legend_ncol: int = Field(1, description="图例列数")
+    bbox_to_anchor: Optional[Tuple[float, float]] = Field((1, 0.5), description="图例相对位置")
+    
+    # 其他设置
+    label_outer: bool = Field(False, description="仅显示外围刻度标签")
+    
+    style: Optional[Dict[str, Any]] = Field(None, description="其他全局样式")
 
 class RenderRequestModel(BaseModel):
     """完整渲染请求"""
@@ -126,6 +151,24 @@ export interface CanvasConfig {
   height: number;
   rows: number;
   cols: number;
+  wspace: number;
+  hspace: number;
+  
+  // 画布级别样式
+  title?: string;
+  titleFontsize?: number;
+  ytitle?: string;
+  ytitleFontsize?: number;
+  
+  // 图例配置
+  showLegend: boolean;
+  legendLoc: string;
+  legendNcol: number;
+  bboxToAnchor: [number, number];
+  
+  // 其他设置
+  labelOuter: boolean;
+  
   style?: Record<string, any>;
 }
 
@@ -180,7 +223,19 @@ class WebChartAdapter:
             height=canvas_config.get('height', 6),
             nrows=canvas_config.get('rows', 1),
             ncols=canvas_config.get('cols', 1),
-            style=canvas_config.get('style')
+            wspace=canvas_config.get('wspace', 0.1),
+            hspace=canvas_config.get('hspace', 0.1),
+            style={
+                'title': canvas_config.get('title'),
+                'title_fontsize': canvas_config.get('title_fontsize'),
+                'ytitle': canvas_config.get('ytitle'),
+                'ytitle_fontsize': canvas_config.get('ytitle_fontsize'),
+                'show_legend': canvas_config.get('show_legend', False),
+                'legend_loc': canvas_config.get('legend_loc', 'center left'),
+                'legend_ncol': canvas_config.get('legend_ncol', 1),
+                'bbox_to_anchor': canvas_config.get('bbox_to_anchor', (1, 0.5)),
+                'label_outer': canvas_config.get('label_outer', False),
+            }
         )
         
         # 2. 按 ax_index 排序子图，确保顺序正确
@@ -499,7 +554,15 @@ payload = {
         "width": 15,
         "height": 12,
         "rows": 2,
-        "cols": 2
+        "cols": 2,
+        "wspace": 0.15,
+        "hspace": 0.2,
+        "title": "2024年销售数据分析",
+        "ytitle": "销售额（万元）",
+        "show_legend": True,
+        "legend_loc": "center left",
+        "legend_ncol": 1,
+        "label_outer": True
     },
     "subplots": [
         {
@@ -579,6 +642,13 @@ const defaultCanvas: CanvasConfig = {
   height: 6,
   rows: 1,
   cols: 1,
+  wspace: 0.1,
+  hspace: 0.1,
+  showLegend: false,
+  legendLoc: 'center left',
+  legendNcol: 1,
+  bboxToAnchor: [1, 0.5],
+  labelOuter: false,
 };
 
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
@@ -729,7 +799,7 @@ export default function GridPreview() {
                     {subplot.chartType.toUpperCase()}
                   </div>
                   <div className="text-xs text-gray-500">
-                    子图 {axIndex + 1}
+                    位置 {axIndex}
                   </div>
                   {subplot.data.columns.length > 0 && (
                     <div className="text-xs text-green-600 mt-1">
@@ -741,7 +811,7 @@ export default function GridPreview() {
                 <>
                   <div className="text-2xl text-gray-400 mb-1">+</div>
                   <div className="text-xs text-gray-500">
-                    添加子图
+                    点击添加子图
                   </div>
                 </>
               )}
@@ -781,6 +851,7 @@ export default function GridControls() {
     <div className="space-y-4">
       <h3 className="text-sm font-semibold">画布设置</h3>
       
+      {/* 网格尺寸 */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <label className="text-xs text-gray-600">行数</label>
@@ -829,6 +900,116 @@ export default function GridControls() {
             value={canvas.height}
             onChange={(e) => updateCanvas({ height: parseFloat(e.target.value) })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+      </div>
+      
+      {/* 间距设置 */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <label className="text-xs text-gray-600">水平间距</label>
+          <input
+            type="number"
+            min={0}
+            max={1}
+            step={0.05}
+            value={canvas.wspace}
+            onChange={(e) => updateCanvas({ wspace: parseFloat(e.target.value) })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+        
+        <div className="space-y-1">
+          <label className="text-xs text-gray-600">垂直间距</label>
+          <input
+            type="number"
+            min={0}
+            max={1}
+            step={0.05}
+            value={canvas.hspace}
+            onChange={(e) => updateCanvas({ hspace: parseFloat(e.target.value) })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
+        </div>
+      </div>
+      
+      {/* 画布标题 */}
+      <div className="space-y-2">
+        <label className="text-xs text-gray-600">画布总标题</label>
+        <input
+          type="text"
+          value={canvas.title || ''}
+          onChange={(e) => updateCanvas({ title: e.target.value || undefined })}
+          placeholder="可选"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <label className="text-xs text-gray-600">Y轴总标题</label>
+        <input
+          type="text"
+          value={canvas.ytitle || ''}
+          onChange={(e) => updateCanvas({ ytitle: e.target.value || undefined })}
+          placeholder="可选"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
+      
+      {/* 图例设置 */}
+      <div className="space-y-3 pt-3 border-t">
+        <div className="flex items-center justify-between">
+          <label className="text-xs text-gray-600">显示画布总图例</label>
+          <input
+            type="checkbox"
+            checked={canvas.showLegend}
+            onChange={(e) => updateCanvas({ showLegend: e.target.checked })}
+            className="rounded"
+          />
+        </div>
+        
+        {canvas.showLegend && (
+          <>
+            <div className="space-y-1">
+              <label className="text-xs text-gray-600">图例位置</label>
+              <select
+                value={canvas.legendLoc}
+                onChange={(e) => updateCanvas({ legendLoc: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+              >
+                <option value="center left">右侧居中</option>
+                <option value="lower center">底部居中</option>
+                <option value="upper center">顶部居中</option>
+              </select>
+            </div>
+            
+            <div className="space-y-1">
+              <label className="text-xs text-gray-600">图例列数</label>
+              <input
+                type="number"
+                min={1}
+                max={5}
+                value={canvas.legendNcol}
+                onChange={(e) => updateCanvas({ legendNcol: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+            </div>
+          </>
+        )}
+      </div>
+      
+      {/* 其他设置 */}
+      <div className="pt-3 border-t">
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-xs text-gray-600">Label Outer</label>
+            <p className="text-xs text-gray-400">仅显示外围刻度标签</p>
+          </div>
+          <input
+            type="checkbox"
+            checked={canvas.labelOuter}
+            onChange={(e) => updateCanvas({ labelOuter: e.target.checked })}
+            className="rounded"
           />
         </div>
       </div>
@@ -1425,7 +1606,12 @@ def test_backward_compatibility():
 - [ ] 支持 1×1 到 6×6 的任意网格布局
 - [ ] 支持至少 5 种图表类型（bar, line, pie, area, scatter）
 - [ ] 每个子图可独立配置数据和参数
-- [ ] 可视化网格编辑器正常工作
+- [ ] 简单网格编辑器正常工作（点击添加/删除子图）
+- [ ] **画布级别功能**：
+  - [ ] 画布总标题（suptitle）和 Y轴总标题（supylabel）
+  - [ ] 画布总图例（汇总所有子图图例）
+  - [ ] label_outer（仅显示外围刻度标签）
+  - [ ] 子图间距可调节（wspace, hspace）
 
 ✅ **向后兼容**：
 - [ ] MVP 的 `/api/render` 端点仍可用
@@ -1491,7 +1677,18 @@ def test_backward_compatibility():
     "width": 15,
     "height": 12,
     "rows": 2,
-    "cols": 2
+    "cols": 2,
+    "wspace": 0.15,
+    "hspace": 0.2,
+    "title": "2024年销售数据分析",
+    "title_fontsize": 20,
+    "ytitle": "销售额（万元）",
+    "ytitle_fontsize": 16,
+    "show_legend": true,
+    "legend_loc": "center left",
+    "legend_ncol": 1,
+    "bbox_to_anchor": [1, 0.5],
+    "label_outer": true
   },
   "subplots": [
     {

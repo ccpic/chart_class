@@ -1,19 +1,113 @@
 """
-MVP 版本的图表适配器
-仅支持柱状图渲染
+Web 图表适配器
+支持单图渲染和多子图画布渲染
 """
 
 import pandas as pd
 import matplotlib.pyplot as plt
 from io import BytesIO
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 # 导入现有库（只读引用）
 from chart import GridFigure
 
 
 class WebChartAdapter:
-    """Web 图表适配器 - MVP 版本"""
+    """Web 图表适配器 - 支持单图和多子图渲染"""
+
+    def render_canvas(
+        self, canvas_config: Dict[str, Any], subplots: List[Dict[str, Any]]
+    ) -> bytes:
+        """
+        渲染多子图画布
+
+        Args:
+            canvas_config: 画布配置 {width, height, rows, cols, title, ytitle, show_legend, label_outer, ...}
+            subplots: 子图列表 [{subplot_id, ax_index, chart_type, data, params}, ...]
+
+        Returns:
+            PNG 图片字节
+        """
+        try:
+            # 1. 构建画布样式字典
+            style = {
+                "title": canvas_config.get("title"),
+                "title_fontsize": canvas_config.get("title_fontsize"),
+                "ytitle": canvas_config.get("ytitle"),
+                "ytitle_fontsize": canvas_config.get("ytitle_fontsize"),
+                "show_legend": canvas_config.get("show_legend", False),
+                "legend_loc": canvas_config.get("legend_loc", "center left"),
+                "legend_ncol": canvas_config.get("legend_ncol", 1),
+                "bbox_to_anchor": canvas_config.get("bbox_to_anchor", (1, 0.5)),
+                "label_outer": canvas_config.get("label_outer", False),
+            }
+
+            # 移除 None 值，避免传递无效参数
+            style = {k: v for k, v in style.items() if v is not None}
+
+            # 2. 创建 GridFigure
+            f = plt.figure(
+                FigureClass=GridFigure,
+                width=canvas_config.get("width", 15),
+                height=canvas_config.get("height", 6),
+                nrows=canvas_config.get("rows", 1),
+                ncols=canvas_config.get("cols", 1),
+                wspace=canvas_config.get("wspace", 0.1),
+                hspace=canvas_config.get("hspace", 0.1),
+                style=style,
+            )
+
+            # 3. 按 ax_index 排序子图，确保顺序正确
+            sorted_subplots = sorted(subplots, key=lambda x: x["ax_index"])
+
+            # 4. 循环渲染每个子图
+            for subplot in sorted_subplots:
+                try:
+                    # 转换数据为 DataFrame
+                    data_dict = subplot["data"]
+                    df = pd.DataFrame(
+                        data=data_dict["data"], columns=data_dict["columns"]
+                    )
+                    if data_dict.get("index"):
+                        df.index = data_dict["index"]
+
+                    # 获取图表类型和参数
+                    chart_type = subplot["chart_type"]
+                    params = subplot["params"].copy()
+                    ax_index = subplot["ax_index"]
+
+                    # 调用 f.plot() 绘制子图
+                    f.plot(kind=chart_type, data=df, ax_index=ax_index, **params)
+
+                except Exception as e:
+                    # 错误处理：在对应位置显示错误信息
+                    print(f"子图 {subplot['subplot_id']} 渲染失败: {str(e)}")
+                    # 在图表上显示错误文本
+                    if ax_index < len(f.axes):
+                        ax = f.axes[ax_index]
+                        ax.text(
+                            0.5,
+                            0.5,
+                            f"渲染错误\n{str(e)}",
+                            ha="center",
+                            va="center",
+                            color="red",
+                            transform=ax.transAxes,
+                        )
+
+            # 5. 保存为 PNG
+            buf = BytesIO()
+            f.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+            buf.seek(0)
+            image_bytes = buf.read()
+            buf.close()
+            plt.close(f)
+
+            return image_bytes
+
+        except Exception as e:
+            plt.close("all")
+            raise ValueError(f"画布渲染失败: {str(e)}")
 
     def render_bar_chart(
         self, data_json: Dict[str, Any], params: Dict[str, Any]
@@ -74,6 +168,25 @@ class WebChartAdapter:
             df.index = data_json["index"]
 
         return df
+
+    def get_supported_chart_types(self) -> List[str]:
+        """返回支持的图表类型列表"""
+        return ["bar", "line", "pie", "area", "scatter"]
+
+    def get_default_params(self, chart_type: str) -> Dict[str, Any]:
+        """
+        返回指定图表类型的默认参数
+
+        用于前端表单初始化
+        """
+        defaults = {
+            "bar": {"stacked": True, "show_label": True, "label_formatter": "{abs}"},
+            "line": {"marker": "o", "show_label": False, "linewidth": 2},
+            "pie": {"show_label": True, "autopct": "%1.1f%%"},
+            "area": {"stacked": True, "alpha": 0.7},
+            "scatter": {"marker": "o", "size": 50},
+        }
+        return defaults.get(chart_type, {})
 
 
 # 单例模式（可选优化）
