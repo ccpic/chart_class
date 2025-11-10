@@ -1,17 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import {
   LayoutGrid,
-  BarChart3,
-  LineChart,
-  PieChart,
-  AreaChart,
-  ScatterChart,
   Settings,
   HelpCircle,
-  ChevronRight,
 } from 'lucide-react';
 
 import {
@@ -27,21 +20,16 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import { Separator } from '@/components/ui/separator';
 
 import { useCanvasStore } from '@/store/canvasStore';
-import SubplotItem from '@/components/sidebar/SubplotItem';
-import SampleDataButton from '@/components/canvas/SampleDataButton';
-import CanvasToolbar from '@/components/canvas/CanvasToolbar';
+import CanvasTreeView from '@/components/canvas/CanvasTreeView';
+import ResetCanvasButton from '@/components/canvas/ResetCanvasButton';
 
 /**
  * 全局侧边栏组件
- * 参考 shadcn/ui sidebar-07 设计
- * 特性：可折叠到图标，展示画布和子图层级结构
+ * 使用 TreeView 展示画布和子图的层级结构
  */
 export default function AppSidebar() {
-  const pathname = usePathname();
-  const canvas = useCanvasStore((state) => state.canvas);
   const subplots = useCanvasStore((state) => state.subplots);
 
   return (
@@ -67,72 +55,24 @@ export default function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      {/* 主内容：画布和子图 */}
+      {/* 主内容：画布和子图树形结构 */}
       <SidebarContent>
-        {/* 画布信息 */}
-        <SidebarGroup>
-          <SidebarGroupLabel>画布</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/canvas'}>
-                  <Link href="/canvas">
-                    <LayoutGrid className="size-4" />
-                    <span>{canvas.title || '主画布'}</span>
-                    <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
-                      <span>{canvas.rows}×{canvas.cols}</span>
-                      <ChevronRight className="size-3" />
-                    </div>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* 子图列表 */}
         <SidebarGroup>
           <SidebarGroupLabel>
-            子图 ({subplots.length})
+            画布结构 ({subplots.length} 个子图)
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {subplots.length > 0 ? (
-                subplots.map((subplot) => (
-                  <SubplotItem
-                    key={subplot.subplotId}
-                    subplot={subplot}
-                    isActive={pathname === `/subplot/${subplot.subplotId}`}
-                  />
-                ))
-              ) : (
-                <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                  暂无子图
-                  <div className="mt-1 text-xs">
-                    点击画布网格添加
-                  </div>
-                </div>
-              )}
-            </SidebarMenu>
+            <CanvasTreeView expandAll={true} className="p-2" />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      {/* 底部：工具栏 + 操作区 */}
+      {/* 底部：重置按钮、设置和帮助 */}
       <SidebarFooter>
-        {/* 工具栏：示例数据 + 保存/加载/重置 */}
-        <div className="px-2 py-3 space-y-3">
-          <div className="flex flex-col gap-2">
-            <SampleDataButton />
-          </div>
-          <Separator />
-          <CanvasToolbar />
-        </div>
-        
-        <Separator />
-        
-        {/* 设置和帮助 */}
         <SidebarMenu>
+          <SidebarMenuItem>
+            <ResetCanvasButton />
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <Link href="/settings">
