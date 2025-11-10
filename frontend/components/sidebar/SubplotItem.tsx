@@ -7,6 +7,7 @@ import {
   PieChart,
   AreaChart,
   ScatterChart,
+  Droplets,
   Circle,
   CheckCircle2,
   AlertCircle,
@@ -41,6 +42,8 @@ function getChartIcon(type: string) {
       return <AreaChart className={iconClass} />;
     case 'scatter':
       return <ScatterChart className={iconClass} />;
+    case 'bubble':
+      return <Droplets className={iconClass} />;
     default:
       return <Circle className={iconClass} />;
   }

@@ -42,8 +42,8 @@ class WebChartAdapter:
                 "label_outer": canvas_config.get("label_outer", False),
             }
 
-            # 移除 None 值，避免传递无效参数
-            style = {k: v for k, v in style.items() if v is not None}
+            # 移除 None 值和空字符串，避免传递无效参数
+            style = {k: v for k, v in style.items() if v is not None and v != ""}
 
             # 2. 创建 GridFigure
             f = plt.figure(
@@ -54,6 +54,9 @@ class WebChartAdapter:
                 ncols=canvas_config.get("cols", 1),
                 wspace=canvas_config.get("wspace", 0.1),
                 hspace=canvas_config.get("hspace", 0.1),
+                width_ratios=canvas_config.get("width_ratios"),
+                height_ratios=canvas_config.get("height_ratios"),
+                fontsize=canvas_config.get("fontsize", 14),
                 style=style,
             )
 
@@ -95,9 +98,17 @@ class WebChartAdapter:
                             transform=ax.transAxes,
                         )
 
-            # 5. 保存为 PNG
+            # 5. 应用样式（必须在保存前调用）
+            f.style.apply_style()
+
+            # 6. 保存为 PNG（使用配置的 DPI 和透明度）
+            dpi = canvas_config.get("dpi", 400)
+            transparent = canvas_config.get("transparent", True)
+
             buf = BytesIO()
-            f.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+            f.savefig(
+                buf, format="png", dpi=dpi, bbox_inches="tight", transparent=transparent
+            )
             buf.seek(0)
             image_bytes = buf.read()
             buf.close()
@@ -171,7 +182,7 @@ class WebChartAdapter:
 
     def get_supported_chart_types(self) -> List[str]:
         """返回支持的图表类型列表"""
-        return ["bar", "line", "pie", "area", "scatter"]
+        return ["bar", "line", "pie", "area", "scatter", "bubble"]
 
     def get_default_params(self, chart_type: str) -> Dict[str, Any]:
         """
@@ -185,6 +196,22 @@ class WebChartAdapter:
             "pie": {"show_label": True, "autopct": "%1.1f%%"},
             "area": {"stacked": True, "alpha": 0.7},
             "scatter": {"marker": "o", "size": 50},
+            "bubble": {
+                "alpha": 0.6,
+                "bubble_scale": 1,
+                "edgecolor": "black",
+                "random_color": False,
+                "show_reg": False,
+                "show_hist": False,
+                "corr": None,
+                "label_limit": 0,
+                "label_formatter": "{index}",
+                "x_avg": None,
+                "y_avg": None,
+                "avg_linestyle": "--",
+                "avg_linewidth": 1,
+                "avg_color": "gray",
+            },
         }
         return defaults.get(chart_type, {})
 

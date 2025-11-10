@@ -4,7 +4,7 @@ import React from 'react';
 import { useCanvasStore } from '@/store/canvasStore';
 
 export default function GridControls() {
-  const { canvas, updateCanvas, reset } = useCanvasStore();
+  const { canvas, updateCanvas } = useCanvasStore();
   
   const handleRowsChange = (value: number) => {
     if (value >= 1 && value <= 6) {
@@ -20,8 +20,6 @@ export default function GridControls() {
   
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold">画布设置</h3>
-      
       {/* 网格尺寸 */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
@@ -110,7 +108,7 @@ export default function GridControls() {
         <input
           type="text"
           value={canvas.title || ''}
-          onChange={(e) => updateCanvas({ title: e.target.value || undefined })}
+          onChange={(e) => updateCanvas({ title: e.target.value })}
           placeholder="可选"
           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
         />
@@ -121,8 +119,22 @@ export default function GridControls() {
         <input
           type="text"
           value={canvas.ytitle || ''}
-          onChange={(e) => updateCanvas({ ytitle: e.target.value || undefined })}
+          onChange={(e) => updateCanvas({ ytitle: e.target.value })}
           placeholder="可选"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
+        />
+      </div>
+
+      {/* 字体大小 */}
+      <div className="space-y-2">
+        <label className="text-xs text-gray-600">全局字体大小</label>
+        <input
+          type="number"
+          min={8}
+          max={24}
+          step={1}
+          value={canvas.fontsize || 14}
+          onChange={(e) => updateCanvas({ fontsize: parseInt(e.target.value) })}
           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
         />
       </div>
@@ -169,6 +181,36 @@ export default function GridControls() {
         )}
       </div>
       
+      {/* 导出设置 */}
+      <div className="space-y-3 pt-3 border-t">
+        <div className="space-y-2">
+          <label className="text-xs text-gray-600">图片 DPI</label>
+          <input
+            type="number"
+            min={72}
+            max={600}
+            step={50}
+            value={canvas.dpi || 400}
+            onChange={(e) => updateCanvas({ dpi: parseInt(e.target.value) })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
+          />
+          <p className="text-xs text-gray-400">更高的 DPI 获得更清晰的图片</p>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-xs text-gray-600">透明背景</label>
+            <p className="text-xs text-gray-400">保存图片时使用透明背景</p>
+          </div>
+          <input
+            type="checkbox"
+            checked={canvas.transparent ?? true}
+            onChange={(e) => updateCanvas({ transparent: e.target.checked })}
+            className="rounded"
+          />
+        </div>
+      </div>
+      
       {/* 其他设置 */}
       <div className="pt-3 border-t">
         <div className="flex items-center justify-between">
@@ -184,13 +226,6 @@ export default function GridControls() {
           />
         </div>
       </div>
-      
-      <button
-        onClick={reset}
-        className="w-full px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-      >
-        重置画布
-      </button>
     </div>
   );
 }

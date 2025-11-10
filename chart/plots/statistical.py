@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from adjustText import adjust_text
+from textalloc import allocate_text
 
 from chart.plots.base import Plot
 
@@ -294,9 +294,29 @@ class PlotBoxdot(Plot):
                         )
                     )
         if len(labels) > 0:
-            adjust_text(
-                labels,
-                arrowprops=dict(arrowstyle="->", color="black"),
+            # 提取文本位置和内容
+            x_data = [t.get_position()[0] for t in labels]
+            y_data = [t.get_position()[1] for t in labels]
+            text_list = [t.get_text() for t in labels]
+
+            # 移除原始文本对象
+            for t in labels:
+                t.remove()
+
+            # 使用 textalloc 重新分配位置
+            allocate_text(
+                self.ax.figure,
+                self.ax,
+                x_data,
+                y_data,
+                text_list,
+                x_scatter=x_data,
+                y_scatter=y_data,
+                textsize=self.fontsize * 0.8,
+                linecolor="black",
+                draw_lines=True,
+                linewidth=0.8,  # 连接线宽度
+                max_distance=0.12,  # 箱线图异常值标签保持较近距离
             )
 
         # 添加最大值， 最小值，中位数标签

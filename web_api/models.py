@@ -16,6 +16,7 @@ class ChartType(str, Enum):
     PIE = "pie"
     AREA = "area"
     SCATTER = "scatter"
+    BUBBLE = "bubble"
 
 
 class ChartDataModel(BaseModel):
@@ -46,11 +47,16 @@ class CanvasConfigModel(BaseModel):
     wspace: float = Field(0.1, description="子图水平间距")
     hspace: float = Field(0.1, description="子图垂直间距")
 
+    # 子图宽高比例
+    width_ratios: Optional[List[float]] = Field(None, description="子图宽度比例列表")
+    height_ratios: Optional[List[float]] = Field(None, description="子图高度比例列表")
+
     # 画布级别样式
     title: Optional[str] = Field(None, description="画布总标题")
     title_fontsize: Optional[float] = Field(None, description="总标题字体大小")
     ytitle: Optional[str] = Field(None, description="Y轴总标题")
     ytitle_fontsize: Optional[float] = Field(None, description="Y轴总标题字体大小")
+    fontsize: Optional[int] = Field(14, description="全局字体大小")
 
     # 图例配置
     show_legend: bool = Field(False, description="是否显示画布总图例")
@@ -62,6 +68,8 @@ class CanvasConfigModel(BaseModel):
 
     # 其他设置
     label_outer: bool = Field(False, description="仅显示外围刻度标签")
+    dpi: int = Field(400, description="图片保存 DPI")
+    transparent: bool = Field(True, description="是否使用透明背景")
 
     style: Optional[Dict[str, Any]] = Field(None, description="其他全局样式")
 

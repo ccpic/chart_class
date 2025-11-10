@@ -11,6 +11,7 @@ const CHART_TYPE_LABELS: Record<string, string> = {
   pie: '饼图',
   area: '面积图',
   scatter: '散点图',
+  bubble: '气泡图',
 };
 
 interface Props {

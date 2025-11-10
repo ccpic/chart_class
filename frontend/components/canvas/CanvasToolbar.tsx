@@ -1,6 +1,7 @@
 'use client';
 
 import { Save, Upload, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCanvasStore } from '@/store/canvasStore';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +24,7 @@ import {
 export default function CanvasToolbar() {
   const { saveToLocalStorage, loadFromLocalStorage, reset } = useCanvasStore();
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleSave = () => {
     saveToLocalStorage();
@@ -42,6 +44,8 @@ export default function CanvasToolbar() {
 
   const handleReset = () => {
     reset();
+    // 重置后跳转到画布页面
+    router.push('/canvas');
     toast({
       title: '重置成功',
       description: '所有画布和子图配置已清空',

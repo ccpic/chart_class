@@ -3,6 +3,7 @@
 import React from 'react';
 import { useCanvasStore } from '@/store/canvasStore';
 import { SubplotConfig } from '@/types/canvas';
+import BubbleParamsEditor from './params/BubbleParamsEditor';
 
 interface Props {
   subplot: SubplotConfig;
@@ -276,6 +277,8 @@ export default function ParamsEditor({ subplot }: Props) {
         return <AreaParams subplot={subplot} />;
       case 'scatter':
         return <ScatterParams subplot={subplot} />;
+      case 'bubble':
+        return <BubbleParamsEditor subplot={subplot} />;
       default:
         return <div className="text-sm text-gray-500">暂无可配置参数</div>;
     }

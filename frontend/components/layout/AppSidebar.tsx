@@ -41,7 +41,8 @@ import CanvasToolbar from '@/components/canvas/CanvasToolbar';
  */
 export default function AppSidebar() {
   const pathname = usePathname();
-  const { canvas, subplots } = useCanvasStore();
+  const canvas = useCanvasStore((state) => state.canvas);
+  const subplots = useCanvasStore((state) => state.subplots);
 
   return (
     <Sidebar collapsible="icon">

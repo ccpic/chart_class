@@ -9,7 +9,7 @@ from matplotlib.lines import Line2D
 import numpy as np
 import pandas as pd
 from chart.plots.base import Plot
-from adjustText import adjust_text
+from textalloc import allocate_text
 from chart.plots.utils import scatter_hist, regression_band
 import math
 
@@ -169,41 +169,40 @@ class PlotBubble(Plot):
         y_shown = y if ylim is None else y[y.between(ylim[0], ylim[1])]
         index_shown = x_shown.index.intersection(y_shown.index)
 
+        # 预先计算需要显示的城市名称集合
+        top_y_cities = set()
+        if label_topy > 0 and not pd.api.types.is_categorical_dtype(y):
+            top_y_cities = set(y.loc[index_shown].nlargest(label_topy).index)
+
         for i in range(len(index_shown)):
-            # print(index_shown[i])
+            city_name = index_shown[i]
+
             if (
                 i < label_limit
-                or (
-                    not pd.api.types.is_categorical_dtype(y)  # 判断y轴不为category
-                    and index_shown[i] in y.loc[index_shown].nlargest(label_topy).index
-                )
-                # or (index_shown[i] in label_mustshow)
-                or (self.focus and index_shown[i] in self.focus)
+                or city_name in top_y_cities
+                # or (city_name in label_mustshow)
+                or (self.focus and city_name in self.focus)
             ):  # 在label_limit内或者强制要求展示y值最大item的标签或者在特别关注列表时
                 d_label = {
                     "x": (
-                        d_style.get("x_fmt").format(x.loc[index_shown].iloc[i])
-                        if isinstance(x.loc[index_shown].iloc[i], str) is False
-                        else x.loc[index_shown].iloc[i]
+                        d_style.get("x_fmt").format(x.loc[city_name])
+                        if isinstance(x.loc[city_name], str) is False
+                        else x.loc[city_name]
                     ),
                     "y": (
-                        d_style.get("y_fmt").format(y.loc[index_shown].iloc[i])
-                        if isinstance(y.loc[index_shown].iloc[i], str) is False
-                        else y.loc[index_shown].iloc[i]
+                        d_style.get("y_fmt").format(y.loc[city_name])
+                        if isinstance(y.loc[city_name], str) is False
+                        else y.loc[city_name]
                     ),
-                    "z": z.loc[index_shown].iloc[i],
-                    "hue": (
-                        self.hue.loc[index_shown].iloc[i]
-                        if self.hue is not None
-                        else None
-                    ),
-                    "index": index_shown[i],
+                    "z": z.loc[city_name],
+                    "hue": (self.hue.loc[city_name] if self.hue is not None else None),
+                    "index": city_name,
                 }
 
                 texts.append(
                     self.ax.text(
-                        x.loc[index_shown].iloc[i],
-                        y.loc[index_shown].iloc[i],
+                        x.loc[city_name],
+                        y.loc[city_name],
                         label_formatter.format(**d_label),
                         ha="center",
                         va="center",
@@ -211,21 +210,37 @@ class PlotBubble(Plot):
                         fontsize=kwargs.get("label_fontsize", self.fontsize),
                         color=(
                             "red"
-                            if (self.focus and (index_shown[i] in self.focus))
+                            if (self.focus and (city_name in self.focus))
                             else "black"
                         ),
                     )
                 )
 
-        # 用adjust_text包保证标签互不重叠
-        if label_limit > 1:
-            np.random.seed(0)
-            adjust_text(
-                texts,
-                ax=self.ax,
-                # force_text=0.5,
-                arrowprops=dict(arrowstyle="->", color="black"),
-                # only_move="x"
+        # 用textalloc包保证标签互不重叠
+        if label_limit > 1 and texts:
+            # 提取文本位置和内容
+            x_data = [t.get_position()[0] for t in texts]
+            y_data = [t.get_position()[1] for t in texts]
+            text_list = [t.get_text() for t in texts]
+
+            # 移除原始文本对象
+            for t in texts:
+                t.remove()
+
+            # 使用 textalloc 重新分配位置
+            allocate_text(
+                self.ax.figure,
+                self.ax,
+                x_data,
+                y_data,
+                text_list,
+                x_scatter=x_data,
+                y_scatter=y_data,
+                textsize=self.fontsize,
+                linecolor="black",
+                draw_lines=True,
+                linewidth=0.8,  # 连接线宽度
+                max_distance=0.1,  # 限制标签离数据点的最大距离（相对于轴范围的比例）
             )
 
         # 添加轴label

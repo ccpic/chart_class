@@ -53,15 +53,18 @@ const defaultCanvas: CanvasConfig = {
   cols: 1,
   wspace: 0.1,
   hspace: 0.1,
+  fontsize: 14,
   showLegend: false,
   legendLoc: "center left",
   legendNcol: 1,
   bboxToAnchor: [1, 0.5],
   labelOuter: false,
+  dpi: 400,
+  transparent: true,
 };
 
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
-  canvas: defaultCanvas,
+  canvas: { ...defaultCanvas },
   subplots: [],
   selectedSubplotId: null,
   currentSubplotId: null,
@@ -72,6 +75,27 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     })),
 
   addSubplot: (axIndex, chartType = "bar") => {
+    // 根据图表类型设置默认参数
+    let defaultParams = {};
+    if (chartType === "bubble") {
+      defaultParams = {
+        alpha: 0.6,
+        bubble_scale: 1,
+        edgecolor: "black",
+        random_color: false,
+        show_reg: false,
+        show_hist: false,
+        corr: null,
+        label_limit: 0,
+        label_formatter: "{index}",
+        x_avg: null,
+        y_avg: null,
+        avg_linestyle: "--",
+        avg_linewidth: 1,
+        avg_color: "gray",
+      };
+    }
+
     const newSubplot: SubplotConfig = {
       subplotId: `subplot-${Date.now()}`,
       axIndex,
@@ -80,7 +104,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         columns: [],
         data: [],
       },
-      params: {},
+      params: defaultParams,
     };
     set((state) => ({
       subplots: [...state.subplots, newSubplot],
@@ -204,11 +228,18 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     }
   },
 
-  reset: () =>
+  reset: () => {
     set({
-      canvas: defaultCanvas,
+      canvas: { ...defaultCanvas },
       subplots: [],
       selectedSubplotId: null,
       currentSubplotId: null,
-    }),
+    });
+    // 同时清除本地存储
+    try {
+      localStorage.removeItem("chart-class-canvas");
+    } catch (error) {
+      console.error("Failed to clear localStorage:", error);
+    }
+  },
 }));

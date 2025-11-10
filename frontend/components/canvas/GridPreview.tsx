@@ -17,6 +17,7 @@ import {
   PieChart,
   AreaChart,
   ScatterChart,
+  Droplets,
 } from 'lucide-react';
 
 // 图表类型映射
@@ -26,6 +27,7 @@ const CHART_TYPE_LABELS: Record<ChartType, string> = {
   pie: '饼图',
   area: '面积图',
   scatter: '散点图',
+  bubble: '气泡图',
 };
 
 // 图表类型图标映射
@@ -35,11 +37,12 @@ const CHART_TYPE_ICONS: Record<ChartType, React.ReactNode> = {
   pie: <PieChart className="h-4 w-4" />,
   area: <AreaChart className="h-4 w-4" />,
   scatter: <ScatterChart className="h-4 w-4" />,
+  bubble: <Droplets className="h-4 w-4" />,
 };
 
 export default function GridPreview() {
   const router = useRouter();
-  const { canvas, subplots, addSubplot, getSubplotByAxIndex, updateSubplot } = useCanvasStore();
+  const { canvas, subplots, addSubplot, getSubplotByAxIndex, updateSubplot, updateCanvas } = useCanvasStore();
   const [pendingChartTypes, setPendingChartTypes] = useState<Record<number, ChartType>>({});
   
   const { rows, cols } = canvas;
@@ -47,6 +50,10 @@ export default function GridPreview() {
   
   // 生成网格单元格
   const cells = Array.from({ length: totalCells }, (_, i) => i);
+  
+  // 初始化宽高比例数组（如果未设置）
+  const widthRatios = canvas.widthRatios || Array(cols).fill(1);
+  const heightRatios = canvas.heightRatios || Array(rows).fill(1);
   
   const handleChartTypeSelect = (axIndex: number, chartType: ChartType) => {
     const subplot = getSubplotByAxIndex(axIndex);
@@ -58,6 +65,20 @@ export default function GridPreview() {
       // 保存待创建子图的类型
       setPendingChartTypes(prev => ({ ...prev, [axIndex]: chartType }));
     }
+  };
+  
+  // 更新列宽比例
+  const handleWidthRatioChange = (colIndex: number, value: number) => {
+    const newRatios = [...widthRatios];
+    newRatios[colIndex] = value;
+    updateCanvas({ widthRatios: newRatios });
+  };
+  
+  // 更新行高比例
+  const handleHeightRatioChange = (rowIndex: number, value: number) => {
+    const newRatios = [...heightRatios];
+    newRatios[rowIndex] = value;
+    updateCanvas({ heightRatios: newRatios });
   };
   
   const handleCreateSubplot = (axIndex: number) => {
@@ -90,6 +111,54 @@ export default function GridPreview() {
           已用 {subplots.length}/{totalCells} 个单元格
         </div>
       </div>
+      
+      {/* 列宽比例设置 */}
+      {cols > 1 && (
+        <div className="flex items-center gap-2 flex-shrink-0 bg-blue-50 p-3 rounded-lg">
+          <span className="text-xs font-medium text-gray-700 whitespace-nowrap">列宽比例:</span>
+          {widthRatios.map((ratio, colIndex) => (
+            <div key={colIndex} className="flex items-center gap-1">
+              <label className="text-xs text-gray-600">列{colIndex + 1}</label>
+              <input
+                type="number"
+                min="0.1"
+                max="10"
+                step="0.1"
+                value={ratio}
+                onChange={(e) => handleWidthRatioChange(colIndex, parseFloat(e.target.value) || 1)}
+                className="w-16 px-2 py-1 text-xs border rounded"
+              />
+            </div>
+          ))}
+          <span className="text-xs text-gray-500 ml-2">
+            (数值越大，该列越宽)
+          </span>
+        </div>
+      )}
+      
+      {/* 行高比例设置 */}
+      {rows > 1 && (
+        <div className="flex items-center gap-2 flex-shrink-0 bg-green-50 p-3 rounded-lg">
+          <span className="text-xs font-medium text-gray-700 whitespace-nowrap">行高比例:</span>
+          {heightRatios.map((ratio, rowIndex) => (
+            <div key={rowIndex} className="flex items-center gap-1">
+              <label className="text-xs text-gray-600">行{rowIndex + 1}</label>
+              <input
+                type="number"
+                min="0.1"
+                max="10"
+                step="0.1"
+                value={ratio}
+                onChange={(e) => handleHeightRatioChange(rowIndex, parseFloat(e.target.value) || 1)}
+                className="w-16 px-2 py-1 text-xs border rounded"
+              />
+            </div>
+          ))}
+          <span className="text-xs text-gray-500 ml-2">
+            (数值越大，该行越高)
+          </span>
+        </div>
+      )}
       
       <div 
         className="grid gap-3 bg-gray-50 p-4 rounded-lg flex-1 min-h-0"

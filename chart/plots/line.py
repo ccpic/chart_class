@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, List
 import numpy as np
 from chart.plots.base import Plot
-from adjustText import adjust_text
+from textalloc import allocate_text
 
 
 class PlotLine(Plot):
@@ -131,14 +131,31 @@ class PlotLine(Plot):
                         )
 
         # 优化标签位置
-        if d_style.get("adjust_labels") is True:
-            np.random.seed(0)
-            adjust_text(
-                texts,
-                ax=self.ax,
-                only_move={"text": "y", "static": "y", "explode": "y", "pull": "y"},
-                arrowprops=dict(arrowstyle="-"),
-                max_move=(1, 1),
+        if d_style.get("adjust_labels") is True and texts:
+            # 提取文本位置和内容
+            x_data = [t.get_position()[0] for t in texts]
+            y_data = [t.get_position()[1] for t in texts]
+            text_list = [t.get_text() for t in texts]
+
+            # 移除原始文本对象
+            for t in texts:
+                t.remove()
+
+            # 使用 textalloc 重新分配位置（仅Y方向移动）
+            allocate_text(
+                self.ax.figure,
+                self.ax,
+                x_data,
+                y_data,
+                text_list,
+                x_scatter=x_data,
+                y_scatter=y_data,
+                textsize=self.fontsize,
+                linecolor="black",
+                draw_lines=True,
+                avoid_label_lines_overlap=True,
+                linewidth=0.8,  # 连接线宽度
+                max_distance=0.1,  # 折线图标签保持较近距离
             )
 
         # 使用基类方法格式化y轴
