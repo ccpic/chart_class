@@ -42,6 +42,9 @@ interface CanvasStore {
   saveToLocalStorage: () => void;
   loadFromLocalStorage: () => void;
 
+  // 从保存的图表加载
+  loadFromSavedChart: (canvas: CanvasConfig, subplots: SubplotConfig[]) => void;
+
   // 重置
   reset: () => void;
 }
@@ -226,6 +229,15 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     } catch (error) {
       console.error("Failed to load from localStorage:", error);
     }
+  },
+
+  loadFromSavedChart: (canvas, subplots) => {
+    set({
+      canvas,
+      subplots,
+      selectedSubplotId: null,
+      currentSubplotId: null,
+    });
   },
 
   reset: () => {

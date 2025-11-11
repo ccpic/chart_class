@@ -5,7 +5,7 @@ from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 import os
 from typing import Any, Dict, List, Tuple, Optional, Literal, Union
 import matplotlib as mpl
-from chart.color import is_color_dark
+from chart.color.color import is_color_dark
 from chart.plots.bar import PlotBar, PlotBarh  # noqa: F401
 from chart.plots.line import PlotLine, PlotArea  # noqa: F401
 from chart.plots.scatter import PlotBubble, PlotStripdot  # noqa: F401
@@ -21,7 +21,7 @@ from chart.plots.wordcloud import PlotWordcloud  # noqa: F401
 from chart.plots.table import PlotTable  # noqa: F401
 from chart.plots.venn import PlotVenn2, PlotVenn3  # noqa: F401
 import pandas as pd
-from chart.color import CMAP_QUAL, CMAP_NORM, COLOR_DICT
+from chart.color.color import CMAP_QUAL, CMAP_NORM, COLOR_DICT
 from chart.components.annotation import Connection
 import inspect
 import re

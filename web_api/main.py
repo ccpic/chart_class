@@ -1,13 +1,15 @@
 """
-Web API 应用
-支持单图和多子图画布渲染
+Chart Class Web API
+统一的 Web API 服务，包括：
+- 图表渲染 API（单图/多子图画布）
+- 颜色管理 API（CRUD 操作）
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import logging
 
 # 导入桥接层
@@ -24,21 +26,35 @@ from web_api.models import (
     SubplotConfigModel,
 )
 
+# 导入颜色管理
+from chart.color.color_manager import ColorManager
+
 # 配置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # 创建应用
-app = FastAPI(title="Chart Class Web API", version="0.2.0")
+app = FastAPI(
+    title="Chart Class Web API",
+    description="图表渲染 + 颜色管理统一 API",
+    version="0.3.0",
+)
 
 # CORS 配置
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 全局颜色管理器
+color_manager = ColorManager()
 
 
 # 数据模型
@@ -71,7 +87,16 @@ class RenderRequest(BaseModel):
 @app.get("/")
 async def root():
     """健康检查"""
-    return {"status": "ok", "message": "Chart Class Web API", "version": "0.2.0"}
+    return {
+        "status": "ok",
+        "message": "Chart Class Web API",
+        "version": "0.3.0",
+        "services": {
+            "chart_rendering": "/api/render/*",
+            "color_management": "/api/colors/*",
+        },
+        "docs": "/docs",
+    }
 
 
 # ============ 新端点：多子图渲染 ============
@@ -284,8 +309,178 @@ async def render_chart(request: RenderRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-# 启动命令
+# ============ 颜色管理 API ============
+
+
+class ColorCreateRequest(BaseModel):
+    """创建颜色请求"""
+
+    name: str
+    color: str
+    named_color: Optional[str] = None  # 可选的 matplotlib 命名颜色
+    overwrite: bool = False
+
+
+class ColorUpdateRequest(BaseModel):
+    """更新颜色请求"""
+
+    color: Optional[str] = None
+    named_color: Optional[str] = None  # 可选的 matplotlib 命名颜色
+
+
+class ColorResponse(BaseModel):
+    """颜色响应"""
+
+    name: str
+    color: str  # 永远是 HEX 值
+    named_color: Optional[str] = None  # 可选的 matplotlib 命名颜色
+
+
+class MessageResponse(BaseModel):
+    """通用消息响应"""
+
+    message: str
+    success: bool
+
+
+@app.get("/api/colors", response_model=List[ColorResponse])
+def list_colors(
+    search: Optional[str] = Query(None, description="搜索关键词"),
+):
+    """
+    获取所有颜色映射
+
+    - **search**: 搜索关键词（可选）
+    """
+    mappings = color_manager.list_all(search=search)
+    return [
+        ColorResponse(name=m.name, color=m.color, named_color=m.named_color)
+        for m in mappings
+    ]
+
+
+@app.get("/api/colors/meta/stats")
+def get_color_stats():
+    """获取统计信息"""
+    all_colors = color_manager.to_dict()
+
+    return {
+        "total_colors": len(all_colors),
+    }
+
+
+@app.get("/api/colors/{name}", response_model=ColorResponse)
+def get_color(name: str):
+    """
+    获取指定颜色映射
+
+    - **name**: 颜色名称
+    """
+    mapping = color_manager.get(name)
+    if not mapping:
+        raise HTTPException(status_code=404, detail=f"颜色 '{name}' 不存在")
+
+    return ColorResponse(
+        name=mapping.name, color=mapping.color, named_color=mapping.named_color
+    )
+
+
+@app.post("/api/colors", response_model=MessageResponse)
+def create_color(request: ColorCreateRequest):
+    """
+    添加新颜色映射
+
+    - **name**: 颜色名称（必填）
+    - **color**: 颜色值（必填）
+    - **named_color**: 可选的 matplotlib 命名颜色（可选）
+    - **overwrite**: 是否覆盖已存在的（默认 false）
+    """
+    success = color_manager.add(
+        name=request.name,
+        color=request.color,
+        named_color=request.named_color,
+        overwrite=request.overwrite,
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=409,
+            detail=f"颜色 '{request.name}' 已存在，请设置 overwrite=true 覆盖",
+        )
+
+    return MessageResponse(message=f"成功添加颜色 '{request.name}'", success=True)
+
+
+@app.put("/api/colors/{name}", response_model=MessageResponse)
+def update_color(name: str, request: ColorUpdateRequest):
+    """
+    更新颜色映射
+
+    - **name**: 颜色名称（路径参数）
+    - **color**: 新颜色值（可选）
+    - **named_color**: 新的命名颜色（可选，null 表示清除）
+    """
+    # 获取当前映射
+    current = color_manager.get(name)
+    if not current:
+        raise HTTPException(status_code=404, detail=f"颜色 '{name}' 不存在")
+
+    # 准备更新参数
+    update_params = {}
+    if request.color is not None:
+        update_params["color"] = request.color
+
+    # 处理 named_color：如果请求中包含该字段（即使是 null），都应该更新
+    # Pydantic 会将 JSON 的 null 转为 Python 的 None
+    if "named_color" in request.model_dump(exclude_unset=True):
+        # 如果是 null，清空命名颜色；否则设置新值
+        update_params["named_color"] = request.named_color or ""
+
+    success = color_manager.update(name=name, **update_params)
+
+    if not success:
+        raise HTTPException(status_code=500, detail=f"更新颜色 '{name}' 失败")
+
+    return MessageResponse(message=f"成功更新颜色 '{name}'", success=True)
+
+
+@app.delete("/api/colors/{name}", response_model=MessageResponse)
+def delete_color(name: str):
+    """
+    删除颜色映射
+
+    - **name**: 颜色名称
+    """
+    success = color_manager.delete(name)
+
+    if not success:
+        raise HTTPException(status_code=404, detail=f"颜色 '{name}' 不存在")
+
+    return MessageResponse(message=f"成功删除颜色 '{name}'", success=True)
+
+
+@app.post("/api/colors/export/typescript", response_model=MessageResponse)
+def export_typescript(output_path: str = "frontend/lib/colors/schemes.ts"):
+    """
+    导出为 TypeScript 文件
+
+    - **output_path**: 输出文件路径（默认 frontend/lib/colors/schemes.ts）
+    """
+    try:
+        color_manager.export_to_typescript(output_path)
+        return MessageResponse(message=f"成功导出到 {output_path}", success=True)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============ 启动服务 ============
 if __name__ == "__main__":
     import uvicorn
+
+    print("🚀 启动 Chart Class Web API 服务...")
+    print("📊 图表渲染 API: http://localhost:8000/api/render/*")
+    print("🎨 颜色管理 API: http://localhost:8000/api/colors/*")
+    print("📚 API 文档: http://localhost:8000/docs")
+    print("")
 
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

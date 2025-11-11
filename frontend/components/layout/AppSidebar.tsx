@@ -19,11 +19,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 
 import { useCanvasStore } from '@/store/canvasStore';
 import CanvasTreeView from '@/components/canvas/CanvasTreeView';
 import ResetCanvasButton from '@/components/canvas/ResetCanvasButton';
+import SaveChartDialog from '@/components/chart/SaveChartDialog';
+import LoadChartSheet from '@/components/chart/LoadChartSheet';
+import ChartImport from '@/components/chart/ChartImport';
+import ColorManagerSheet from '@/components/color/ColorManagerSheet';
 
 /**
  * 全局侧边栏组件
@@ -67,11 +72,24 @@ export default function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* 底部：重置按钮、设置和帮助 */}
+      {/* 底部：图表管理、重置按钮、设置和帮助 */}
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
             <ResetCanvasButton />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SaveChartDialog />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <LoadChartSheet />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <ChartImport />
+          </SidebarMenuItem>
+          <SidebarSeparator />
+          <SidebarMenuItem>
+            <ColorManagerSheet />
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>

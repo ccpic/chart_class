@@ -3,7 +3,7 @@
 import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCanvasStore } from '@/store/canvasStore';
-import { Button } from '@/components/ui/button';
+import { SidebarMenuButton } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -39,14 +39,10 @@ export default function ResetCanvasButton() {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-start gap-2"
-        >
-          <Trash2 className="h-4 w-4" />
+        <SidebarMenuButton>
+          <Trash2 className="size-4" />
           <span>重置画布</span>
-        </Button>
+        </SidebarMenuButton>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

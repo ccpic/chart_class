@@ -1,0 +1,2969 @@
+{
+  "心血管销售事业部": {
+    "name": "心血管销售事业部",
+    "color": "#4B0082",
+    "named_color": "indigo"
+  },
+  "肾病销售事业部": {
+    "name": "肾病销售事业部",
+    "color": "#B22222"
+  },
+  "纯自营地级市": {
+    "name": "纯自营地级市",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "纯招商地级市": {
+    "name": "纯招商地级市",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "自营+招商地级市": {
+    "name": "自营+招商地级市",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "未覆盖地级市": {
+    "name": "未覆盖地级市",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "自营": {
+    "name": "自营",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "自营-双坦均开户": {
+    "name": "自营-双坦均开户",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "自营-仅信立坦开户": {
+    "name": "自营-仅信立坦开户",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "自营-仅复立坦开户": {
+    "name": "自营-仅复立坦开户",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "自营-双坦均未开户": {
+    "name": "自营-双坦均未开户",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "自营-已开户": {
+    "name": "自营-已开户",
+    "color": "#BB2549"
+  },
+  "自营-未开户": {
+    "name": "自营-未开户",
+    "color": "#C9516D"
+  },
+  "招商-已开户": {
+    "name": "招商-已开户",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "招商-未开户": {
+    "name": "招商-未开户",
+    "color": "#33CCFF"
+  },
+  "非目标": {
+    "name": "非目标",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "HIF市场潜力贡献": {
+    "name": "HIF市场潜力贡献",
+    "color": "#00A1B2"
+  },
+  "诺欣妥销售盒数贡献": {
+    "name": "诺欣妥销售盒数贡献",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "双坦销售盒数贡献": {
+    "name": "双坦销售盒数贡献",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "双坦自营销售盒数贡献": {
+    "name": "双坦自营销售盒数贡献",
+    "color": "#D8BFD8",
+    "named_color": "thistle"
+  },
+  "恩那罗盒数贡献": {
+    "name": "恩那罗盒数贡献",
+    "color": "#BB2549"
+  },
+  "爱瑞卓盒数贡献": {
+    "name": "爱瑞卓盒数贡献",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "双坦_自营": {
+    "name": "双坦_自营",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "双坦_招商": {
+    "name": "双坦_招商",
+    "color": "#DDA0DD",
+    "named_color": "plum"
+  },
+  "恩那罗_自营": {
+    "name": "恩那罗_自营",
+    "color": "#BB2549"
+  },
+  "恩那罗_招商": {
+    "name": "恩那罗_招商",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "招商": {
+    "name": "招商",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "未覆盖": {
+    "name": "未覆盖",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "未开户": {
+    "name": "未开户",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "R>0但N=0": {
+    "name": "R>0但N=0",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "N/R比=0%": {
+    "name": "N/R比=0%",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "N/R比0-15%": {
+    "name": "N/R比0-15%",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "N/R比15%-30%": {
+    "name": "N/R比15%-30%",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "N/R比>30%": {
+    "name": "N/R比>30%",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "博固泰": {
+    "name": "博固泰",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "爱瑞卓恩那罗共同自营": {
+    "name": "爱瑞卓恩那罗共同自营",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "恩那罗独有自营": {
+    "name": "恩那罗独有自营",
+    "color": "#BB2549"
+  },
+  "爱瑞卓独有自营": {
+    "name": "爱瑞卓独有自营",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "恩那罗自营": {
+    "name": "恩那罗自营",
+    "color": "#BB2549"
+  },
+  "恩那罗自营医院": {
+    "name": "恩那罗自营医院",
+    "color": "#BB2549"
+  },
+  "恩那罗非自营": {
+    "name": "恩那罗非自营",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "恩那罗非自营医院": {
+    "name": "恩那罗非自营医院",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "恩那罗": {
+    "name": "恩那罗",
+    "color": "#BB2549"
+  },
+  "爱瑞卓": {
+    "name": "爱瑞卓",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "恩那罗H1月均": {
+    "name": "恩那罗H1月均",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "恩那罗M7单月": {
+    "name": "恩那罗M7单月",
+    "color": "#BB2549"
+  },
+  "恩那罗M78月均": {
+    "name": "恩那罗M78月均",
+    "color": "#BB2549"
+  },
+  "爱瑞卓H1月均": {
+    "name": "爱瑞卓H1月均",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "地奥氨贝": {
+    "name": "地奥氨贝",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "贝那普利氨氯地平片": {
+    "name": "贝那普利氨氯地平片",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "百安新": {
+    "name": "百安新",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "开素达": {
+    "name": "开素达",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "倍博特": {
+    "name": "倍博特",
+    "color": "#800000",
+    "named_color": "maroon"
+  },
+  "天舒平": {
+    "name": "天舒平",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "协安之": {
+    "name": "协安之",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "瑞心安": {
+    "name": "瑞心安",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "思卫卡": {
+    "name": "思卫卡",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "缬沙坦氨氯地平（百奥）": {
+    "name": "缬沙坦氨氯地平（百奥）",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "缬沙坦氨氯地平（华新）": {
+    "name": "缬沙坦氨氯地平（华新）",
+    "color": "#EE82EE",
+    "named_color": "violet"
+  },
+  "缬氨悦": {
+    "name": "缬氨悦",
+    "color": "#FF7F50",
+    "named_color": "coral"
+  },
+  "未填写": {
+    "name": "未填写",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "100MG * 1": {
+    "name": "100MG * 1",
+    "color": "#6F8DB9"
+  },
+  "100MG * 2": {
+    "name": "100MG * 2",
+    "color": "#6F8DB9"
+  },
+  "10MG": {
+    "name": "10MG",
+    "color": "#6A5ACD",
+    "named_color": "slateblue"
+  },
+  "15MG": {
+    "name": "15MG",
+    "color": "#663399",
+    "named_color": "rebeccapurple"
+  },
+  "200MG * 1": {
+    "name": "200MG * 1",
+    "color": "#44546A"
+  },
+  "20MG": {
+    "name": "20MG",
+    "color": "#4B0082",
+    "named_color": "indigo"
+  },
+  "250MG": {
+    "name": "250MG",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "25MG10片装": {
+    "name": "25MG10片装",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "25MG20片装": {
+    "name": "25MG20片装",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "500MG": {
+    "name": "500MG",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "50MG * 2": {
+    "name": "50MG * 2",
+    "color": "#BD2843"
+  },
+  "75MG7片装": {
+    "name": "75MG7片装",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "A+C FDC": {
+    "name": "A+C FDC",
+    "color": "#800080",
+    "named_color": "Purple"
+  },
+  "A+C": {
+    "name": "A+C",
+    "color": "#800080",
+    "named_color": "Purple"
+  },
+  "A+D FDC": {
+    "name": "A+D FDC",
+    "color": "#EE82EE",
+    "named_color": "Violet"
+  },
+  "A+D": {
+    "name": "A+D",
+    "color": "#EE82EE",
+    "named_color": "Violet"
+  },
+  "ACEI": {
+    "name": "ACEI",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "ACEI+C": {
+    "name": "ACEI+C",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "ACEI+D": {
+    "name": "ACEI+D",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "ACLASTA (NVR)": {
+    "name": "ACLASTA (NVR)",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "MAT实际发货": {
+    "name": "MAT实际发货",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "ADALAT (BY6)": {
+    "name": "ADALAT (BY6)",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "ALENDRONATE SODIUM (S1H)": {
+    "name": "ALENDRONATE SODIUM (S1H)",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "AMLODIPINE BESYLAT (CQY)": {
+    "name": "AMLODIPINE BESYLAT (CQY)",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "AMLODIPINE BESYLAT (S5O)": {
+    "name": "AMLODIPINE BESYLAT (S5O)",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "AN LAI (ZJ5)": {
+    "name": "AN LAI (ZJ5)",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "APROVEL (SG9)": {
+    "name": "APROVEL (SG9)",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "ARB": {
+    "name": "ARB",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "ARB+C": {
+    "name": "ARB+C",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "ARB+D": {
+    "name": "ARB+D",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "ARNI": {
+    "name": "ARNI",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "B03A 补血药，铁剂": {
+    "name": "B03A 补血药，铁剂",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "B03C 红细胞生成素": {
+    "name": "B03C 红细胞生成素",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "B03D HIF-PH抑制剂": {
+    "name": "B03D HIF-PH抑制剂",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "ESA": {
+    "name": "ESA",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "补血中药": {
+    "name": "补血中药",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "铁剂": {
+    "name": "铁剂",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "HIF-PHI": {
+    "name": "HIF-PHI",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "BAI AN XIN (GRU)": {
+    "name": "BAI AN XIN (GRU)",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "BAYASPIRIN (BAY)": {
+    "name": "BAYASPIRIN (BAY)",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "BB": {
+    "name": "BB",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "BEI YI (ZJ5)": {
+    "name": "BEI YI (ZJ5)",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "BEI YUE (ZJ5)": {
+    "name": "BEI YUE (ZJ5)",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "Beta Blocker": {
+    "name": "Beta Blocker",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "Bottom20%": {
+    "name": "Bottom20%",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "BRILINTA (AZN)": {
+    "name": "BRILINTA (AZN)",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "CCB": {
+    "name": "CCB",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "CLOPIDOGREL BISULF (HDO)": {
+    "name": "CLOPIDOGREL BISULF (HDO)",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "COAPROVEL (SG9)": {
+    "name": "COAPROVEL (SG9)",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "COZAAR (ORG)": {
+    "name": "COZAAR (ORG)",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "DA FEN GAI (SZA)": {
+    "name": "DA FEN GAI (SZA)",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "DIOVAN (NVR)": {
+    "name": "DIOVAN (NVR)",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "Diuretics": {
+    "name": "Diuretics",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "DPP4": {
+    "name": "DPP4",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "DU": {
+    "name": "DU",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "ELCITONIN (ASC)": {
+    "name": "ELCITONIN (ASC)",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "EN CUN (S1H)": {
+    "name": "EN CUN (S1H)",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "ENTRESTO (NVR)": {
+    "name": "ENTRESTO (NVR)",
+    "color": "#EE82EE",
+    "named_color": "violet"
+  },
+  "EXFORGE (NVR)": {
+    "name": "EXFORGE (NVR)",
+    "color": "#800000",
+    "named_color": "maroon"
+  },
+  "FORSTEO (LLY)": {
+    "name": "FORSTEO (LLY)",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "FORSTEO PRE-FILLED P 600Y 2.4ML 1": {
+    "name": "FORSTEO PRE-FILLED P 600Y 2.4ML 1",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "复泰奥": {
+    "name": "复泰奥",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "FOSAMAX (ORG)": {
+    "name": "FOSAMAX (ORG)",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "FOSAMAX PLUS (ORG)": {
+    "name": "FOSAMAX PLUS (ORG)",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "FUROSEMIDE (SZO)": {
+    "name": "FUROSEMIDE (SZO)",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "G03J0\n选择性雌激素\n受体调节剂": {
+    "name": "G03J0\n选择性雌激素\n受体调节剂",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "GLP-1": {
+    "name": "GLP-1",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "H04A0\n降钙素": {
+    "name": "H04A0\n降钙素",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "H04E0\n甲状旁腺激素\n及类似物": {
+    "name": "H04E0\n甲状旁腺激素\n及类似物",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "HYZAAR (ORG)": {
+    "name": "HYZAAR (ORG)",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "INS": {
+    "name": "INS",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "JI JIA (JSH)": {
+    "name": "JI JIA (JSH)",
+    "color": "#DA70D6",
+    "named_color": "orchid"
+  },
+  "JIN ER LI (B-Y)": {
+    "name": "JIN ER LI (B-Y)",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "KE MI GU (SK4)": {
+    "name": "KE MI GU (SK4)",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "LABA+ICS固定复方制剂": {
+    "name": "LABA+ICS固定复方制剂",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "LAN SHA (BW.)": {
+    "name": "LAN SHA (BW.)",
+    "color": "#00FFFF",
+    "named_color": "c"
+  },
+  "LOTENSIN (NBJ)": {
+    "name": "LOTENSIN (NBJ)",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "M05B3\n治疗骨质疏松\n和骨钙失调\n的二膦酸盐类": {
+    "name": "M05B3\n治疗骨质疏松\n和骨钙失调\n的二膦酸盐类",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "MAT数量": {
+    "name": "MAT数量",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "MAT金额": {
+    "name": "MAT金额",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "MIACALCIC (NVR)": {
+    "name": "MIACALCIC (NVR)",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "Mid-Bottom20%": {
+    "name": "Mid-Bottom20%",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "Mid20%": {
+    "name": "Mid20%",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "MON数量": {
+    "name": "MON数量",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "MON金额": {
+    "name": "MON金额",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "MQT数量": {
+    "name": "MQT数量",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "MQT金额": {
+    "name": "MQT金额",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "MRA": {
+    "name": "MRA",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "NORVASC (VI/)": {
+    "name": "NORVASC (VI/)",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "OAD": {
+    "name": "OAD",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "OLMETEC PLUS (DSC)": {
+    "name": "OLMETEC PLUS (DSC)",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "Others": {
+    "name": "Others",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "PLAGRIL (DRL)": {
+    "name": "PLAGRIL (DRL)",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "PLAVIX (SG9)": {
+    "name": "PLAVIX (SG9)",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "PROLIA (AAI)": {
+    "name": "PROLIA (AAI)",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "PTH": {
+    "name": "PTH",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "RAAS FDC": {
+    "name": "RAAS FDC",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "RAAS平片(ARB+ACEI)": {
+    "name": "RAAS平片(ARB+ACEI)",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "RISEDRONATE SODIUM (YKJ)": {
+    "name": "RISEDRONATE SODIUM (YKJ)",
+    "color": "#FF7F50",
+    "named_color": "coral"
+  },
+  "SAMA+SABA固定复方制剂": {
+    "name": "SAMA+SABA固定复方制剂",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "SERM": {
+    "name": "SERM",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "SGLT2": {
+    "name": "SGLT2",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "SHI HUI DA (JTF)": {
+    "name": "SHI HUI DA (JTF)",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "SHUAI TAI (LUU)": {
+    "name": "SHUAI TAI (LUU)",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "SHUAI XIN (LUU)": {
+    "name": "SHUAI XIN (LUU)",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "SHUAI XIN/SHUAI TAI (LUU)": {
+    "name": "SHUAI XIN/SHUAI TAI (LUU)",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "SI DI NUO (S-Y)": {
+    "name": "SI DI NUO (S-Y)",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "TALCOM (SI6)": {
+    "name": "TALCOM (SI6)",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "Top-Mid20%": {
+    "name": "Top-Mid20%",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "Top20%": {
+    "name": "Top20%",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "趋势-P12M": {
+    "name": "趋势-P12M",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "趋势-P9M": {
+    "name": "趋势-P9M",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "趋势-P3M": {
+    "name": "趋势-P3M",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "趋势-P6M": {
+    "name": "趋势-P6M",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "TUO PING (ZHT)": {
+    "name": "TUO PING (ZHT)",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "TZD & PPAR全激动剂": {
+    "name": "TZD & PPAR全激动剂",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "TZD": {
+    "name": "TZD",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "V03B 中药和中成药": {
+    "name": "V03B 中药和中成药",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "VALSARTAN (QJX)": {
+    "name": "VALSARTAN (QJX)",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "VBP品种": {
+    "name": "VBP品种",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "XIE AN ZHI (ZHU)": {
+    "name": "XIE AN ZHI (ZHU)",
+    "color": "#7B68EE",
+    "named_color": "mediumslateblue"
+  },
+  "XIE KE (JC4)": {
+    "name": "XIE KE (JC4)",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "XIN FU TAI (XIL)": {
+    "name": "XIN FU TAI (XIL)",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "XIN FU TAI PRE-FILLED P 600Y 2.4ML 1": {
+    "name": "XIN FU TAI PRE-FILLED P 600Y 2.4ML 1",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "欣复泰水针": {
+    "name": "欣复泰水针",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "XIN FU TAI VIAL DRY 200IU 10": {
+    "name": "XIN FU TAI VIAL DRY 200IU 10",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "欣复泰粉针": {
+    "name": "欣复泰粉针",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "XIN LI TAN (SI6)": {
+    "name": "XIN LI TAN (SI6)",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "YI DA LI (ZUP)": {
+    "name": "YI DA LI (ZUP)",
+    "color": "#808000",
+    "named_color": "olive"
+  },
+  "YI GU (CTA)": {
+    "name": "YI GU (CTA)",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "YI SU (JJJ)": {
+    "name": "YI SU (JJJ)",
+    "color": "#FF7F50",
+    "named_color": "coral"
+  },
+  "YI YE (AU3)": {
+    "name": "YI YE (AU3)",
+    "color": "#FF7F50",
+    "named_color": "coral"
+  },
+  "YIN DUO (HZH)": {
+    "name": "YIN DUO (HZH)",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "YOU LI WEI (NJ2)": {
+    "name": "YOU LI WEI (NJ2)",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "ZHEN GU (S60)": {
+    "name": "ZHEN GU (S60)",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "ZHEN GU VIAL DRY 200IU 1": {
+    "name": "ZHEN GU VIAL DRY 200IU 1",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "珍固粉针": {
+    "name": "珍固粉针",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "珍固水针": {
+    "name": "珍固水针",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "α糖苷酶抑制剂": {
+    "name": "α糖苷酶抑制剂",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "β受体阻断剂": {
+    "name": "β受体阻断剂",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "一线城市": {
+    "name": "一线城市",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "万脉舒（H2C）": {
+    "name": "万脉舒（H2C）",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "三线城市": {
+    "name": "三线城市",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "丙卡特罗": {
+    "name": "丙卡特罗",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "丙戊酸钠": {
+    "name": "丙戊酸钠",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "丙酸倍氯米松": {
+    "name": "丙酸倍氯米松",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "丙酸氟替卡松": {
+    "name": "丙酸氟替卡松",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "中标仿制": {
+    "name": "中标仿制",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "二甲双胍": {
+    "name": "二甲双胍",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "二线城市": {
+    "name": "二线城市",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "二羟丙茶碱": {
+    "name": "二羟丙茶碱",
+    "color": "#FF6347",
+    "named_color": "tomato"
+  },
+  "二羟丙茶碱氯化钠": {
+    "name": "二羟丙茶碱氯化钠",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "五线城市": {
+    "name": "五线城市",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "京可新": {
+    "name": "京可新",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "京可新（ZXJ）": {
+    "name": "京可新（ZXJ）",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "京必舒新（ZXJ）": {
+    "name": "京必舒新（ZXJ）",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "京诺": {
+    "name": "京诺",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "京诺（ZXJ）": {
+    "name": "京诺（ZXJ）",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "代文": {
+    "name": "代文",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "代文（NVR）": {
+    "name": "代文（NVR）",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "代文（NVU）": {
+    "name": "代文（NVU）",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "伊伐布雷定": {
+    "name": "伊伐布雷定",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "伊疏（S.I）": {
+    "name": "伊疏（S.I）",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "伊达力": {
+    "name": "伊达力",
+    "color": "#808000",
+    "named_color": "olive"
+  },
+  "伊达力（ZHI）": {
+    "name": "伊达力（ZHI）",
+    "color": "#808000",
+    "named_color": "olive"
+  },
+  "伊达力（ZUP）": {
+    "name": "伊达力（ZUP）",
+    "color": "#808000",
+    "named_color": "olive"
+  },
+  "伏格列波糖": {
+    "name": "伏格列波糖",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "优力平": {
+    "name": "优力平",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "优力平（ZLU）": {
+    "name": "优力平（ZLU）",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "依固": {
+    "name": "依固",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "依固（C2T）": {
+    "name": "依固（C2T）",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "依固（CTA）": {
+    "name": "依固（CTA）",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "依度沙班": {
+    "name": "依度沙班",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "依折麦布": {
+    "name": "依折麦布",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "依替膦酸二钠": {
+    "name": "依替膦酸二钠",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "依苏": {
+    "name": "依苏",
+    "color": "#FF7F50",
+    "named_color": "coral"
+  },
+  "依那普利": {
+    "name": "依那普利",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "依那普利（JJJ）": {
+    "name": "依那普利（JJJ）",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "依那普利（YAZ）": {
+    "name": "依那普利（YAZ）",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "依那普利拉": {
+    "name": "依那普利拉",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "依降钙素": {
+    "name": "依降钙素",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "信立坦": {
+    "name": "信立坦",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "信立坦（SI6）": {
+    "name": "信立坦（SI6）",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "信立明": {
+    "name": "信立明",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "信立明（SI6）": {
+    "name": "信立明（SI6）",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "信达悦（SI6）": {
+    "name": "信达悦（SI6）",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "倍利舒": {
+    "name": "倍利舒",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "倍博特（NVU）": {
+    "name": "倍博特（NVU）",
+    "color": "#800000",
+    "named_color": "maroon"
+  },
+  "倍怡": {
+    "name": "倍怡",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "倍怡（ZJ5）": {
+    "name": "倍怡（ZJ5）",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "倍悦": {
+    "name": "倍悦",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "倍悦（ZJ5）": {
+    "name": "倍悦（ZJ5）",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "倍林达": {
+    "name": "倍林达",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "傲坦": {
+    "name": "傲坦",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "傲坦（DCG）": {
+    "name": "傲坦（DCG）",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "傲坦（DSC）": {
+    "name": "傲坦（DSC）",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "克赛（AVS）": {
+    "name": "克赛（AVS）",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "兰沙": {
+    "name": "兰沙",
+    "color": "#00FFFF",
+    "named_color": "c"
+  },
+  "兰沙（B4W）": {
+    "name": "兰沙（B4W）",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "兰沙（BW.）": {
+    "name": "兰沙（BW.）",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "其他品种": {
+    "name": "其他品种",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "其他科室": {
+    "name": "其他科室",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "其他非集采品种": {
+    "name": "其他非集采品种",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "内分泌科": {
+    "name": "内分泌科",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "冠心病": {
+    "name": "冠心病",
+    "color": "#6F8DB9"
+  },
+  "冠爽": {
+    "name": "冠爽",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "冠爽（BJP）": {
+    "name": "冠爽（BJP）",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "冠爽（SHN）": {
+    "name": "冠爽（SHN）",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "利伐沙班": {
+    "name": "利伐沙班",
+    "color": "#663399",
+    "named_color": "rebeccapurple"
+  },
+  "利塞膦酸钠": {
+    "name": "利塞膦酸钠",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "利塞膦酸钠片": {
+    "name": "利塞膦酸钠片",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "利塞膦酸钠片（YKJ）": {
+    "name": "利塞膦酸钠片（YKJ）",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "利格列汀": {
+    "name": "利格列汀",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "力清之": {
+    "name": "力清之",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "力清之（KW.）": {
+    "name": "力清之（KW.）",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "加巴喷丁": {
+    "name": "加巴喷丁",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "匹伐他汀": {
+    "name": "匹伐他汀",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "匹伐他汀（JN.）": {
+    "name": "匹伐他汀（JN.）",
+    "color": "#1E90FF",
+    "named_color": "dodgerblue"
+  },
+  "匹伐他汀钙片": {
+    "name": "匹伐他汀钙片",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "匹伐他汀钙片（S1Q）": {
+    "name": "匹伐他汀钙片（S1Q）",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "匹伐他汀钙片（SI6）": {
+    "name": "匹伐他汀钙片（SI6）",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "华东区": {
+    "name": "华东区",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "华中区": {
+    "name": "华中区",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "华北区": {
+    "name": "华北区",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "华南区": {
+    "name": "华南区",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "华法林": {
+    "name": "华法林",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "华西区": {
+    "name": "华西区",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "卒中": {
+    "name": "卒中",
+    "color": "#2B9B33"
+  },
+  "单价": {
+    "name": "单价",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "单纯高血压": {
+    "name": "单纯高血压",
+    "color": "#44546A"
+  },
+  "卡托普利": {
+    "name": "卡托普利",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "卡托普利片": {
+    "name": "卡托普利片",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "卡格列净": {
+    "name": "卡格列净",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "厄贝沙坦,氢氯噻嗪": {
+    "name": "厄贝沙坦,氢氯噻嗪",
+    "color": "#4169E1",
+    "named_color": "royalblue"
+  },
+  "厄贝沙坦": {
+    "name": "厄贝沙坦",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "厄贝沙坦氢氯噻嗪": {
+    "name": "厄贝沙坦氢氯噻嗪",
+    "color": "#4169E1",
+    "named_color": "royalblue"
+  },
+  "双膦酸盐类": {
+    "name": "双膦酸盐类",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "口服溶液": {
+    "name": "口服溶液",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "口服片剂": {
+    "name": "口服片剂",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "可定": {
+    "name": "可定",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "可定（A5Z）": {
+    "name": "可定（A5Z）",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "可定（AZN）": {
+    "name": "可定（AZN）",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "吉加": {
+    "name": "吉加",
+    "color": "#DA70D6",
+    "named_color": "orchid"
+  },
+  "吉加（H9R）": {
+    "name": "吉加（H9R）",
+    "color": "#DA70D6",
+    "named_color": "orchid"
+  },
+  "吉加（JSH）": {
+    "name": "吉加（JSH）",
+    "color": "#DA70D6",
+    "named_color": "orchid"
+  },
+  "吲哚布芬": {
+    "name": "吲哚布芬",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "吸入性糖皮质激素(ICS)": {
+    "name": "吸入性糖皮质激素(ICS)",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "咪达普利": {
+    "name": "咪达普利",
+    "color": "#FF7F50",
+    "named_color": "coral"
+  },
+  "唑来膦酸": {
+    "name": "唑来膦酸",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "唑来膦酸（SHR）": {
+    "name": "唑来膦酸（SHR）",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "唑来膦酸（YAZ）": {
+    "name": "唑来膦酸（YAZ）",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "唑来膦酸注射液": {
+    "name": "唑来膦酸注射液",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "唑来膦酸注射液（KEU）": {
+    "name": "唑来膦酸注射液（KEU）",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "唑来膦酸注射液（SK4）": {
+    "name": "唑来膦酸注射液（SK4）",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "喹那普利": {
+    "name": "喹那普利",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "四线城市": {
+    "name": "四线城市",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "国产阿司匹林": {
+    "name": "国产阿司匹林",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "地舒单抗": {
+    "name": "地舒单抗",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "坎地沙坦": {
+    "name": "坎地沙坦",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "埃格列净": {
+    "name": "埃格列净",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "培哚普利": {
+    "name": "培哚普利",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "培哚普利氨氯地平": {
+    "name": "培哚普利氨氯地平",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "复傲坦（DCG）": {
+    "name": "复傲坦（DCG）",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "复方妥英麻黄茶碱": {
+    "name": "复方妥英麻黄茶碱",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "复方胆氨": {
+    "name": "复方胆氨",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "复方茶碱麻黄碱": {
+    "name": "复方茶碱麻黄碱",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "复泰奥（LYG）": {
+    "name": "复泰奥（LYG）",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "多索茶碱": {
+    "name": "多索茶碱",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "天泉乐宁（FTQ）": {
+    "name": "天泉乐宁（FTQ）",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "奥卡西平": {
+    "name": "奥卡西平",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "奥美沙坦": {
+    "name": "奥美沙坦",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "奥美沙坦（BW.）": {
+    "name": "奥美沙坦（BW.）",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "奥美沙坦（FTQ）": {
+    "name": "奥美沙坦（FTQ）",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "奥美沙坦（GY0）": {
+    "name": "奥美沙坦（GY0）",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "奥美沙坦（SI6）": {
+    "name": "奥美沙坦（SI6）",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "奥美沙坦酯": {
+    "name": "奥美沙坦酯",
+    "color": "#2B9B33"
+  },
+  "奥美沙坦酯片（S6N）": {
+    "name": "奥美沙坦酯片（S6N）",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "妥洛特罗": {
+    "name": "妥洛特罗",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "孟鲁司特": {
+    "name": "孟鲁司特",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "安博维": {
+    "name": "安博维",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "安博维（SA9）": {
+    "name": "安博维（SA9）",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "安博维（SG9）": {
+    "name": "安博维（SG9）",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "安博诺（SA9）": {
+    "name": "安博诺（SA9）",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "安来": {
+    "name": "安来",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "安来（ZJ5）": {
+    "name": "安来（ZJ5）",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "密固达": {
+    "name": "密固达",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "密固达（NVR）": {
+    "name": "密固达（NVR）",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "密固达（NVU）": {
+    "name": "密固达（NVU）",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "密盖息": {
+    "name": "密盖息",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "密盖息（NVR）": {
+    "name": "密盖息（NVR）",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "密盖息（NVU）": {
+    "name": "密盖息（NVU）",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "富利他之（ZHI）": {
+    "name": "富利他之（ZHI）",
+    "color": "#663399",
+    "named_color": "rebeccapurple"
+  },
+  "尤佳": {
+    "name": "尤佳",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "尤佳（TOF）": {
+    "name": "尤佳（TOF）",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "尤尼舒（J/G）": {
+    "name": "尤尼舒（J/G）",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "左乙拉西坦": {
+    "name": "左乙拉西坦",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "左乙拉西坦（SI6）": {
+    "name": "左乙拉西坦（SI6）",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "左乙拉西坦（ZJO）": {
+    "name": "左乙拉西坦（ZJO）",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "左乙拉西坦片（CQU）": {
+    "name": "左乙拉西坦片（CQU）",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "左乙拉西坦片（ZXJ）": {
+    "name": "左乙拉西坦片（ZXJ）",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "左旋氨氯地平": {
+    "name": "左旋氨氯地平",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "布地奈德": {
+    "name": "布地奈德",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "帅信": {
+    "name": "帅信",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "帅信/帅泰": {
+    "name": "帅信/帅泰",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "帅泰": {
+    "name": "帅泰",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "希佳（C2T）": {
+    "name": "希佳（C2T）",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "希佳（NJ2）": {
+    "name": "希佳（NJ2）",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "希弗全（A1L）": {
+    "name": "希弗全（A1L）",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "带量品种": {
+    "name": "带量品种",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "平欣": {
+    "name": "平欣",
+    "color": "#7B68EE",
+    "named_color": "mediumslateblue"
+  },
+  "开浦兰（UCB）": {
+    "name": "开浦兰（UCB）",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "异丙肾上腺素": {
+    "name": "异丙肾上腺素",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "心内科": {
+    "name": "心内科",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "心力衰竭": {
+    "name": "心力衰竭",
+    "color": "#8B4513",
+    "named_color": "Saddlebrown"
+  },
+  "必洛斯": {
+    "name": "必洛斯",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "恒格列净": {
+    "name": "恒格列净",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "恩存": {
+    "name": "恩存",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "恩格列净": {
+    "name": "恩格列净",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "慢性肾病": {
+    "name": "慢性肾病",
+    "color": "#FAA53A"
+  },
+  "托吡酯": {
+    "name": "托吡酯",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "托妥": {
+    "name": "托妥",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "托妥（NJ2）": {
+    "name": "托妥（NJ2）",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "托平（ZHT）": {
+    "name": "托平（ZHT）",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "抗白三烯类药物(LTRA)": {
+    "name": "抗白三烯类药物(LTRA)",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "拉莫三嗪": {
+    "name": "拉莫三嗪",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "拉贝洛尔": {
+    "name": "拉贝洛尔",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "拜阿司匹灵": {
+    "name": "拜阿司匹灵",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "搏力高": {
+    "name": "搏力高",
+    "color": "#7B68EE",
+    "named_color": "mediumslateblue"
+  },
+  "搏力高（ZYG）": {
+    "name": "搏力高（ZYG）",
+    "color": "#7B68EE",
+    "named_color": "mediumslateblue"
+  },
+  "斯迪诺": {
+    "name": "斯迪诺",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "斯迪诺（LU6）": {
+    "name": "斯迪诺（LU6）",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "斯迪诺（S-Y）": {
+    "name": "斯迪诺（S-Y）",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "旗舰社区": {
+    "name": "旗舰社区",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "无以上适应症": {
+    "name": "无以上适应症",
+    "color": "#800080",
+    "named_color": "Purple"
+  },
+  "普仑司特": {
+    "name": "普仑司特",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "普伐他汀": {
+    "name": "普伐他汀",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "普内科": {
+    "name": "普内科",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "普洛静（GTW）": {
+    "name": "普洛静（GTW）",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "普瑞巴林": {
+    "name": "普瑞巴林",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "普罗力": {
+    "name": "普罗力",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "普罗力（AAI）": {
+    "name": "普罗力（AAI）",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "普通社区": {
+    "name": "普通社区",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "替格瑞洛": {
+    "name": "替格瑞洛",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "替米沙坦": {
+    "name": "替米沙坦",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "未中标仿制": {
+    "name": "未中标仿制",
+    "color": "#1E90FF",
+    "named_color": "dodgerblue"
+  },
+  "未中标原研": {
+    "name": "未中标原研",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "来适可XL（NVR）": {
+    "name": "来适可XL（NVR）",
+    "color": "#DA70D6",
+    "named_color": "orchid"
+  },
+  "来适可XL（NVU）": {
+    "name": "来适可XL（NVU）",
+    "color": "#DA70D6",
+    "named_color": "orchid"
+  },
+  "标准盒数（万盒）": {
+    "name": "标准盒数（万盒）",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "格列奈类": {
+    "name": "格列奈类",
+    "color": "#EE82EE",
+    "named_color": "violet"
+  },
+  "欣复泰": {
+    "name": "欣复泰",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "欣复泰（XIL）": {
+    "name": "欣复泰（XIL）",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "欧美利（GY0）": {
+    "name": "欧美利（GY0）",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "比伐芦定": {
+    "name": "比伐芦定",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "比伐芦定\n海南双成药业股份有限公司": {
+    "name": "比伐芦定\n海南双成药业股份有限公司",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "比伐芦定\n齐鲁制药集团": {
+    "name": "比伐芦定\n齐鲁制药集团",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "比索洛尔": {
+    "name": "比索洛尔",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "氟伐他汀": {
+    "name": "氟伐他汀",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "氨氯地平": {
+    "name": "氨氯地平",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "氨茶碱": {
+    "name": "氨茶碱",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "氯吡格雷": {
+    "name": "氯吡格雷",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "氯沙坦": {
+    "name": "氯沙坦",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "氯沙坦氢氯噻嗪": {
+    "name": "氯沙坦氢氯噻嗪",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "氯沙坦钾": {
+    "name": "氯沙坦钾",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "氯硝西泮": {
+    "name": "氯硝西泮",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "沙丁胺醇": {
+    "name": "沙丁胺醇",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "沙库巴曲缬沙坦": {
+    "name": "沙库巴曲缬沙坦",
+    "color": "#EE82EE",
+    "named_color": "violet"
+  },
+  "沙库巴曲缬沙坦钠": {
+    "name": "沙库巴曲缬沙坦钠",
+    "color": "#808000",
+    "named_color": "Olive"
+  },
+  "沙格列汀": {
+    "name": "沙格列汀",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "法安明（PHA）": {
+    "name": "法安明（PHA）",
+    "color": "#663399",
+    "named_color": "rebeccapurple"
+  },
+  "波立维": {
+    "name": "波立维",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "注射剂": {
+    "name": "注射剂",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "注射用那屈肝素钙": {
+    "name": "注射用那屈肝素钙",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "注射用那屈肝素钙（DG+）": {
+    "name": "注射用那屈肝素钙（DG+）",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "泰仪": {
+    "name": "泰仪",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "泰加宁": {
+    "name": "泰加宁",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "泰加宁（SI6）": {
+    "name": "泰加宁（SI6）",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "泰加宁\n深圳信立泰药业股份有限公司": {
+    "name": "泰加宁\n深圳信立泰药业股份有限公司",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "泰嘉": {
+    "name": "泰嘉",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "泽朗": {
+    "name": "泽朗",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "泽朗\n江苏豪森药业集团有限公司": {
+    "name": "泽朗\n江苏豪森药业集团有限公司",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "洛伐他汀": {
+    "name": "洛伐他汀",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "洛汀新": {
+    "name": "洛汀新",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "洛汀新（NBJ）": {
+    "name": "洛汀新（NBJ）",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "洛汀新（NVU）": {
+    "name": "洛汀新（NVU）",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "特布他林": {
+    "name": "特布他林",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "特立帕肽": {
+    "name": "特立帕肽",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "环仑特罗": {
+    "name": "环仑特罗",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "环索奈德": {
+    "name": "环索奈德",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "珍固": {
+    "name": "珍固",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "珍固（S60）": {
+    "name": "珍固（S60）",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "班布特罗": {
+    "name": "班布特罗",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "瑞旨": {
+    "name": "瑞旨",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "瑞旨（S6B）": {
+    "name": "瑞旨（S6B）",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "瑞旨（S7O）": {
+    "name": "瑞旨（S7O）",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "瑞舒伐他汀": {
+    "name": "瑞舒伐他汀",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "瑞舒伐他汀（C2T）": {
+    "name": "瑞舒伐他汀（C2T）",
+    "color": "#1E90FF",
+    "named_color": "dodgerblue"
+  },
+  "瑞舒伐他汀（LEK）": {
+    "name": "瑞舒伐他汀（LEK）",
+    "color": "#808000",
+    "named_color": "olive"
+  },
+  "瑞舒伐他汀（NJ2）": {
+    "name": "瑞舒伐他汀（NJ2）",
+    "color": "#1E90FF",
+    "named_color": "dodgerblue"
+  },
+  "瑞舒伐他汀（NVU）": {
+    "name": "瑞舒伐他汀（NVU）",
+    "color": "#808000",
+    "named_color": "olive"
+  },
+  "瑞舒伐他汀钙片（ZHI）": {
+    "name": "瑞舒伐他汀钙片（ZHI）",
+    "color": "#DA70D6",
+    "named_color": "orchid"
+  },
+  "百安新（YAZ）": {
+    "name": "百安新（YAZ）",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "益盖宁": {
+    "name": "益盖宁",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "益盖宁（ASC）": {
+    "name": "益盖宁（ASC）",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "短效β2受体激动剂(SABA)": {
+    "name": "短效β2受体激动剂(SABA)",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "短效抗胆碱剂(SAMA)": {
+    "name": "短效抗胆碱剂(SAMA)",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "硝苯地平": {
+    "name": "硝苯地平",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "硝苯地平缓释片": {
+    "name": "硝苯地平缓释片",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "硫酸氢氯吡格雷片": {
+    "name": "硫酸氢氯吡格雷片",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "硫酸镁": {
+    "name": "硫酸镁",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "磺脲类": {
+    "name": "磺脲类",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "社区医院": {
+    "name": "社区医院",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "神内科": {
+    "name": "神内科",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "福善美": {
+    "name": "福善美",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "福善美（MSD）": {
+    "name": "福善美（MSD）",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "福善美（MSG）": {
+    "name": "福善美（MSG）",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "福美加": {
+    "name": "福美加",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "福美加（MSD）": {
+    "name": "福美加（MSD）",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "福美加（MSG）": {
+    "name": "福美加（MSG）",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "福莫特罗": {
+    "name": "福莫特罗",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "福辛普利": {
+    "name": "福辛普利",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "科素亚": {
+    "name": "科素亚",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "科素亚（MHU）": {
+    "name": "科素亚（MHU）",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "科素亚（MSG）": {
+    "name": "科素亚（MSG）",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "科苏": {
+    "name": "科苏",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "穗悦": {
+    "name": "穗悦",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "立普妥": {
+    "name": "立普妥",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "立普妥（PFZ）": {
+    "name": "立普妥（PFZ）",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "立普妥（VI/）": {
+    "name": "立普妥（VI/）",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "立迈青（AHK）": {
+    "name": "立迈青（AHK）",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "等级医院": {
+    "name": "等级医院",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "米格列醇": {
+    "name": "米格列醇",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "维格列汀": {
+    "name": "维格列汀",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "缓宁": {
+    "name": "缓宁",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "缬克（JC4）": {
+    "name": "缬克（JC4）",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "缬沙坦,氨氯地平": {
+    "name": "缬沙坦,氨氯地平",
+    "color": "#800000",
+    "named_color": "maroon"
+  },
+  "缬沙坦": {
+    "name": "缬沙坦",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "缬沙坦氢氯噻嗪": {
+    "name": "缬沙坦氢氯噻嗪",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "缬沙坦氨氯地平": {
+    "name": "缬沙坦氨氯地平",
+    "color": "#800000",
+    "named_color": "maroon"
+  },
+  "美卡素": {
+    "name": "美卡素",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "美卡素（B.I）": {
+    "name": "美卡素（B.I）",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "美托洛尔": {
+    "name": "美托洛尔",
+    "color": "#6B8E23",
+    "named_color": "olivedrab"
+  },
+  "美托洛尔常释剂型": {
+    "name": "美托洛尔常释剂型",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "美托洛尔缓释剂型": {
+    "name": "美托洛尔缓释剂型",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "美托洛尔缓释片": {
+    "name": "美托洛尔缓释片",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "美洛林": {
+    "name": "美洛林",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "美百乐镇（DCG）": {
+    "name": "美百乐镇（DCG）",
+    "color": "#FF7F50",
+    "named_color": "coral"
+  },
+  "美百乐镇（DSC）": {
+    "name": "美百乐镇（DSC）",
+    "color": "#FF7F50",
+    "named_color": "coral"
+  },
+  "美阿沙坦": {
+    "name": "美阿沙坦",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "美阿沙坦钾片": {
+    "name": "美阿沙坦钾片",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "老干科": {
+    "name": "老干科",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "肝素": {
+    "name": "肝素",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "肾内科": {
+    "name": "肾内科",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "舒降之（MHU）": {
+    "name": "舒降之（MHU）",
+    "color": "#1E90FF",
+    "named_color": "dodgerblue"
+  },
+  "艾司洛尔": {
+    "name": "艾司洛尔",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "艾普拉唑": {
+    "name": "艾普拉唑",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "苯巴比妥": {
+    "name": "苯巴比妥",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "茚达特罗": {
+    "name": "茚达特罗",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "茶碱,盐酸甲麻黄碱,暴马子浸膏": {
+    "name": "茶碱,盐酸甲麻黄碱,暴马子浸膏",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "茶碱": {
+    "name": "茶碱",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "螺内酯": {
+    "name": "螺内酯",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "血脂异常": {
+    "name": "血脂异常",
+    "color": "#BD2843"
+  },
+  "西格列汀": {
+    "name": "西格列汀",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "诺欣妥": {
+    "name": "诺欣妥",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "诺欣妥（NVU）": {
+    "name": "诺欣妥（NVU）",
+    "color": "#EE82EE",
+    "named_color": "violet"
+  },
+  "贝尼地平": {
+    "name": "贝尼地平",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "贝那普利,氨氯地平": {
+    "name": "贝那普利,氨氯地平",
+    "color": "#FA8072",
+    "named_color": "salmon"
+  },
+  "贝那普利": {
+    "name": "贝那普利",
+    "color": "#800080",
+    "named_color": "Purple"
+  },
+  "贝那普利氨氯地平": {
+    "name": "贝那普利氨氯地平",
+    "color": "#FA8072",
+    "named_color": "salmon"
+  },
+  "赖诺普利": {
+    "name": "赖诺普利",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "赛倍畅（JJY）": {
+    "name": "赛倍畅（JJY）",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "赛博利": {
+    "name": "赛博利",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "赛博利（S1E）": {
+    "name": "赛博利（S1E）",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "辛伐他汀": {
+    "name": "辛伐他汀",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "辛可（GXN）": {
+    "name": "辛可（GXN）",
+    "color": "#808000",
+    "named_color": "olive"
+  },
+  "达格列净": {
+    "name": "达格列净",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "达比加群酯": {
+    "name": "达比加群酯",
+    "color": "#1E90FF",
+    "named_color": "dodgerblue"
+  },
+  "达芬盖（SZA）": {
+    "name": "达芬盖（SZA）",
+    "color": "#1E90FF",
+    "named_color": "dodgerblue"
+  },
+  "迪之雅": {
+    "name": "迪之雅",
+    "color": "#808000",
+    "named_color": "olive"
+  },
+  "速避凝（A3N）": {
+    "name": "速避凝（A3N）",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "那屈肝素钙注射液（JJY）": {
+    "name": "那屈肝素钙注射液（JJY）",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "邦之": {
+    "name": "邦之",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "邦之（JBI）": {
+    "name": "邦之（JBI）",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "邦之（SFO）": {
+    "name": "邦之（SFO）",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "金尔力": {
+    "name": "金尔力",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "金尔力（B-Y）": {
+    "name": "金尔力（B-Y）",
+    "color": "#800080",
+    "named_color": "purple"
+  },
+  "销售基恩（万元）": {
+    "name": "销售基恩（万元）",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "长效β2受体激动剂(LABA)": {
+    "name": "长效β2受体激动剂(LABA)",
+    "color": "#FF6347",
+    "named_color": "tomato"
+  },
+  "长效抗胆碱剂(LAMA)": {
+    "name": "长效抗胆碱剂(LAMA)",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "阿乐": {
+    "name": "阿乐",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "阿乐（SDS）": {
+    "name": "阿乐（SDS）",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "阿仑膦酸钠,维生素D3": {
+    "name": "阿仑膦酸钠,维生素D3",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "阿仑膦酸钠": {
+    "name": "阿仑膦酸钠",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "阿仑膦酸钠维生素D3": {
+    "name": "阿仑膦酸钠维生素D3",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "阿利沙坦": {
+    "name": "阿利沙坦",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "阿利沙坦酯": {
+    "name": "阿利沙坦酯",
+    "color": "#00BFFF",
+    "named_color": "Deepskyblue"
+  },
+  "阿利沙坦酯氨氯地平": {
+    "name": "阿利沙坦酯氨氯地平",
+    "color": "#EE82EE",
+    "named_color": "Violet"
+  },
+  "阿卡波糖咀嚼片": {
+    "name": "阿卡波糖咀嚼片",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "阿卡波糖片剂": {
+    "name": "阿卡波糖片剂",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "阿司匹林": {
+    "name": "阿司匹林",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "阿哌沙班": {
+    "name": "阿哌沙班",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "阿托伐他汀": {
+    "name": "阿托伐他汀",
+    "color": "#000080",
+    "named_color": "navy"
+  },
+  "阿托伐他汀（FJ.）": {
+    "name": "阿托伐他汀（FJ.）",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "阿托伐他汀（FXG）": {
+    "name": "阿托伐他汀（FXG）",
+    "color": "#808000",
+    "named_color": "olive"
+  },
+  "阿托伐他汀（GI2）": {
+    "name": "阿托伐他汀（GI2）",
+    "color": "#808000",
+    "named_color": "olive"
+  },
+  "阿托伐他汀（HNQ）": {
+    "name": "阿托伐他汀（HNQ）",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "阿托伐他汀（QIL）": {
+    "name": "阿托伐他汀（QIL）",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "阿托伐他汀（ZLU）": {
+    "name": "阿托伐他汀（ZLU）",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "阿托伐他汀钙分散片（G6B）": {
+    "name": "阿托伐他汀钙分散片（G6B）",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "阿格列汀": {
+    "name": "阿格列汀",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "阿罗洛尔": {
+    "name": "阿罗洛尔",
+    "color": "#006400",
+    "named_color": "darkgreen"
+  },
+  "阿齐沙坦": {
+    "name": "阿齐沙坦",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "降钙素": {
+    "name": "降钙素",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "雅施达": {
+    "name": "雅施达",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "雅施达（SVU）": {
+    "name": "雅施达（SVU）",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "雅施达（TSV）": {
+    "name": "雅施达（TSV）",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "集采品种": {
+    "name": "集采品种",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "雷洛昔芬": {
+    "name": "雷洛昔芬",
+    "color": "#FFD700",
+    "named_color": "gold"
+  },
+  "雷米普利": {
+    "name": "雷米普利",
+    "color": "#00BFFF",
+    "named_color": "deepskyblue"
+  },
+  "非VBP品种": {
+    "name": "非VBP品种",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "非奈利酮": {
+    "name": "非奈利酮",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "非带量品种": {
+    "name": "非带量品种",
+    "color": "#008080",
+    "named_color": "teal"
+  },
+  "非洛地平": {
+    "name": "非洛地平",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "非类固醇类呼吸道消炎药": {
+    "name": "非类固醇类呼吸道消炎药",
+    "color": "#8B4513",
+    "named_color": "saddlebrown"
+  },
+  "马来酸依那普利叶酸片（AU3）": {
+    "name": "马来酸依那普利叶酸片（AU3）",
+    "color": "#808080",
+    "named_color": "grey"
+  },
+  "高尿酸": {
+    "name": "高尿酸",
+    "color": "#00BFFF",
+    "named_color": "Deepskyblue"
+  },
+  "高血压+冠心病": {
+    "name": "高血压+冠心病",
+    "color": "#6F8DB9"
+  },
+  "高血压+卒中": {
+    "name": "高血压+卒中",
+    "color": "#2B9B33"
+  },
+  "高血压+心力衰竭": {
+    "name": "高血压+心力衰竭",
+    "color": "#8B4513",
+    "named_color": "Saddlebrown"
+  },
+  "高血压+慢性肾病": {
+    "name": "高血压+慢性肾病",
+    "color": "#FAA53A"
+  },
+  "高血压+糖尿病": {
+    "name": "高血压+糖尿病",
+    "color": "#ED94B6"
+  },
+  "高血压+血脂异常": {
+    "name": "高血压+血脂异常",
+    "color": "#BD2843"
+  },
+  "高血压+高尿酸": {
+    "name": "高血压+高尿酸",
+    "color": "#00BFFF",
+    "named_color": "Deepskyblue"
+  },
+  "鲑降钙素": {
+    "name": "鲑降钙素",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "鲑鱼降钙素": {
+    "name": "鲑鱼降钙素",
+    "color": "#DC143C",
+    "named_color": "crimson"
+  },
+  "黄嘌呤类": {
+    "name": "黄嘌呤类",
+    "color": "#FF8C00",
+    "named_color": "darkorange"
+  },
+  "齐征": {
+    "name": "齐征",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  },
+  "齐征（QLU）": {
+    "name": "齐征（QLU）",
+    "color": "#FFC0CB",
+    "named_color": "pink"
+  }
+}

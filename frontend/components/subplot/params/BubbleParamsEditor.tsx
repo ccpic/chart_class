@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HelpCircle } from 'lucide-react';
+import ColorPicker from '@/components/color/ColorPicker';
 
 interface Props {
   subplot: SubplotConfig;
@@ -156,18 +157,11 @@ export default function BubbleParamsEditor({ subplot }: Props) {
             <label htmlFor="random_color" className="text-sm">随机颜色</label>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">边框颜色</label>
-            <Input
-              type="text"
-              value={subplot.params.edgecolor || 'black'}
-              onChange={(e) => updateParam('edgecolor', e.target.value)}
-              placeholder="black, white, #RRGGBB"
-            />
-            <p className="text-xs text-gray-500">
-              支持颜色名称或十六进制值
-            </p>
-          </div>
+          <ColorPicker
+            label="气泡边框颜色"
+            value={subplot.params.edgecolor || '#000000'}
+            onChange={(color) => updateParam('edgecolor', color)}
+          />
         </TabsContent>
 
         {/* Tab 3: 坐标轴 */}
@@ -354,15 +348,11 @@ export default function BubbleParamsEditor({ subplot }: Props) {
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm">颜色</label>
-                <Input
-                  type="text"
-                  value={subplot.params.avg_color || 'gray'}
-                  onChange={(e) => updateParam('avg_color', e.target.value)}
-                  placeholder="gray, red, #RRGGBB"
-                />
-              </div>
+              <ColorPicker
+                label="颜色"
+                value={subplot.params.avg_color || '#808080'}
+                onChange={(color) => updateParam('avg_color', color)}
+              />
             </div>
           )}
         </TabsContent>

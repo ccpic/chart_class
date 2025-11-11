@@ -8,7 +8,7 @@ Chart Module - 图表绘制核心模块
 """
 
 from chart.figure import GridFigure
-from chart.color import COLOR_DICT, CMAP_QUAL, CMAP_NORM, is_color_dark
+from chart.color.color import COLOR_DICT, CMAP_QUAL, CMAP_NORM, is_color_dark
 
 __all__ = [
     "GridFigure",

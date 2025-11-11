@@ -222,61 +222,99 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
     const pastedText = e.clipboardData.getData('text');
     if (!pastedText) return;
 
+    console.log(`📋 粘贴事件 - 位置类型: ${cellType}, 起始位置: (${startRow}, ${startCol})`);
+
     // 解析粘贴的数据（Excel 使用制表符分隔列，换行符分隔行）
     const pastedRows = pastedText.split('\n').map(row => 
       row.split('\t').map(cell => cell.trim())
     );
 
     // 移除最后的空行（如果有）
-    if (pastedRows[pastedRows.length - 1].every(cell => cell === '')) {
+    if (pastedRows.length > 0 && pastedRows[pastedRows.length - 1].every(cell => cell === '')) {
       pastedRows.pop();
     }
+
+    console.log('📊 解析后的数据:', pastedRows);
 
     // 根据粘贴位置类型处理
     if (cellType === 'corner') {
       // 左上角粘贴：第一行 → 列名，第一列 → 行索引，其余 → 数据
+      console.log('🔷 识别为左上角粘贴');
       handleCornerPaste(pastedRows);
     } else if (cellType === 'colName') {
       // 列名粘贴：只更新列名
+      console.log('📊 识别为列名粘贴');
       handleColumnNamePaste(pastedRows, startCol);
     } else if (cellType === 'rowIndex') {
       // 行索引粘贴：只更新行索引
+      console.log('📋 识别为行索引粘贴');
       handleRowIndexPaste(pastedRows, startRow);
     } else {
       // 数据区域粘贴
+      console.log('📈 识别为数据区域粘贴');
       handleDataPaste(pastedRows, startRow, startCol);
     }
   };
 
   // 左上角粘贴处理
   const handleCornerPaste = (pastedRows: string[][]) => {
-    if (pastedRows.length === 0) return;
+    console.log('🔷 左上角粘贴 - 原始数据:', pastedRows);
+    
+    if (pastedRows.length === 0) {
+      console.warn('粘贴数据为空');
+      return;
+    }
 
-    // 第一行作为列名（跳过第一个单元格）
-    const newColumns = pastedRows[0].slice(1);
+    // 如果只有一行一列，当作普通数据处理
+    if (pastedRows.length === 1 && pastedRows[0].length === 1) {
+      console.log('只有一个单元格，忽略');
+      return;
+    }
+
+    // 第一行作为列名（跳过第一个单元格，因为 [0][0] 是左上角交汇处）
+    const newColumns = pastedRows[0].slice(1).filter(col => col !== '');
+    console.log('📊 解析列名:', newColumns);
     
-    // 第一列作为行索引（跳过第一个单元格）
-    const newIndex = pastedRows.slice(1).map(row => row[0] || '');
+    // 第一列作为行索引（跳过第一行，因为 [0][0] 是左上角交汇处）
+    const newIndex = pastedRows.slice(1).map(row => row[0] || '').filter(idx => idx !== '');
+    console.log('📋 解析行索引:', newIndex);
     
-    // 其余作为数据
+    // 其余作为数据（跳过第一行和第一列）
     const newRows = pastedRows.slice(1).map(row => {
       const dataRow = row.slice(1);
       return dataRow.map(cell => safeParseNumber(cell));
     });
+    console.log('📈 解析数据矩阵:', newRows);
+
+    // 验证数据完整性
+    if (newColumns.length === 0) {
+      console.warn('没有有效的列名，使用默认列名');
+      newColumns.push('列1');
+    }
+
+    if (newIndex.length === 0) {
+      console.warn('没有有效的行索引，使用默认行索引');
+      newIndex.push('行1');
+    }
 
     // 确保数据行数与索引行数匹配
     while (newRows.length < newIndex.length) {
       newRows.push(new Array(newColumns.length).fill(''));
     }
 
-    setColumns(newColumns.length > 0 ? newColumns : ['列1']);
-    setIndex(newIndex.length > 0 ? newIndex : ['行1']);
+    // 确保每行的列数匹配
+    newRows.forEach(row => {
+      while (row.length < newColumns.length) {
+        row.push('');
+      }
+    });
+
+    console.log('✅ 最终结果:', { columns: newColumns, index: newIndex, rows: newRows });
+
+    setColumns(newColumns);
+    setIndex(newIndex);
     setRows(newRows);
-    syncToParent(
-      newColumns.length > 0 ? newColumns : ['列1'],
-      newIndex.length > 0 ? newIndex : ['行1'],
-      newRows
-    );
+    syncToParent(newColumns, newIndex, newRows);
   };
 
   // 列名粘贴处理
@@ -440,16 +478,26 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
           <thead className="bg-gray-50 sticky top-0">
             <tr>
               {/* 左上角交汇单元格 */}
-              <th 
-                className={`w-32 border-b border-r p-2 text-xs font-semibold text-gray-400 cursor-pointer hover:bg-blue-100 ${
-                  selectedCell?.type === 'corner' ? 'bg-blue-200 ring-2 ring-blue-500' : 'bg-gray-100'
-                }`}
-                onClick={() => setSelectedCell({ row: 0, col: 0, type: 'corner' })}
-                onPaste={(e) => handlePaste(e, 0, 0, 'corner')}
-                tabIndex={0}
-                title="点击选中，粘贴包含行列索引的完整表格"
-              >
-                <ArrowDownLeft className="h-4 w-4 mx-auto text-gray-400" />
+              <th className="w-32 border-b border-r p-0 bg-gray-100 relative">
+                <Input
+                  value=""
+                  readOnly
+                  onFocus={() => setSelectedCell({ row: 0, col: 0, type: 'corner' })}
+                  onPaste={(e) => {
+                    console.log('🔷 左上角粘贴事件触发');
+                    handlePaste(e, 0, 0, 'corner');
+                  }}
+                  className={`border-0 h-8 text-xs font-semibold text-center focus-visible:ring-2 bg-transparent cursor-pointer ${
+                    selectedCell?.type === 'corner' 
+                      ? 'bg-blue-200 ring-2 ring-blue-500' 
+                      : 'hover:bg-blue-100'
+                  }`}
+                  title="点击选中，粘贴包含行列索引的完整表格"
+                  placeholder=""
+                />
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <ArrowDownLeft className="h-4 w-4 text-gray-400" />
+                </div>
               </th>
               {columns.map((col, colIndex) => (
                 <th key={colIndex} className="border-b border-r bg-gray-50 p-0">

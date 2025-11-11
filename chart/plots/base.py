@@ -8,7 +8,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.ticker import MultipleLocator
-from chart.color import Colors
+from chart.color.color import Colors
 
 
 class Plot:
