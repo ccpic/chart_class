@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SubplotConfig } from '@/types/canvas';
-import { Eye, Table2, FileJson, Loader2, Trash2 } from 'lucide-react';
+import { Eye, Table2, FileJson, Loader2, Trash2, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCanvasStore } from '@/store/canvasStore';
 import { renderSubplot } from '@/lib/api';
@@ -11,6 +11,7 @@ import Image from 'next/image';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertCircle, BarChart3, Info, Save, RotateCcw } from 'lucide-react';
 import DataGridEditor from './DataGridEditor';
+import { PlotSpecificParamsTab } from './params/PlotSpecificParamsTab';
 
 interface Props {
   subplot: SubplotConfig;
@@ -22,6 +23,9 @@ interface Props {
  */
 export default function SubplotTabs({ subplot }: Props) {
   const { updateSubplot } = useCanvasStore();
+  
+  // Tab 状态管理
+  const [activeTab, setActiveTab] = useState('preview');
   
   // 渲染相关状态
   const [isRendering, setIsRendering] = useState(false);
@@ -47,8 +51,12 @@ export default function SubplotTabs({ subplot }: Props) {
       const blob = await renderSubplot(subplot);
       const imageUrl = URL.createObjectURL(blob);
       setRenderedImage(imageUrl);
+      // 自动跳转到渲染预览 tab
+      setActiveTab('preview');
     } catch (err) {
       setRenderError(err instanceof Error ? err.message : '渲染失败');
+      // 即使失败也跳转到预览tab显示错误信息
+      setActiveTab('preview');
     } finally {
       setIsRendering(false);
     }
@@ -106,9 +114,9 @@ export default function SubplotTabs({ subplot }: Props) {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-white">
       {/* 顶部操作栏 */}
-      <div className="px-6 pt-4 pb-3 border-b bg-white flex items-center gap-3 flex-shrink-0">
+      <div className="px-6 pt-4 pb-3 border-b bg-white flex items-center gap-3 flex-shrink-0 sticky top-[73px] z-10">
         <Button
           onClick={handleRender}
           disabled={!hasData || isRendering}
@@ -144,8 +152,8 @@ export default function SubplotTabs({ subplot }: Props) {
       </div>
 
       {/* Tabs 区域 */}
-      <Tabs defaultValue="preview" className="flex-1 flex flex-col">
-        <TabsList className="mx-6 mt-4 flex-shrink-0">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+        <TabsList className="mx-6 mt-4 flex-shrink-0 sticky top-[137px] z-10 bg-white">
           <TabsTrigger value="preview" className="gap-2">
             <Eye className="h-4 w-4" />
             渲染预览
@@ -158,14 +166,18 @@ export default function SubplotTabs({ subplot }: Props) {
             <FileJson className="h-4 w-4" />
             JSON 编辑
           </TabsTrigger>
+          <TabsTrigger value="params" className="gap-2">
+            <Settings className="h-4 w-4" />
+            图表参数
+          </TabsTrigger>
         </TabsList>
 
         {/* Tab 1: 渲染预览 */}
-        <TabsContent value="preview" className="flex-1 overflow-auto mt-0 px-6 pb-6 pt-4">
+        <TabsContent value="preview" className="flex-1 mt-0 px-6 pb-6 pt-4 overflow-visible">
           <div className="space-y-4">
             {/* 错误提示 */}
             {renderError && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-md flex-shrink-0">
                 <p className="text-sm text-red-600 flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
                   {renderError}
@@ -175,7 +187,7 @@ export default function SubplotTabs({ subplot }: Props) {
 
             {/* 渲染结果或空状态 */}
             {renderedImage ? (
-              <div className="bg-white rounded-lg border overflow-hidden">
+              <div className="bg-white rounded-lg border">
                 <Image
                   src={renderedImage}
                   alt="Subplot Preview"
@@ -202,7 +214,7 @@ export default function SubplotTabs({ subplot }: Props) {
         </TabsContent>
 
         {/* Tab 2: 表格编辑 */}
-        <TabsContent value="grid" className="flex-1 overflow-auto mt-0 px-6 pb-6 pt-4">
+        <TabsContent value="grid" className="flex-1 mt-0 px-6 pb-6 pt-4 overflow-visible">
           <DataGridEditor 
             data={subplot.data} 
             onChange={handleGridChange}
@@ -210,7 +222,7 @@ export default function SubplotTabs({ subplot }: Props) {
         </TabsContent>
 
         {/* Tab 3: JSON 编辑 */}
-        <TabsContent value="json" className="flex-1 overflow-auto mt-0 px-6 pb-6 pt-4">
+        <TabsContent value="json" className="flex-1 mt-0 px-6 pb-6 pt-4 overflow-visible">
           <div className="space-y-4">
             {/* 说明文字 */}
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
@@ -262,8 +274,12 @@ export default function SubplotTabs({ subplot }: Props) {
             </div>
           </div>
         </TabsContent>
+
+        {/* Tab 4: 图表参数 */}
+        <TabsContent value="params" className="flex-1 mt-0 overflow-visible">
+          <PlotSpecificParamsTab subplot={subplot} />
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
-

@@ -1,0 +1,55 @@
+'use client';
+
+import BubbleParamsEditor from './BubbleParamsEditor';
+import type { SubplotConfig } from '@/types/canvas';
+
+interface PlotSpecificParamsRouterProps {
+  subplot: SubplotConfig;
+}
+
+/**
+ * 图表类型到中文名称的映射
+ */
+function getChartTypeName(kind: string): string {
+  const nameMap: Record<string, string> = {
+    bubble: '气泡图',
+    bar: '柱状图',
+    line: '折线图',
+    pie: '饼图',
+    scatter: '散点图',
+    heatmap: '热力图',
+    treemap: '矩形树图',
+    waffle: '华夫饼图',
+    funnel: '漏斗图',
+    venn: '韦恩图',
+    wordcloud: '词云',
+  };
+  return nameMap[kind] || kind;
+}
+
+/**
+ * 根据图表类型路由到对应的参数编辑组件
+ */
+export function PlotSpecificParamsRouter({ subplot }: PlotSpecificParamsRouterProps) {
+  const chartName = getChartTypeName(subplot.chartType);
+
+  // 目前只支持气泡图
+  if (subplot.chartType === 'bubble') {
+    return <BubbleParamsEditor subplot={subplot} />;
+  }
+
+  // 其他图表类型显示开发中提示
+  return (
+    <div className="flex items-center justify-center h-32">
+      <div className="text-center">
+        <div className="text-4xl mb-2">🚧</div>
+        <p className="text-sm font-medium text-gray-700">
+          {chartName} 参数编辑器开发中
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          即将推出，敬请期待
+        </p>
+      </div>
+    </div>
+  );
+}

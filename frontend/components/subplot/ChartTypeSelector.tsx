@@ -3,13 +3,20 @@
 import React from 'react';
 import { useCanvasStore } from '@/store/canvasStore';
 import { SubplotConfig, ChartType } from '@/types/canvas';
+import {
+  BarChart3,
+  LineChart,
+  PieChart,
+  AreaChart,
+  ScatterChart,
+} from 'lucide-react';
 
-const CHART_TYPES: { value: ChartType; label: string; icon: string }[] = [
-  { value: 'bar', label: '柱状图', icon: '📊' },
-  { value: 'line', label: '折线图', icon: '📈' },
-  { value: 'pie', label: '饼图', icon: '🥧' },
-  { value: 'area', label: '面积图', icon: '📉' },
-  { value: 'scatter', label: '散点图', icon: '⚫' },
+const CHART_TYPES: { value: ChartType; label: string; icon: React.ReactNode }[] = [
+  { value: 'bar', label: '柱状图', icon: <BarChart3 className="h-5 w-5" /> },
+  { value: 'line', label: '折线图', icon: <LineChart className="h-5 w-5" /> },
+  { value: 'pie', label: '饼图', icon: <PieChart className="h-5 w-5" /> },
+  { value: 'area', label: '面积图', icon: <AreaChart className="h-5 w-5" /> },
+  { value: 'scatter', label: '散点图', icon: <ScatterChart className="h-5 w-5" /> },
 ];
 
 interface Props {
@@ -39,7 +46,7 @@ export default function ChartTypeSelector({ subplot }: Props) {
               }
             `}
           >
-            <div className="text-lg mb-1">{type.icon}</div>
+            <div className="mb-1 flex justify-center">{type.icon}</div>
             <div className="text-xs">{type.label}</div>
           </button>
         ))}

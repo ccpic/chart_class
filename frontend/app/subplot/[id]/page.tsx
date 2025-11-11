@@ -58,9 +58,9 @@ export default function SubplotPage() {
     <div className="flex h-full w-full">
       {/* 中心内容区：Tabs（预览 + 数据编辑） */}
       <MainContent>
-        <div className="h-full flex flex-col">
+        <div className="min-h-full flex flex-col">
           {/* 标题栏 */}
-          <div className="px-6 py-4 border-b bg-white flex-shrink-0">
+          <div className="px-6 py-4 border-b bg-white flex-shrink-0 sticky top-0 z-10">
             <div className="flex items-start justify-between">
               <div>
                 <h1 className="text-2xl font-bold">
@@ -102,7 +102,7 @@ export default function SubplotPage() {
           </div>
 
           {/* Tabs 区域 - 顶天立地 */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0">
             <SubplotTabs subplot={subplot} />
           </div>
         </div>

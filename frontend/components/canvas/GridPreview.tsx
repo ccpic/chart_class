@@ -114,7 +114,7 @@ export default function GridPreview() {
       
       {/* 列宽比例设置 */}
       {cols > 1 && (
-        <div className="flex items-center gap-2 flex-shrink-0 bg-blue-50 p-3 rounded-lg">
+        <div className="flex items-center gap-2 flex-shrink-0 bg-gray-50 border border-gray-200 p-3 rounded-lg">
           <span className="text-xs font-medium text-gray-700 whitespace-nowrap">列宽比例:</span>
           {widthRatios.map((ratio, colIndex) => (
             <div key={colIndex} className="flex items-center gap-1">
@@ -138,7 +138,7 @@ export default function GridPreview() {
       
       {/* 行高比例设置 */}
       {rows > 1 && (
-        <div className="flex items-center gap-2 flex-shrink-0 bg-green-50 p-3 rounded-lg">
+        <div className="flex items-center gap-2 flex-shrink-0 bg-gray-50 border border-gray-200 p-3 rounded-lg">
           <span className="text-xs font-medium text-gray-700 whitespace-nowrap">行高比例:</span>
           {heightRatios.map((ratio, rowIndex) => (
             <div key={rowIndex} className="flex items-center gap-1">
@@ -179,7 +179,7 @@ export default function GridPreview() {
                 flex flex-col gap-2
                 min-h-0
                 ${subplot 
-                  ? 'bg-white border-blue-300' 
+                  ? 'bg-white border-gray-400' 
                   : 'bg-gray-100 border-dashed border-gray-300'
                 }
               `}
@@ -233,7 +233,7 @@ export default function GridPreview() {
               {subplot ? (
                 <button
                   onClick={() => handleEditSubplot(subplot.subplotId)}
-                  className="w-full px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors flex-shrink-0"
+                  className="w-full px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors flex-shrink-0"
                 >
                   编辑子图
                 </button>
@@ -242,10 +242,10 @@ export default function GridPreview() {
                   onClick={() => handleCreateSubplot(axIndex)}
                   disabled={!pendingType}
                   className={`
-                    w-full px-3 py-1.5 text-sm font-medium rounded transition-colors flex-shrink-0
+                    w-full px-3 py-1.5 text-sm font-medium rounded transition-colors flex-shrink-0 border
                     ${pendingType
-                      ? 'text-white bg-blue-600 hover:bg-blue-700'
-                      : 'text-gray-400 bg-gray-200 cursor-not-allowed'
+                      ? 'text-white bg-gray-800 hover:bg-gray-900 border-gray-800'
+                      : 'text-gray-400 bg-gray-200 border-gray-200 cursor-not-allowed'
                     }
                   `}
                 >

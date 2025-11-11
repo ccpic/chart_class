@@ -40,7 +40,7 @@ export default function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       {/* 顶部：应用标题和 Logo */}
-      <SidebarHeader>
+      <SidebarHeader className="group-data-[collapsible=icon]:items-center">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
@@ -49,7 +49,7 @@ export default function AppSidebar() {
                   <LayoutGrid className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">Chart Class</span>
+                  <span className="text-lg font-semibold">Chart Class</span>
                   <span className="text-xs text-muted-foreground">
                     可视化工具
                   </span>
@@ -61,9 +61,9 @@ export default function AppSidebar() {
       </SidebarHeader>
 
       {/* 主内容：画布和子图树形结构 */}
-      <SidebarContent>
+      <SidebarContent className="group-data-[collapsible=icon]:items-center">
         <SidebarGroup>
-          <SidebarGroupLabel>
+          <SidebarGroupLabel className="group-data-[collapsible=icon]:text-center">
             画布结构 ({subplots.length} 个子图)
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -73,7 +73,7 @@ export default function AppSidebar() {
       </SidebarContent>
 
       {/* 底部：图表管理、重置按钮、设置和帮助 */}
-      <SidebarFooter>
+      <SidebarFooter className="group-data-[collapsible=icon]:items-center">
         <SidebarMenu>
           <SidebarMenuItem>
             <ResetCanvasButton />

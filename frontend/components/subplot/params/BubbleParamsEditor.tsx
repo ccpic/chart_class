@@ -5,9 +5,13 @@ import { useCanvasStore } from '@/store/canvasStore';
 import { SubplotConfig } from '@/types/canvas';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HelpCircle } from 'lucide-react';
 import ColorPicker from '@/components/color/ColorPicker';
+import NumberFormatEditor from '@/components/ui/number-format-editor';
 
 interface Props {
   subplot: SubplotConfig;
@@ -131,30 +135,29 @@ export default function BubbleParamsEditor({ subplot }: Props) {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">透明度</label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={subplot.params.alpha ?? 0.6}
-              onChange={(e) => updateParam('alpha', parseFloat(e.target.value))}
+            <Label htmlFor="alpha-slider" className="text-sm font-medium">
+              透明度: {(subplot.params.alpha ?? 0.6).toFixed(1)}
+            </Label>
+            <Slider
+              id="alpha-slider"
+              min={0}
+              max={1}
+              step={0.1}
+              value={[subplot.params.alpha ?? 0.6]}
+              onValueChange={([value]) => updateParam('alpha', value)}
               className="w-full"
             />
-            <div className="text-sm text-gray-600 text-right">
-              {(subplot.params.alpha ?? 0.6).toFixed(1)}
-            </div>
           </div>
 
           <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
+            <Checkbox
               id="random_color"
               checked={subplot.params.random_color ?? false}
-              onChange={(e) => updateParam('random_color', e.target.checked)}
-              className="rounded"
+              onCheckedChange={(checked) => updateParam('random_color', checked)}
             />
-            <label htmlFor="random_color" className="text-sm">随机颜色</label>
+            <Label htmlFor="random_color" className="text-sm cursor-pointer">
+              随机颜色
+            </Label>
           </div>
 
           <ColorPicker
@@ -166,150 +169,90 @@ export default function BubbleParamsEditor({ subplot }: Props) {
 
         {/* Tab 3: 坐标轴 */}
         <TabsContent value="axis" className="space-y-4 mt-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">X 轴范围</label>
-            <div className="flex items-center space-x-2">
-              <Input
-                type="number"
-                placeholder="最小值"
-                value={subplot.params.xlim?.[0] ?? ''}
-                onChange={(e) => {
-                  const xlim = subplot.params.xlim || [null, null];
-                  updateParam('xlim', [e.target.value ? parseFloat(e.target.value) : null, xlim[1]]);
-                }}
-              />
-              <span className="text-sm">-</span>
-              <Input
-                type="number"
-                placeholder="最大值"
-                value={subplot.params.xlim?.[1] ?? ''}
-                onChange={(e) => {
-                  const xlim = subplot.params.xlim || [null, null];
-                  updateParam('xlim', [xlim[0], e.target.value ? parseFloat(e.target.value) : null]);
-                }}
-              />
-            </div>
-            <p className="text-xs text-gray-500">
-              留空则自动计算
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Y 轴范围</label>
-            <div className="flex items-center space-x-2">
-              <Input
-                type="number"
-                placeholder="最小值"
-                value={subplot.params.ylim?.[0] ?? ''}
-                onChange={(e) => {
-                  const ylim = subplot.params.ylim || [null, null];
-                  updateParam('ylim', [e.target.value ? parseFloat(e.target.value) : null, ylim[1]]);
-                }}
-              />
-              <span className="text-sm">-</span>
-              <Input
-                type="number"
-                placeholder="最大值"
-                value={subplot.params.ylim?.[1] ?? ''}
-                onChange={(e) => {
-                  const ylim = subplot.params.ylim || [null, null];
-                  updateParam('ylim', [ylim[0], e.target.value ? parseFloat(e.target.value) : null]);
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">X 轴格式化</label>
-            <Input
-              type="text"
+          {/* X轴格式化和Y轴格式化 - 一行 */}
+          <div className="grid grid-cols-2 gap-4">
+            <NumberFormatEditor
+              label="X 轴格式化"
               value={subplot.params.x_fmt || '{:,.0f}'}
-              onChange={(e) => updateParam('x_fmt', e.target.value)}
-              placeholder="{:,.0f}"
+              onChange={(fmt) => updateParam('x_fmt', fmt)}
             />
-            <p className="text-xs text-gray-500">
-              Python 格式化字符串
-            </p>
-          </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Y 轴格式化</label>
-            <Input
-              type="text"
+            <NumberFormatEditor
+              label="Y 轴格式化"
               value={subplot.params.y_fmt || '{:,.0f}'}
-              onChange={(e) => updateParam('y_fmt', e.target.value)}
-              placeholder="{:,.0f}"
+              onChange={(fmt) => updateParam('y_fmt', fmt)}
             />
           </div>
 
-          {/* X 均值线设置 */}
-          <div className="p-3 bg-blue-50 rounded-md space-y-3 mt-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">X 轴参考线（垂直）</p>
-              <input
-                type="checkbox"
-                id="enable_x_avg"
-                checked={(subplot.params.x_avg !== undefined && subplot.params.x_avg !== null)}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    updateParam('x_avg', 0);
-                  } else {
-                    updateParam('x_avg', null);
-                  }
-                }}
-                className="rounded"
-              />
-            </div>
-            
-            {(subplot.params.x_avg !== undefined && subplot.params.x_avg !== null) && (
-              <div className="space-y-2">
-                <label className="text-sm">参考线位置（X 值）</label>
-                <Input
-                  type="number"
-                  value={typeof subplot.params.x_avg === 'number' ? subplot.params.x_avg : ''}
-                  onChange={(e) => updateParam('x_avg', e.target.value ? parseFloat(e.target.value) : 0)}
-                  placeholder="输入 X 轴数值"
+          {/* X轴参考线和Y轴参考线 - 一行 */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* X 均值线设置 */}
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="enable_x_avg" className="text-sm font-medium cursor-pointer">
+                  X 轴参考线
+                </Label>
+                <Checkbox
+                  id="enable_x_avg"
+                  checked={(subplot.params.x_avg !== undefined && subplot.params.x_avg !== null)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      updateParam('x_avg', 0);
+                    } else {
+                      updateParam('x_avg', null);
+                    }
+                  }}
                 />
-                <p className="text-xs text-gray-500">
-                  留空或填 0 表示自动使用均值
-                </p>
               </div>
-            )}
-          </div>
+              
+              {(subplot.params.x_avg !== undefined && subplot.params.x_avg !== null) && (
+                <div className="space-y-2">
+                  <Label htmlFor="x_avg_input" className="text-sm">参考线位置</Label>
+                  <Input
+                    id="x_avg_input"
+                    type="number"
+                    value={typeof subplot.params.x_avg === 'number' ? subplot.params.x_avg : ''}
+                    onChange={(e) => updateParam('x_avg', e.target.value ? parseFloat(e.target.value) : 0)}
+                    placeholder="X 值"
+                  />
+                  <p className="text-xs text-gray-500">0=均值</p>
+                </div>
+              )}
+            </div>
 
-          {/* Y 均值线设置 */}
-          <div className="p-3 bg-green-50 rounded-md space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">Y 轴参考线（水平）</p>
-              <input
-                type="checkbox"
-                id="enable_y_avg"
-                checked={(subplot.params.y_avg !== undefined && subplot.params.y_avg !== null)}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    updateParam('y_avg', 0);
-                  } else {
-                    updateParam('y_avg', null);
-                  }
-                }}
-                className="rounded"
-              />
-            </div>
-            
-            {(subplot.params.y_avg !== undefined && subplot.params.y_avg !== null) && (
-              <div className="space-y-2">
-                <label className="text-sm">参考线位置（Y 值）</label>
-                <Input
-                  type="number"
-                  value={typeof subplot.params.y_avg === 'number' ? subplot.params.y_avg : ''}
-                  onChange={(e) => updateParam('y_avg', e.target.value ? parseFloat(e.target.value) : 0)}
-                  placeholder="输入 Y 轴数值"
+            {/* Y 均值线设置 */}
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="enable_y_avg" className="text-sm font-medium cursor-pointer">
+                  Y 轴参考线
+                </Label>
+                <Checkbox
+                  id="enable_y_avg"
+                  checked={(subplot.params.y_avg !== undefined && subplot.params.y_avg !== null)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      updateParam('y_avg', 0);
+                    } else {
+                      updateParam('y_avg', null);
+                    }
+                  }}
                 />
-                <p className="text-xs text-gray-500">
-                  留空或填 0 表示自动使用均值
-                </p>
               </div>
-            )}
+              
+              {(subplot.params.y_avg !== undefined && subplot.params.y_avg !== null) && (
+                <div className="space-y-2">
+                  <Label htmlFor="y_avg_input" className="text-sm">参考线位置</Label>
+                  <Input
+                    id="y_avg_input"
+                    type="number"
+                    value={typeof subplot.params.y_avg === 'number' ? subplot.params.y_avg : ''}
+                    onChange={(e) => updateParam('y_avg', e.target.value ? parseFloat(e.target.value) : 0)}
+                    placeholder="Y 值"
+                  />
+                  <p className="text-xs text-gray-500">0=均值</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 参考线样式 */}
@@ -360,41 +303,40 @@ export default function BubbleParamsEditor({ subplot }: Props) {
         {/* Tab 4: 气泡和标签 */}
         <TabsContent value="bubble" className="space-y-4 mt-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">气泡缩放系数</label>
-            <input
-              type="range"
-              min="0.1"
-              max="10"
-              step="0.1"
-              value={subplot.params.bubble_scale ?? 1}
-              onChange={(e) => updateParam('bubble_scale', parseFloat(e.target.value))}
+            <Label htmlFor="bubble-scale-slider" className="text-sm font-medium">
+              气泡缩放系数: {(subplot.params.bubble_scale ?? 1).toFixed(1)}
+            </Label>
+            <Slider
+              id="bubble-scale-slider"
+              min={0.1}
+              max={10}
+              step={0.1}
+              value={[subplot.params.bubble_scale ?? 1]}
+              onValueChange={([value]) => updateParam('bubble_scale', value)}
               className="w-full"
             />
-            <div className="text-sm text-gray-600 text-right">
-              {(subplot.params.bubble_scale ?? 1).toFixed(1)}
-            </div>
-            <p className="text-xs text-gray-500">
-              控制气泡整体大小
-            </p>
+            <p className="text-xs text-gray-500">控制气泡整体大小</p>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium">标签显示数量</label>
+              <Label htmlFor="label-limit-slider" className="text-sm font-medium">
+                标签显示数量
+              </Label>
               <div className="group relative">
                 <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
                 <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                  显示前 N 个最大的气泡标签，0 为不显示
+                  显示前 N 个气泡标签，0 为不显示
                 </div>
               </div>
             </div>
-            <input
-              type="range"
-              min="0"
+            <Slider
+              id="label-limit-slider"
+              min={0}
               max={rowCount || 20}
-              step="1"
-              value={subplot.params.label_limit ?? 0}
-              onChange={(e) => updateParam('label_limit', parseInt(e.target.value))}
+              step={1}
+              value={[subplot.params.label_limit ?? 0]}
+              onValueChange={([value]) => updateParam('label_limit', value)}
               className="w-full"
             />
             <div className="flex justify-between items-center">
@@ -408,21 +350,10 @@ export default function BubbleParamsEditor({ subplot }: Props) {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">标签格式化</label>
-            <Input
-              type="text"
-              value={subplot.params.label_formatter || '{index}'}
-              onChange={(e) => updateParam('label_formatter', e.target.value)}
-              placeholder="{index}, {x}, {y}, {z}"
-            />
-            <p className="text-xs text-gray-500">
-              支持: {'{index}'} (行索引), {'{x}'}, {'{y}'}, {'{z}'}
-            </p>
-          </div>
-
-          <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium">按 Y 值标注前 N 个</label>
+              <Label htmlFor="label-topy-slider" className="text-sm font-medium">
+                按 Y 值标注前 N 个
+              </Label>
               <div className="group relative">
                 <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
                 <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
@@ -430,13 +361,13 @@ export default function BubbleParamsEditor({ subplot }: Props) {
                 </div>
               </div>
             </div>
-            <input
-              type="range"
-              min="0"
+            <Slider
+              id="label-topy-slider"
+              min={0}
               max={rowCount || 20}
-              step="1"
-              value={subplot.params.label_topy ?? 0}
-              onChange={(e) => updateParam('label_topy', parseInt(e.target.value))}
+              step={1}
+              value={[subplot.params.label_topy ?? 0]}
+              onValueChange={([value]) => updateParam('label_topy', value)}
               className="w-full"
             />
             <div className="flex justify-between items-center">
@@ -448,41 +379,59 @@ export default function BubbleParamsEditor({ subplot }: Props) {
               </span>
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="label-formatter" className="text-sm font-medium">
+              标签格式化
+            </Label>
+            <Input
+              id="label-formatter"
+              type="text"
+              value={subplot.params.label_formatter || '{index}'}
+              onChange={(e) => updateParam('label_formatter', e.target.value)}
+              placeholder="{index}, {x}, {y}, {z}"
+            />
+            <p className="text-xs text-gray-500">
+              支持: {'{index}'} (行索引), {'{x}'}, {'{y}'}, {'{z}'}
+            </p>
+          </div>
+
+          
         </TabsContent>
 
         {/* Tab 5: 高级统计 */}
         <TabsContent value="stats" className="space-y-4 mt-4">
           <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
+            <Checkbox
               id="show_reg"
               checked={subplot.params.show_reg ?? false}
-              onChange={(e) => updateParam('show_reg', e.target.checked)}
-              className="rounded"
+              onCheckedChange={(checked) => updateParam('show_reg', checked)}
             />
-            <label htmlFor="show_reg" className="text-sm">显示回归线（线性拟合）</label>
+            <Label htmlFor="show_reg" className="text-sm cursor-pointer">
+              显示回归线（线性拟合）
+            </Label>
           </div>
 
           <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
+            <Checkbox
               id="show_hist"
               checked={subplot.params.show_hist ?? false}
-              onChange={(e) => updateParam('show_hist', e.target.checked)}
-              className="rounded"
+              onCheckedChange={(checked) => updateParam('show_hist', checked)}
             />
-            <label htmlFor="show_hist" className="text-sm">显示分布直方图（边缘分布）</label>
+            <Label htmlFor="show_hist" className="text-sm cursor-pointer">
+              显示分布直方图（边缘分布）
+            </Label>
           </div>
 
           <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
+            <Checkbox
               id="corr"
               checked={(subplot.params.corr !== undefined && subplot.params.corr !== null && subplot.params.corr !== false)}
-              onChange={(e) => updateParam('corr', e.target.checked ? true : null)}
-              className="rounded"
+              onCheckedChange={(checked) => updateParam('corr', checked ? true : null)}
             />
-            <label htmlFor="corr" className="text-sm">显示相关系数（Pearson）</label>
+            <Label htmlFor="corr" className="text-sm cursor-pointer">
+              显示相关系数（Pearson）
+            </Label>
           </div>
         </TabsContent>
       </Tabs>

@@ -204,6 +204,72 @@ const getNamedColorFromHex = (hex: string): string | undefined => {
   return HEX_TO_NAME_MAP[hex.toUpperCase()];
 };
 
+/**
+ * 将 HEX 颜色转换为 HSL
+ * 用于颜色相似度排序
+ */
+const hexToHSL = (hex: string): { h: number; s: number; l: number } => {
+  // 移除 # 并转换为 RGB
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const diff = max - min;
+  
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (diff !== 0) {
+    s = l > 0.5 ? diff / (2 - max - min) : diff / (max + min);
+
+    switch (max) {
+      case r:
+        h = ((g - b) / diff + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / diff + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / diff + 4) / 6;
+        break;
+    }
+  }
+
+  return {
+    h: h * 360,      // 色相 (0-360)
+    s: s * 100,      // 饱和度 (0-100)
+    l: l * 100,      // 亮度 (0-100)
+  };
+};
+
+/**
+ * 智能颜色排序算法
+ * 按照色相 → 饱和度 → 亮度的优先级排序
+ * 使颜色按照色轮顺序排列，相似颜色聚集在一起
+ */
+const sortColorsBySimilarity = (colors: [string, string][]): [string, string][] => {
+  return colors.sort((a, b) => {
+    const hslA = hexToHSL(a[1]);
+    const hslB = hexToHSL(b[1]);
+
+    // 优先级1: 按色相排序（红→橙→黄→绿→青→蓝→紫）
+    if (Math.abs(hslA.h - hslB.h) > 1) {
+      return hslA.h - hslB.h;
+    }
+
+    // 优先级2: 色相相近时，按饱和度排序（灰色在前，鲜艳在后）
+    if (Math.abs(hslA.s - hslB.s) > 1) {
+      return hslA.s - hslB.s;
+    }
+
+    // 优先级3: 色相和饱和度都相近时，按亮度排序（暗→亮）
+    return hslA.l - hslB.l;
+  });
+};
+
 interface ColorPickerProps {
   value: string;
   onChange: (color: string, namedColor?: string) => void; // 返回 HEX 值和可选的命名颜色
@@ -344,7 +410,7 @@ export default function ColorPicker({
     setIsOpen(open);
   };
 
-  // 过滤并排序命名颜色（按 HEX 值排序使相近颜色相邻）
+  // 过滤并智能排序命名颜色（按色相→饱和度→亮度排序）
   const filteredAndSortedColors = (() => {
     // 将所有颜色扁平化为 [name, hex] 数组
     const allColors = Object.values(MATPLOTLIB_COLORS).flatMap(colors =>
@@ -356,12 +422,8 @@ export default function ColorPicker({
       name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     
-    // 按 HEX 值排序（转换为数值进行比较）
-    return filtered.sort((a, b) => {
-      const hexA = parseInt(a[1].replace('#', ''), 16);
-      const hexB = parseInt(b[1].replace('#', ''), 16);
-      return hexA - hexB;
-    });
+    // 按颜色相似度智能排序（HSL 色彩空间）
+    return sortColorsBySimilarity(filtered);
   })();
 
   return (
@@ -512,24 +574,52 @@ export default function ColorPicker({
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
 
-                {/* 颜色列表 */}
+                {/* 颜色列表 - 固定容器，无横向滚动 */}
                 <div 
-                  className="h-64 w-full overflow-y-scroll rounded-md border p-2"
+                  className="h-64 w-full overflow-y-auto overflow-x-hidden rounded-md border p-2"
                   style={{ overscrollBehavior: 'contain' }}
                   onWheel={(e) => {
                     e.stopPropagation();
                   }}
                 >
-                  <div className="grid gap-0.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(20px, 1fr))' }}>
+                  {/* 使用固定列数的网格，避免横向滚动 */}
+                  <div className="grid grid-cols-16 gap-0.5">
                     {filteredAndSortedColors.map(([name, hex], index) => {
-                      // 简单判断：假设每行约16个色块，前16个显示在下方
-                      const showBelow = index < 16;
+                      // 计算 tooltip 显示位置
+                      const colsPerRow = 16;
+                      const row = Math.floor(index / colsPerRow);
+                      const col = index % colsPerRow;
+                      
+                      // 根据位置智能调整 tooltip 方向
+                      let tooltipPosition = '';
+                      let arrowPosition = '';
+                      
+                      // 前3行：tooltip 显示在下方
+                      if (row < 3) {
+                        tooltipPosition = 'top-full mt-1';
+                        arrowPosition = 'bottom-full border-b-gray-900';
+                      } 
+                      // 其他行：tooltip 显示在上方
+                      else {
+                        tooltipPosition = 'bottom-full mb-1';
+                        arrowPosition = 'top-full border-t-gray-900';
+                      }
+                      
+                      // 左右对齐调整
+                      let horizontalAlign = 'left-1/2 -translate-x-1/2'; // 默认居中
+                      if (col < 3) {
+                        // 最左侧：tooltip 左对齐
+                        horizontalAlign = 'left-0';
+                      } else if (col >= colsPerRow - 3) {
+                        // 最右侧：tooltip 右对齐
+                        horizontalAlign = 'right-0';
+                      }
+                      
                       return (
                         <button
                           key={name}
                           onClick={() => handleColorSelect(hex, name)}
-                          className="relative group w-5 h-5 rounded-sm border border-gray-200 hover:scale-150 hover:z-10 hover:shadow-lg transition-all"
-                          title={`${name}\n${hex}`}
+                          className="relative group w-5 h-5 rounded-sm border border-gray-200 hover:scale-150 hover:z-50 hover:shadow-lg transition-all"
                           style={{ backgroundColor: hex }}
                         >
                           {currentColor.toUpperCase() === hex.toUpperCase() && (
@@ -537,18 +627,14 @@ export default function ColorPicker({
                               <Check className="w-3 h-3 text-white drop-shadow-lg" />
                             </div>
                           )}
-                          {/* Hover 提示 - 动态位置 */}
+                          {/* Hover 提示 - 智能定位 */}
                           <div 
-                            className={`absolute left-1/2 -translate-x-1/2 ${
-                              showBelow ? 'top-full mt-1' : 'bottom-full mb-1'
-                            } hidden group-hover:block bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-20 pointer-events-none`}
+                            className={`absolute ${tooltipPosition} ${horizontalAlign} hidden group-hover:block bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-50 pointer-events-none shadow-xl`}
                           >
                             {name} - {hex}
                             {/* 小三角箭头 */}
                             <div 
-                              className={`absolute left-1/2 -translate-x-1/2 border-4 border-transparent ${
-                                showBelow ? 'bottom-full border-b-gray-900' : 'top-full border-t-gray-900'
-                              }`}
+                              className={`absolute ${col < 3 ? 'left-2' : col >= colsPerRow - 3 ? 'right-2' : 'left-1/2 -translate-x-1/2'} border-4 border-transparent ${arrowPosition}`}
                             ></div>
                           </div>
                         </button>
