@@ -43,6 +43,7 @@ const chartTypeNames: Record<string, string> = {
   pie: '饼图',
   scatter: '散点图',
   bubble: '气泡图',
+  hist: '直方图',
   heatmap: '热力图',
   treemap: '树状图',
   waffle: '华夫饼图',
@@ -52,6 +53,7 @@ const chartTypeNames: Record<string, string> = {
   boxdot: '箱线图',
   stripdot: '算珠图',
   word_cloud: '词云',
+  table: '高级表格',
 };
 
 // 图表类型对应的 Lucide 图标
@@ -61,6 +63,7 @@ const chartTypeIcons: Record<string, React.ComponentType<any>> = {
   pie: PieChart,
   scatter: ScatterChart,
   bubble: Circle,
+  hist: BarChart3,
   heatmap: Flame,
   treemap: TreePine,
   waffle: Grid3x3,

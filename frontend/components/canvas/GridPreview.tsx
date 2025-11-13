@@ -18,6 +18,7 @@ import {
   AreaChart,
   ScatterChart,
   Droplets,
+  Table2,
 } from 'lucide-react';
 
 // 图表类型映射
@@ -28,6 +29,8 @@ const CHART_TYPE_LABELS: Record<ChartType, string> = {
   area: '面积图',
   scatter: '散点图',
   bubble: '气泡图',
+  hist: '直方图',
+  table: '高级表格',
 };
 
 // 图表类型图标映射
@@ -38,6 +41,8 @@ const CHART_TYPE_ICONS: Record<ChartType, React.ReactNode> = {
   area: <AreaChart className="h-4 w-4" />,
   scatter: <ScatterChart className="h-4 w-4" />,
   bubble: <Droplets className="h-4 w-4" />,
+  hist: <BarChart3 className="h-4 w-4" />,
+  table: <Table2 className="h-4 w-4" />,
 };
 
 export default function GridPreview() {

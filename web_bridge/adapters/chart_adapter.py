@@ -4,6 +4,7 @@ Web 图表适配器
 """
 
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from io import BytesIO
 from typing import Dict, Any, List
@@ -71,13 +72,282 @@ class WebChartAdapter:
                     df = pd.DataFrame(
                         data=data_dict["data"], columns=data_dict["columns"]
                     )
+
+                    # 将空字符串转换为 np.nan
+                    df = df.replace("", np.nan)
+
                     if data_dict.get("index"):
                         df.index = data_dict["index"]
+                        # 设置索引名称（如果提供）
+                        if data_dict.get("index_name"):
+                            df.index.name = data_dict["index_name"]
+                        elif not df.index.name:
+                            # 如果没有提供索引名称，设置默认值
+                            df.index.name = "index"
 
                     # 获取图表类型和参数
                     chart_type = subplot["chart_type"]
                     params = subplot["params"].copy()
                     ax_index = subplot["ax_index"]
+
+                    # 特殊处理：table 类型需要转换 col_defs
+                    if chart_type == "table" and "col_defs" in params:
+                        from plottable import ColumnDefinition
+                        from plottable.plots import bar, percentile_bars, progress_donut
+                        from chart.plots.utils import normed_cmap, format_value
+                        from functools import partial
+                        import matplotlib.cm as mpl_cm
+
+                        # plot_fn 字符串到函数的映射
+                        plot_fn_map = {
+                            "bar": bar,
+                            "percentile_bars": percentile_bars,
+                            "progress_donut": progress_donut,
+                        }
+
+                        col_defs_data = params["col_defs"]
+                        if col_defs_data and isinstance(col_defs_data, list):
+                            # 转换前端的字典列表为 ColumnDefinition 对象列表
+                            col_defs_objects = []
+                            for col_def in col_defs_data:
+                                # 过滤掉 undefined 或 None 的值
+                                clean_def = {
+                                    k: v
+                                    for k, v in col_def.items()
+                                    if v is not None and v != ""
+                                }
+
+                                # 处理 formatter_config：转换为 partial(format_value, ...)
+                                if "formatter_config" in clean_def:
+                                    fmt_cfg = clean_def.pop("formatter_config")
+                                    fmt = fmt_cfg.get("fmt", "{:,.0f}")
+                                    unit = fmt_cfg.get(
+                                        "unit"
+                                    )  # None 或 "亿"/"百万"/"万"/"千"
+                                    empty_zero = fmt_cfg.get("empty_zero", True)
+                                    empty_nan = fmt_cfg.get("empty_nan", True)
+
+                                    clean_def["formatter"] = partial(
+                                        format_value,
+                                        fmt=fmt,
+                                        unit=unit,
+                                        empty_zero=empty_zero,
+                                        empty_nan=empty_nan,
+                                    )
+                                # 向后兼容：如果只有 formatter 字符串，也转换为 format_value
+                                elif "formatter" in clean_def and isinstance(
+                                    clean_def["formatter"], str
+                                ):
+                                    fmt_str = clean_def["formatter"]
+                                    clean_def["formatter"] = partial(
+                                        format_value,
+                                        fmt=fmt_str,
+                                        empty_zero=True,
+                                        empty_nan=True,
+                                    )
+
+                                # 转换 plot_fn 字符串为实际函数
+                                if "plot_fn" in clean_def and isinstance(
+                                    clean_def["plot_fn"], str
+                                ):
+                                    plot_fn_str = clean_def["plot_fn"]
+                                    if plot_fn_str in plot_fn_map:
+                                        clean_def["plot_fn"] = plot_fn_map[plot_fn_str]
+                                    else:
+                                        # 如果不支持的类型，移除该字段
+                                        clean_def.pop("plot_fn", None)
+
+                                # 处理 plot_kw.formatter：也转换为 format_value 函数
+                                if "plot_kw" in clean_def and isinstance(
+                                    clean_def["plot_kw"], dict
+                                ):
+                                    plot_kw = clean_def["plot_kw"]
+                                    if "formatter" in plot_kw and isinstance(
+                                        plot_kw["formatter"], str
+                                    ):
+                                        fmt_str = plot_kw["formatter"]
+                                        plot_kw["formatter"] = partial(
+                                            format_value,
+                                            fmt=fmt_str,
+                                            empty_zero=True,
+                                            empty_nan=True,
+                                        )
+
+                                # 处理 cmap_config：支持数值映射和分类映射
+                                if "cmap_config" in clean_def:
+                                    cmap_cfg = clean_def.pop("cmap_config")
+                                    col_name = clean_def.get("name")
+
+                                    # 检查映射模式
+                                    mode = cmap_cfg.get("mode", "numeric")
+
+                                    if mode == "numeric" and "numeric" in cmap_cfg:
+                                        # 数值映射：调用 normed_cmap
+                                        if col_name and col_name in df.columns:
+                                            series = df[col_name]
+                                            numeric_cfg = cmap_cfg["numeric"]
+                                            cmap_name = numeric_cfg.get("cmap", "PiYG")
+                                            num_stds = numeric_cfg.get("num_stds", 2.5)
+                                            vmin = numeric_cfg.get("vmin")
+                                            vmax = numeric_cfg.get("vmax")
+
+                                            try:
+                                                cmap = mpl_cm.get_cmap(cmap_name)
+                                                clean_def["cmap"] = normed_cmap(
+                                                    series,
+                                                    cmap,
+                                                    num_stds=num_stds,
+                                                    vmin=vmin,
+                                                    vmax=vmax,
+                                                )
+                                            except Exception as e:
+                                                print(
+                                                    f"警告: 生成 cmap (数值映射) 失败: {e}"
+                                                )
+
+                                    elif (
+                                        mode == "categorical"
+                                        and "categorical" in cmap_cfg
+                                    ):
+                                        # 分类映射：创建字典映射函数
+                                        color_map = cmap_cfg["categorical"]
+                                        default_color = "#808080"  # 灰色作为默认
+                                        clean_def["cmap"] = lambda x: color_map.get(
+                                            str(x), default_color
+                                        )
+
+                                    # 向后兼容旧格式（直接包含 cmap 字段）
+                                    elif "cmap" in cmap_cfg:
+                                        if col_name and col_name in df.columns:
+                                            series = df[col_name]
+                                            cmap_name = cmap_cfg.get("cmap", "PiYG")
+                                            num_stds = cmap_cfg.get("num_stds", 2.5)
+                                            vmin = cmap_cfg.get("vmin")
+                                            vmax = cmap_cfg.get("vmax")
+
+                                            try:
+                                                cmap = mpl_cm.get_cmap(cmap_name)
+                                                clean_def["cmap"] = normed_cmap(
+                                                    series,
+                                                    cmap,
+                                                    num_stds=num_stds,
+                                                    vmin=vmin,
+                                                    vmax=vmax,
+                                                )
+                                            except Exception as e:
+                                                print(
+                                                    f"警告: 生成 cmap (向后兼容) 失败: {e}"
+                                                )
+
+                                # 处理 text_cmap_config：支持数值映射和分类映射
+                                if "text_cmap_config" in clean_def:
+                                    text_cmap_cfg = clean_def.pop("text_cmap_config")
+                                    col_name = clean_def.get("name")
+
+                                    # 检查映射模式
+                                    mode = text_cmap_cfg.get("mode", "numeric")
+
+                                    if mode == "numeric" and "numeric" in text_cmap_cfg:
+                                        # 数值映射：调用 normed_cmap
+                                        if col_name and col_name in df.columns:
+                                            series = df[col_name]
+                                            numeric_cfg = text_cmap_cfg["numeric"]
+                                            cmap_name = numeric_cfg.get(
+                                                "cmap", "RdYlGn"
+                                            )
+                                            num_stds = numeric_cfg.get("num_stds", 2.5)
+                                            vmin = numeric_cfg.get("vmin")
+                                            vmax = numeric_cfg.get("vmax")
+
+                                            try:
+                                                cmap = mpl_cm.get_cmap(cmap_name)
+                                                clean_def["text_cmap"] = normed_cmap(
+                                                    series,
+                                                    cmap,
+                                                    num_stds=num_stds,
+                                                    vmin=vmin,
+                                                    vmax=vmax,
+                                                )
+                                            except Exception as e:
+                                                print(
+                                                    f"警告: 生成 text_cmap (数值映射) 失败: {e}"
+                                                )
+
+                                    elif (
+                                        mode == "categorical"
+                                        and "categorical" in text_cmap_cfg
+                                    ):
+                                        # 分类映射：创建字典映射函数
+                                        color_map = text_cmap_cfg["categorical"]
+                                        default_color = "#000000"  # 黑色作为默认
+                                        clean_def["text_cmap"] = (
+                                            lambda x: color_map.get(
+                                                str(x), default_color
+                                            )
+                                        )
+
+                                    # 向后兼容旧格式
+                                    elif "cmap" in text_cmap_cfg:
+                                        if col_name and col_name in df.columns:
+                                            series = df[col_name]
+                                            cmap_name = text_cmap_cfg.get(
+                                                "cmap", "RdYlGn"
+                                            )
+                                            num_stds = text_cmap_cfg.get(
+                                                "num_stds", 2.5
+                                            )
+                                            vmin = text_cmap_cfg.get("vmin")
+                                            vmax = text_cmap_cfg.get("vmax")
+
+                                            try:
+                                                cmap = mpl_cm.get_cmap(cmap_name)
+                                                clean_def["text_cmap"] = normed_cmap(
+                                                    series,
+                                                    cmap,
+                                                    num_stds=num_stds,
+                                                    vmin=vmin,
+                                                    vmax=vmax,
+                                                )
+                                            except Exception as e:
+                                                print(
+                                                    f"警告: 生成 text_cmap (向后兼容) 失败: {e}"
+                                                )
+
+                                # 处理 textprops.bbox：将 boxstyle 和 pad 组合成 matplotlib 格式
+                                if "textprops" in clean_def and isinstance(
+                                    clean_def["textprops"], dict
+                                ):
+                                    textprops = clean_def["textprops"]
+                                    if "bbox" in textprops and isinstance(
+                                        textprops["bbox"], dict
+                                    ):
+                                        bbox = textprops["bbox"]
+
+                                        # 过滤掉 None 值（facecolor 和 edgecolor 可选）
+                                        bbox = {
+                                            k: v
+                                            for k, v in bbox.items()
+                                            if v is not None
+                                        }
+                                        textprops["bbox"] = bbox
+
+                                        # 如果同时存在 boxstyle 和 pad，组合成 "boxstyle,pad=value" 格式
+                                        if "boxstyle" in bbox and "pad" in bbox:
+                                            boxstyle = bbox["boxstyle"]
+                                            pad = bbox["pad"]
+                                            bbox["boxstyle"] = f"{boxstyle},pad={pad}"
+                                            # 移除单独的 pad 字段（matplotlib 不接受）
+                                            bbox.pop("pad", None)
+
+                                # 确保必需的 name 字段存在
+                                if "name" in clean_def:
+                                    col_defs_objects.append(
+                                        ColumnDefinition(**clean_def)
+                                    )
+
+                            params["col_defs"] = (
+                                col_defs_objects if col_defs_objects else None
+                            )
 
                     # 调用 f.plot() 绘制子图
                     f.plot(kind=chart_type, data=df, ax_index=ax_index, **params)
@@ -182,7 +452,7 @@ class WebChartAdapter:
 
     def get_supported_chart_types(self) -> List[str]:
         """返回支持的图表类型列表"""
-        return ["bar", "line", "pie", "area", "scatter", "bubble"]
+        return ["bar", "line", "pie", "area", "scatter", "bubble", "table", "hist"]
 
     def get_default_params(self, chart_type: str) -> Dict[str, Any]:
         """
@@ -211,6 +481,23 @@ class WebChartAdapter:
                 "avg_linestyle": "--",
                 "avg_linewidth": 1,
                 "avg_color": "gray",
+            },
+            "table": {
+                "col_defs": [],
+                "row_dividers": True,
+                "footer_divider": True,
+                "fontsize": 10,
+            },
+            "hist": {
+                "bins": 10,
+                "tiles": 10,
+                "show_kde": True,
+                "show_metrics": True,
+                "show_tiles": False,
+                "color_hist": "grey",
+                "color_kde": "darkorange",
+                "color_mean": "purple",
+                "color_median": "crimson",
             },
         }
         return defaults.get(chart_type, {})

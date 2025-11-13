@@ -3,11 +3,20 @@
  * 对应后端的 Pydantic 模型
  */
 
-export type ChartType = "bar" | "line" | "pie" | "area" | "scatter" | "bubble";
+export type ChartType =
+  | "bar"
+  | "line"
+  | "pie"
+  | "area"
+  | "scatter"
+  | "bubble"
+  | "table"
+  | "hist"; // 直方图
 
 export interface ChartData {
   columns: string[];
   index?: string[];
+  index_name?: string;
   data: any[][];
 }
 

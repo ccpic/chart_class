@@ -622,7 +622,7 @@ export default function ColorPicker({
                           className="relative group w-5 h-5 rounded-sm border border-gray-200 hover:scale-150 hover:z-50 hover:shadow-lg transition-all"
                           style={{ backgroundColor: hex }}
                         >
-                          {currentColor.toUpperCase() === hex.toUpperCase() && (
+                          {currentColor && currentColor.toUpperCase() === hex.toUpperCase() && (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <Check className="w-3 h-3 text-white drop-shadow-lg" />
                             </div>

@@ -7,7 +7,8 @@ from typing import Sequence
 import matplotlib as mpl
 import numpy as np
 import scipy.stats as stats
-
+import pandas as pd
+from typing import Callable, Literal
 
 def scatter_hist(ax: mpl.axes.Axes, x: Sequence, y: Sequence) -> mpl.axes.Axes:
     """在指定scatter ax绘制x,y轴histogram
@@ -121,3 +122,80 @@ def regression_band(
             )
             ax.plot(x2, y2 - pi, "--", color="0.5", label="95% Prediction Limits")
             ax.plot(x2, y2 + pi, "--", color="0.5")
+
+
+def normed_cmap(
+    s: pd.Series,
+    cmap: mpl.colors.LinearSegmentedColormap,
+    num_stds: float = 2.5,
+    *args,
+    **kwargs,
+) -> Callable:
+    """Returns a normalized colormap function that takes a float as an argument and
+    returns an rgba value.
+
+    Args:
+        s (pd.Series):
+            a series of numeric values
+        cmap (mpl.colors.LinearSegmentedColormap):
+            matplotlib Colormap
+        num_stds (float, optional):
+            vmin and vmax are set to the median ± num_stds.
+            Defaults to 2.5.
+
+    Returns:
+        Callable: Callable that takes a float as an argument and returns an rgba value.
+    """
+
+    # if len(s) == 1:
+    #     return lambda x: (238/255, 238/255, 238/255, 1)
+
+    _median = s.median()
+    _std = s.std()
+
+    vmin = kwargs.get("vmin")
+    if vmin is None:
+        vmin = _median - num_stds * _std
+    vmax = kwargs.get("vmax")
+    if vmax is None:
+        vmax = _median + num_stds * _std
+
+    norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+    m = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+
+    return m.to_rgba
+
+
+def format_value(
+    val: float,
+    fmt: str = "{:,.0f}",
+    unit: Literal["亿", "百万", "万", "千", None] = None,
+    empty_zero: bool = True,
+    empty_nan: bool = True,
+) -> str:
+    """
+    格式化数值为指定格式或单位的字符串
+    :param val: 数值
+    :param fmt: 格式字符串
+    :param unit: 单位（亿、百万、万、千）或 None
+    :return: 转换后的字符串
+    """
+
+    if val == 0:
+        if empty_zero:
+            return ""
+        else:
+            return fmt.format(val)
+    elif np.isnan(val):
+        if empty_nan:
+            return ""
+        else:
+            return "nan"
+
+    if unit:
+        scale = {"亿": 1e8, "百万": 1e6, "万": 1e4, "千": 1e3}.get(unit)
+        if scale:
+            val /= scale
+        else:
+            raise ValueError("Invalid unit specified.")
+    return fmt.format(val)

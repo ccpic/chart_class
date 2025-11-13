@@ -12,6 +12,8 @@ interface CanvasStore {
   subplots: SubplotConfig[];
   selectedSubplotId: string | null;
   currentSubplotId: string | null; // 当前正在编辑的子图（用于路由同步）
+  renderedImage: string | null; // 画布渲染结果
+  renderError: string | null; // 渲染错误信息
 
   // Canvas Actions
   updateCanvas: (config: Partial<CanvasConfig>) => void;
@@ -26,6 +28,11 @@ interface CanvasStore {
   deleteSubplot: (subplotId: string) => void;
   selectSubplot: (subplotId: string | null) => void;
   setCurrentSubplot: (subplotId: string | null) => void;
+
+  // 渲染结果管理
+  setRenderedImage: (imageUrl: string | null) => void;
+  setRenderError: (error: string | null) => void;
+  clearRenderResult: () => void;
 
   // 批量操作
   clearAllSubplots: () => void;
@@ -71,11 +78,20 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   subplots: [],
   selectedSubplotId: null,
   currentSubplotId: null,
+  renderedImage: null,
+  renderError: null,
 
   updateCanvas: (config) =>
     set((state) => ({
       canvas: { ...state.canvas, ...config },
     })),
+
+  setRenderedImage: (imageUrl) =>
+    set({ renderedImage: imageUrl, renderError: null }),
+
+  setRenderError: (error) => set({ renderError: error, renderedImage: null }),
+
+  clearRenderResult: () => set({ renderedImage: null, renderError: null }),
 
   addSubplot: (axIndex, chartType = "bar") => {
     // 根据图表类型设置默认参数
@@ -237,6 +253,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       subplots,
       selectedSubplotId: null,
       currentSubplotId: null,
+      renderedImage: null,
+      renderError: null,
     });
   },
 

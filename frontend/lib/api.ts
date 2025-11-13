@@ -17,9 +17,13 @@ function toSnakeCase(str: string): string {
 /**
  * 递归转换对象的键为 snake_case
  * 用于将前端的 camelCase 数据转换为后端期望的 snake_case
+ * 同时将空字符串转换为 null，以便后端转换为 np.nan
  */
 function convertKeysToSnakeCase(obj: any): any {
   if (obj === null || obj === undefined) return obj;
+
+  // 将空字符串转换为 null（在检查类型之前）
+  if (obj === "") return null;
 
   if (Array.isArray(obj)) {
     return obj.map(convertKeysToSnakeCase);

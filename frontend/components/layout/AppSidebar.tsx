@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/sidebar';
 
 import { useCanvasStore } from '@/store/canvasStore';
+import { useChartStore } from '@/store/chartStore';
 import CanvasTreeView from '@/components/canvas/CanvasTreeView';
 import ResetCanvasButton from '@/components/canvas/ResetCanvasButton';
 import SaveChartDialog from '@/components/chart/SaveChartDialog';
@@ -36,6 +37,7 @@ import ColorManagerSheet from '@/components/color/ColorManagerSheet';
  */
 export default function AppSidebar() {
   const subplots = useCanvasStore((state) => state.subplots);
+  const { currentChart, currentChartId } = useChartStore();
 
   return (
     <Sidebar collapsible="icon">
@@ -63,6 +65,16 @@ export default function AppSidebar() {
       {/* 主内容：画布和子图树形结构 */}
       <SidebarContent className="group-data-[collapsible=icon]:items-center">
         <SidebarGroup>
+          {/* 当前图表名称 */}
+          <div className="px-2 py-2 border-b group-data-[collapsible=icon]:px-2">
+            <div className="text-xs text-muted-foreground mb-1 group-data-[collapsible=icon]:text-center">
+              当前图表
+            </div>
+            <div className="text-sm font-medium truncate group-data-[collapsible=icon]:text-center" title={currentChart?.name || '未保存图表'}>
+              {currentChartId && currentChart ? currentChart.name : '未保存图表'}
+            </div>
+          </div>
+          
           <SidebarGroupLabel className="group-data-[collapsible=icon]:text-center">
             画布结构 ({subplots.length} 个子图)
           </SidebarGroupLabel>

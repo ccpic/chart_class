@@ -3,6 +3,7 @@
 import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCanvasStore } from '@/store/canvasStore';
+import { useChartStore } from '@/store/chartStore';
 import { SidebarMenuButton } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -23,11 +24,13 @@ import {
  */
 export default function ResetCanvasButton() {
   const reset = useCanvasStore((state) => state.reset);
+  const clearCurrentChartId = useChartStore((state) => state.clearCurrentChartId);
   const { toast } = useToast();
   const router = useRouter();
 
   const handleReset = () => {
     reset();
+    clearCurrentChartId(); // 清除当前图表关联
     // 重置后跳转到画布页面
     router.push('/canvas');
     toast({

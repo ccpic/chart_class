@@ -67,6 +67,8 @@ class PlotHist(Plot):
             legend=None,
             alpha=0.5,
         )
+
+        ax_kde = None  # 初始化为 None
         if show_kde:
             ax_kde = self.ax.twinx()
             df.plot(
@@ -197,10 +199,12 @@ class PlotHist(Plot):
         else:
             self.ax.set_xlim(df.min(), df.max())
 
-        ax_kde.spines["right"].set_visible(False)
-        ax_kde.spines["top"].set_visible(False)
-        ax_kde.yaxis.set_ticks_position("left")
-        ax_kde.xaxis.set_ticks_position("bottom")
+        # 只有在创建了 kde 轴时才设置其样式
+        if ax_kde is not None:
+            ax_kde.spines["right"].set_visible(False)
+            ax_kde.spines["top"].set_visible(False)
+            ax_kde.yaxis.set_ticks_position("left")
+            ax_kde.xaxis.set_ticks_position("bottom")
 
         return self
 

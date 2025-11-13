@@ -1,6 +1,8 @@
 'use client';
 
 import BubbleParamsEditor from './BubbleParamsEditor';
+import TableParamsEditor from './TableParamsEditor';
+import HistParamsEditor from './HistParamsEditor';
 import type { SubplotConfig } from '@/types/canvas';
 
 interface PlotSpecificParamsRouterProps {
@@ -13,6 +15,8 @@ interface PlotSpecificParamsRouterProps {
 function getChartTypeName(kind: string): string {
   const nameMap: Record<string, string> = {
     bubble: '气泡图',
+    table: '高级表格',
+    hist: '直方图',
     bar: '柱状图',
     line: '折线图',
     pie: '饼图',
@@ -33,9 +37,19 @@ function getChartTypeName(kind: string): string {
 export function PlotSpecificParamsRouter({ subplot }: PlotSpecificParamsRouterProps) {
   const chartName = getChartTypeName(subplot.chartType);
 
-  // 目前只支持气泡图
+  // 气泡图
   if (subplot.chartType === 'bubble') {
     return <BubbleParamsEditor subplot={subplot} />;
+  }
+
+  // 高级表格
+  if (subplot.chartType === 'table') {
+    return <TableParamsEditor subplot={subplot} />;
+  }
+
+  // 直方图
+  if (subplot.chartType === 'hist') {
+    return <HistParamsEditor subplot={subplot} />;
   }
 
   // 其他图表类型显示开发中提示

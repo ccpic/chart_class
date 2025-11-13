@@ -12,21 +12,17 @@ import { Download, Grid3x3, Eye, Info, AlertCircle, Palette } from 'lucide-react
 import { Button } from '@/components/ui/button';
 
 export default function CanvasPage() {
-  const { canvas, subplots } = useCanvasStore();
-  const [renderedImage, setRenderedImage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { canvas, subplots, renderedImage, renderError, setRenderedImage, setRenderError } = useCanvasStore();
   const [activeTab, setActiveTab] = useState('grid');
 
   const handleRenderComplete = (imageUrl: string) => {
     setRenderedImage(imageUrl);
-    setError(null);
     // 自动跳转到渲染结果 tab
     setActiveTab('render');
   };
 
   const handleRenderError = (errorMessage: string) => {
-    setError(errorMessage);
-    setRenderedImage(null);
+    setRenderError(errorMessage);
   };
 
   const handleDownload = () => {
@@ -130,18 +126,18 @@ export default function CanvasPage() {
               </div>
 
               {/* 错误提示 */}
-              {error && (
+              {renderError && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-md flex-shrink-0">
                   <p className="text-sm text-red-600 flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
-                    {error}
+                    {renderError}
                   </p>
                 </div>
               )}
 
               {/* 渲染结果显示区 */}
               <div className="flex-1 bg-white rounded-lg border overflow-hidden">
-                {!renderedImage && !error && (
+                {!renderedImage && !renderError && (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
                       <Palette className="h-16 w-16 text-gray-400 mx-auto mb-4" />

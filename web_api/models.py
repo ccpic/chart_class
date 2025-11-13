@@ -17,6 +17,8 @@ class ChartType(str, Enum):
     AREA = "area"
     SCATTER = "scatter"
     BUBBLE = "bubble"
+    TABLE = "table"
+    HIST = "hist"
 
 
 class ChartDataModel(BaseModel):

@@ -15,6 +15,8 @@ const CHART_TYPE_LABELS: Record<string, string> = {
   area: '面积图',
   scatter: '散点图',
   bubble: '气泡图',
+  hist: '直方图',
+  table: '高级表格',
 };
 
 interface Props {
