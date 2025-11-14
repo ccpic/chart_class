@@ -11,6 +11,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 import logging
+import os
 
 # 导入桥接层
 import sys
@@ -40,14 +41,13 @@ app = FastAPI(
     version="0.3.0",
 )
 
-# CORS 配置
+# CORS 配置（支持环境变量）
+cors_origins_env = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:5173")
+cors_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:5173",
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

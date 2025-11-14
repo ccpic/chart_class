@@ -3,6 +3,7 @@
 import BubbleParamsEditor from './BubbleParamsEditor';
 import TableParamsEditor from './TableParamsEditor';
 import HistParamsEditor from './HistParamsEditor';
+import BarParamsEditor from './BarParamsEditor';
 import type { SubplotConfig } from '@/types/canvas';
 
 interface PlotSpecificParamsRouterProps {
@@ -50,6 +51,11 @@ export function PlotSpecificParamsRouter({ subplot }: PlotSpecificParamsRouterPr
   // 直方图
   if (subplot.chartType === 'hist') {
     return <HistParamsEditor subplot={subplot} />;
+  }
+
+  // 柱状图
+  if (subplot.chartType === 'bar') {
+    return <BarParamsEditor subplot={subplot} />;
   }
 
   // 其他图表类型显示开发中提示

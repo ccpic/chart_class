@@ -1,0 +1,48 @@
+# 前端 Dockerfile - Next.js 应用
+FROM node:20-alpine AS builder
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制 package 文件
+COPY frontend/package*.json ./
+
+# 安装依赖
+RUN npm ci
+
+# 复制前端源代码
+COPY frontend/ .
+
+# 构建 Next.js 应用
+RUN npm run build
+
+# 生产阶段
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# 设置非 root 用户
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# 从构建阶段复制必要文件
+# Next.js standalone 模式会生成一个独立的 server.js
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# 切换到非 root 用户
+USER nextjs
+
+# 暴露端口
+EXPOSE 3000
+
+# 设置环境变量
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# 启动 Next.js (standalone 模式会在 standalone 目录生成 server.js)
+# 注意：standalone 目录结构可能因 Next.js 版本而异
+CMD ["node", "server.js"]
+

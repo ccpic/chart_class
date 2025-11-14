@@ -1,0 +1,19 @@
+# 生产环境配置
+# 使用方式: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+version: '3.8'
+
+services:
+  backend:
+    environment:
+      # 生产环境可以添加更多配置
+      - LOG_LEVEL=INFO
+    # 生产环境建议移除 volumes 挂载，使用 COPY 到镜像中
+    # volumes:
+    #   - ../data:/app/data
+
+  frontend:
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - NODE_ENV=production
+

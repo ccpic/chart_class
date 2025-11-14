@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Trash2, Info, ArrowDownLeft } from 'lucide-react';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 
 interface DataGridEditorProps {
   data: {
@@ -124,6 +130,23 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
     if (columns.length <= 1) return; // 至少保留一列
     const newColumns = columns.filter((_, i) => i !== colIndex);
     const newRows = rows.map(row => row.filter((_, i) => i !== colIndex));
+    setColumns(newColumns);
+    setRows(newRows);
+    syncToParent(newColumns, index, newRows);
+  };
+
+  // 在指定列右侧插入空列
+  const insertColumnAfter = (colIndex: number) => {
+    const newColumns = [
+      ...columns.slice(0, colIndex + 1),
+      `列${columns.length + 1}`,
+      ...columns.slice(colIndex + 1)
+    ];
+    const newRows = rows.map(row => [
+      ...row.slice(0, colIndex + 1),
+      '',
+      ...row.slice(colIndex + 1)
+    ]);
     setColumns(newColumns);
     setRows(newRows);
     syncToParent(newColumns, index, newRows);
@@ -501,27 +524,47 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
               </th>
               {columns.map((col, colIndex) => (
                 <th key={colIndex} className="border-b border-r bg-gray-50 p-0">
-                  <div className="flex items-center gap-1">
-                    <Input
-                      value={col}
-                      onChange={(e) => updateColumnName(colIndex, e.target.value)}
-                      onFocus={() => setSelectedCell({ row: 0, col: colIndex, type: 'colName' })}
-                      onPaste={(e) => handlePaste(e, 0, colIndex, 'colName')}
-                      className={`border-0 h-8 text-xs font-semibold text-center focus-visible:ring-1 bg-transparent ${
-                        selectedCell?.type === 'colName' && selectedCell?.col === colIndex 
-                          ? 'bg-blue-100 ring-2 ring-blue-500' 
-                          : ''
-                      }`}
-                      placeholder={`列${colIndex + 1}`}
-                    />
-                    <button
-                      onClick={() => deleteColumn(colIndex)}
-                      className="p-1 hover:bg-red-100 rounded text-red-600"
-                      title="删除列"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
+                  <ContextMenu>
+                    <ContextMenuTrigger asChild>
+                      <div className="flex items-center gap-1">
+                        <Input
+                          value={col}
+                          onChange={(e) => updateColumnName(colIndex, e.target.value)}
+                          onFocus={() => setSelectedCell({ row: 0, col: colIndex, type: 'colName' })}
+                          onPaste={(e) => handlePaste(e, 0, colIndex, 'colName')}
+                          className={`border-0 h-8 text-xs font-semibold text-center focus-visible:ring-1 bg-transparent ${
+                            selectedCell?.type === 'colName' && selectedCell?.col === colIndex 
+                              ? 'bg-blue-100 ring-2 ring-blue-500' 
+                              : ''
+                          }`}
+                          placeholder={`列${colIndex + 1}`}
+                        />
+                        <button
+                          onClick={() => deleteColumn(colIndex)}
+                          className="p-1 hover:bg-red-100 rounded text-red-600"
+                          title="删除列"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className="w-48">
+                      <ContextMenuItem
+                        onClick={() => insertColumnAfter(colIndex)}
+                        className="cursor-pointer"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        在右侧插入列
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        onClick={() => deleteColumn(colIndex)}
+                        className="cursor-pointer text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        删除此列
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 </th>
               ))}
             </tr>

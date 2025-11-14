@@ -879,6 +879,9 @@ video {
 .max-h-40 {
   max-height: 10rem;
 }
+.max-h-\[--radix-context-menu-content-available-height\] {
+  max-height: var(--radix-context-menu-content-available-height);
+}
 .max-h-\[--radix-select-content-available-height\] {
   max-height: var(--radix-select-content-available-height);
 }
@@ -890,9 +893,6 @@ video {
 }
 .max-h-screen {
   max-height: 100vh;
-}
-.max-h-\[--radix-context-menu-content-available-height\] {
-  max-height: var(--radix-context-menu-content-available-height);
 }
 .min-h-0 {
   min-height: 0px;
@@ -927,6 +927,9 @@ video {
 .w-16 {
   width: 4rem;
 }
+.w-2 {
+  width: 0.5rem;
+}
 .w-2\.5 {
   width: 0.625rem;
 }
@@ -947,6 +950,9 @@ video {
 }
 .w-4 {
   width: 1rem;
+}
+.w-48 {
+  width: 12rem;
 }
 .w-5 {
   width: 1.25rem;
@@ -986,9 +992,6 @@ video {
 }
 .w-full {
   width: 100%;
-}
-.w-2 {
-  width: 0.5rem;
 }
 .min-w-0 {
   min-width: 0px;
@@ -1035,6 +1038,9 @@ video {
 .border-collapse {
   border-collapse: collapse;
 }
+.origin-\[--radix-context-menu-content-transform-origin\] {
+  transform-origin: var(--radix-context-menu-content-transform-origin);
+}
 .origin-\[--radix-popover-content-transform-origin\] {
   transform-origin: var(--radix-popover-content-transform-origin);
 }
@@ -1043,9 +1049,6 @@ video {
 }
 .origin-\[--radix-tooltip-content-transform-origin\] {
   transform-origin: var(--radix-tooltip-content-transform-origin);
-}
-.origin-\[--radix-context-menu-content-transform-origin\] {
-  transform-origin: var(--radix-context-menu-content-transform-origin);
 }
 .-translate-x-1\/2 {
   --tw-translate-x: -50%;
@@ -1608,6 +1611,9 @@ video {
 }
 .pl-3 {
   padding-left: 0.75rem;
+}
+.pl-6 {
+  padding-left: 1.5rem;
 }
 .pl-8 {
   padding-left: 2rem;
@@ -2541,12 +2547,12 @@ video {
   color: hsl(var(--primary-foreground));
 }
 
-.data-\[state\=open\]\:text-muted-foreground[data-state="open"] {
-  color: hsl(var(--muted-foreground));
-}
-
 .data-\[state\=open\]\:text-accent-foreground[data-state="open"] {
   color: hsl(var(--accent-foreground));
+}
+
+.data-\[state\=open\]\:text-muted-foreground[data-state="open"] {
+  color: hsl(var(--muted-foreground));
 }
 
 .data-\[disabled\]\:opacity-50[data-disabled] {
