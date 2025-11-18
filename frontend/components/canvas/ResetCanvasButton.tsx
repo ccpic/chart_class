@@ -24,6 +24,7 @@ import {
  */
 export default function ResetCanvasButton() {
   const reset = useCanvasStore((state) => state.reset);
+  const clearRenderResult = useCanvasStore((state) => state.clearRenderResult);
   const clearCurrentChartId = useChartStore((state) => state.clearCurrentChartId);
   const { toast } = useToast();
   const router = useRouter();
@@ -31,8 +32,9 @@ export default function ResetCanvasButton() {
   const handleReset = () => {
     reset();
     clearCurrentChartId(); // 清除当前图表关联
-    // 重置后跳转到画布页面
-    router.push('/canvas');
+    clearRenderResult(); // 清空渲染结果
+    // 重置后跳转到画布页面的网格布局tab
+    router.push('/canvas?tab=grid');
     toast({
       title: '重置成功',
       description: '所有画布和子图配置已清空',

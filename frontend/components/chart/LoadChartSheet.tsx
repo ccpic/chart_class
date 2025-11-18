@@ -77,7 +77,7 @@ export default function LoadChartDialog({ trigger }: LoadChartDialogProps) {
     try {
       await loadChart(id);
       setOpen(false);
-      router.push('/canvas');
+      router.push('/canvas?tab=grid'); // 加载后跳转到网格布局tab
       toast({
         title: '加载成功',
         description: '图表已加载到画布',

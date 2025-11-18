@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useCanvasStore } from '@/store/canvasStore';
 import MainContent from '@/components/layout/MainContent';
 import RightPanel from '@/components/layout/RightPanel';
@@ -13,7 +14,16 @@ import { Button } from '@/components/ui/button';
 
 export default function CanvasPage() {
   const { canvas, subplots, renderedImage, renderError, setRenderedImage, setRenderError } = useCanvasStore();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('grid');
+
+  // 从URL参数读取tab状态
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'grid' || tab === 'render') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const handleRenderComplete = (imageUrl: string) => {
     setRenderedImage(imageUrl);

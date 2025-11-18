@@ -68,6 +68,8 @@ const defaultCanvas: CanvasConfig = {
   legendLoc: "center left",
   legendNcol: 1,
   bboxToAnchor: [1, 0.5],
+  sharex: false,
+  sharey: false,
   labelOuter: false,
   dpi: 400,
   transparent: true,

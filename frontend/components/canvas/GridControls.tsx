@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { useCanvasStore } from '@/store/canvasStore';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 export default function GridControls() {
   const { canvas, updateCanvas } = useCanvasStore();
@@ -212,19 +214,48 @@ export default function GridControls() {
       </div>
       
       {/* 其他设置 */}
-      <div className="pt-3 border-t">
-        <div className="flex items-center justify-between">
-          <div>
-            <label className="text-xs text-gray-600">Label Outer</label>
-            <p className="text-xs text-gray-400">仅显示外围刻度标签</p>
-          </div>
-          <input
-            type="checkbox"
-            checked={canvas.labelOuter}
-            onChange={(e) => updateCanvas({ labelOuter: e.target.checked })}
-            className="rounded"
+      <div className="space-y-3 pt-3 border-t">
+        <h3 className="text-sm font-semibold text-gray-700">坐标轴共享</h3>
+        
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="sharex"
+            checked={canvas.sharex ?? false}
+            onCheckedChange={(checked) => updateCanvas({ sharex: !!checked })}
           />
+          <Label htmlFor="sharex" className="text-xs cursor-pointer">
+            共享 X 轴 (sharex)
+          </Label>
         </div>
+        <p className="text-xs text-gray-400 pl-6">多子图共享 X 轴刻度和范围</p>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="sharey"
+            checked={canvas.sharey ?? false}
+            onCheckedChange={(checked) => updateCanvas({ sharey: !!checked })}
+          />
+          <Label htmlFor="sharey" className="text-xs cursor-pointer">
+            共享 Y 轴 (sharey)
+          </Label>
+        </div>
+        <p className="text-xs text-gray-400 pl-6">多子图共享 Y 轴刻度和范围</p>
+      </div>
+      
+      <div className="space-y-3 pt-3 border-t">
+        <h3 className="text-sm font-semibold text-gray-700">其他选项</h3>
+        
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="labelOuter"
+            checked={canvas.labelOuter}
+            onCheckedChange={(checked) => updateCanvas({ labelOuter: !!checked })}
+          />
+          <Label htmlFor="labelOuter" className="text-xs cursor-pointer">
+            Label Outer
+          </Label>
+        </div>
+        <p className="text-xs text-gray-400 pl-6">仅显示外围刻度标签</p>
       </div>
     </div>
   );

@@ -53,6 +53,10 @@ export interface CanvasConfig {
   legendNcol: number;
   bboxToAnchor: [number, number];
 
+  // 坐标轴共享
+  sharex?: boolean;
+  sharey?: boolean;
+
   // 其他设置
   labelOuter: boolean;
   dpi?: number;
