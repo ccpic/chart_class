@@ -478,9 +478,9 @@ if __name__ == "__main__":
     import uvicorn
 
     print("🚀 启动 Chart Class Web API 服务...")
-    print("📊 图表渲染 API: http://localhost:8000/api/render/*")
-    print("🎨 颜色管理 API: http://localhost:8000/api/colors/*")
-    print("📚 API 文档: http://localhost:8000/docs")
+    print("📊 图表渲染 API: http://localhost:8001/api/render/*")
+    print("🎨 颜色管理 API: http://localhost:8001/api/colors/*")
+    print("📚 API 文档: http://localhost:8001/docs")
     print("")
 
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8001, reload=True)

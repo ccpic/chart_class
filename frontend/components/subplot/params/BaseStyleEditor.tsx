@@ -17,11 +17,12 @@ interface BaseStyleEditorProps {
  */
 export function BaseStyleEditor({ style, onChange }: BaseStyleEditorProps) {
   // 默认展开标题分组
-  const [openSections, setOpenSections] = useState<string[]>(['title']);
+  const [openSections, setOpenSections] = useState<string>('title');
 
   return (
     <div className="space-y-2">
       <Accordion 
+        type="single"
         value={openSections} 
         onValueChange={setOpenSections}
         className="space-y-2"

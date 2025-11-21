@@ -143,14 +143,15 @@ export default function GridControls() {
       
       {/* 图例设置 */}
       <div className="space-y-3 pt-3 border-t">
-        <div className="flex items-center justify-between">
-          <label className="text-xs text-gray-600">显示画布总图例</label>
-          <input
-            type="checkbox"
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="showLegend"
             checked={canvas.showLegend}
-            onChange={(e) => updateCanvas({ showLegend: e.target.checked })}
-            className="rounded"
+            onCheckedChange={(checked) => updateCanvas({ showLegend: !!checked })}
           />
+          <Label htmlFor="showLegend" className="text-xs cursor-pointer">
+            显示画布总图例
+          </Label>
         </div>
         
         {canvas.showLegend && (
@@ -199,17 +200,18 @@ export default function GridControls() {
           <p className="text-xs text-gray-400">更高的 DPI 获得更清晰的图片</p>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <label className="text-xs text-gray-600">透明背景</label>
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="transparent"
+            checked={canvas.transparent ?? true}
+            onCheckedChange={(checked) => updateCanvas({ transparent: !!checked })}
+          />
+          <div className="flex-1">
+            <Label htmlFor="transparent" className="text-xs cursor-pointer">
+              透明背景
+            </Label>
             <p className="text-xs text-gray-400">保存图片时使用透明背景</p>
           </div>
-          <input
-            type="checkbox"
-            checked={canvas.transparent ?? true}
-            onChange={(e) => updateCanvas({ transparent: e.target.checked })}
-            className="rounded"
-          />
         </div>
       </div>
       

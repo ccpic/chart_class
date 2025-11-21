@@ -477,7 +477,7 @@ export default function ColorPicker({
             </div>
 
             {/* 标签页 */}
-            <Tabs defaultValue="picker" className="w-full">
+            <Tabs defaultValue="named" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="picker">调色板</TabsTrigger>
                 <TabsTrigger value="input">输入</TabsTrigger>

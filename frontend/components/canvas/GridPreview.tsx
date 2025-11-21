@@ -16,10 +16,13 @@ import {
   LineChart,
   PieChart,
   AreaChart,
-  ScatterChart,
   Droplets,
   Table2,
+  Trash2,
+  Box,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import DeleteSubplotDialog from './DeleteSubplotDialog';
 
 // 图表类型映射
 const CHART_TYPE_LABELS: Record<ChartType, string> = {
@@ -27,9 +30,9 @@ const CHART_TYPE_LABELS: Record<ChartType, string> = {
   line: '折线图',
   pie: '饼图',
   area: '面积图',
-  scatter: '散点图',
   bubble: '气泡图',
   hist: '直方图',
+  boxdot: '箱型图',
   table: '高级表格',
 };
 
@@ -39,15 +42,15 @@ const CHART_TYPE_ICONS: Record<ChartType, React.ReactNode> = {
   line: <LineChart className="h-4 w-4" />,
   pie: <PieChart className="h-4 w-4" />,
   area: <AreaChart className="h-4 w-4" />,
-  scatter: <ScatterChart className="h-4 w-4" />,
   bubble: <Droplets className="h-4 w-4" />,
   hist: <BarChart3 className="h-4 w-4" />,
+  boxdot: <Box className="h-4 w-4" />,
   table: <Table2 className="h-4 w-4" />,
 };
 
 export default function GridPreview() {
   const router = useRouter();
-  const { canvas, subplots, addSubplot, getSubplotByAxIndex, updateSubplot, updateCanvas } = useCanvasStore();
+  const { canvas, subplots, addSubplot, getSubplotByAxIndex, updateSubplot, updateCanvas, deleteSubplot } = useCanvasStore();
   const [pendingChartTypes, setPendingChartTypes] = useState<Record<number, ChartType>>({});
   
   const { rows, cols } = canvas;
@@ -106,6 +109,16 @@ export default function GridPreview() {
   
   const handleEditSubplot = (subplotId: string) => {
     router.push(`/subplot/${subplotId}`);
+  };
+  
+  const handleDeleteSubplot = (subplotId: string, axIndex: number) => {
+    deleteSubplot(subplotId);
+    // 清除该位置的待定类型
+    setPendingChartTypes(prev => {
+      const newState = { ...prev };
+      delete newState[axIndex];
+      return newState;
+    });
   };
   
   return (
@@ -236,12 +249,27 @@ export default function GridPreview() {
               
               {/* 操作按钮 */}
               {subplot ? (
-                <button
-                  onClick={() => handleEditSubplot(subplot.subplotId)}
-                  className="w-full px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors flex-shrink-0"
-                >
-                  编辑子图
-                </button>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => handleEditSubplot(subplot.subplotId)}
+                    className="flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors"
+                  >
+                    编辑子图
+                  </button>
+                  <DeleteSubplotDialog
+                    subplot={subplot}
+                    trigger={
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    }
+                    onConfirm={handleDeleteSubplot}
+                  />
+                </div>
               ) : (
                 <button
                   onClick={() => handleCreateSubplot(axIndex)}

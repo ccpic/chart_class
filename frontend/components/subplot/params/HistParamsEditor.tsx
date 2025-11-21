@@ -65,24 +65,6 @@ export default function HistParamsEditor({ subplot }: Props) {
             <p className="text-xs text-gray-500">直方图柱的个数</p>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="tiles" className="text-sm font-medium">
-                等分线数量 (tiles)
-              </Label>
-              <span className="text-xs text-gray-500">{tiles}</span>
-            </div>
-            <Slider
-              id="tiles"
-              min={2}
-              max={20}
-              step={1}
-              value={[tiles]}
-              onValueChange={(value) => updateParam('tiles', value[0])}
-              className="w-full"
-            />
-            <p className="text-xs text-gray-500">等分线的个数（仅在显示等分线时生效）</p>
-          </div>
         </TabsContent>
 
         {/* Tab 2: 显示选项 */}
@@ -93,14 +75,11 @@ export default function HistParamsEditor({ subplot }: Props) {
               checked={showKde}
               onCheckedChange={(checked) => updateParam('show_kde', checked)}
             />
-            <label
-              htmlFor="show_kde"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
+            <Label htmlFor="show_kde" className="text-sm cursor-pointer">
               显示核密度估计曲线 (KDE)
-            </label>
+            </Label>
           </div>
-          <p className="text-xs text-gray-500 ml-6">
+          <p className="text-xs text-gray-500 pl-6">
             在直方图上叠加显示核密度估计曲线
           </p>
 
@@ -110,33 +89,50 @@ export default function HistParamsEditor({ subplot }: Props) {
               checked={showMetrics}
               onCheckedChange={(checked) => updateParam('show_metrics', checked)}
             />
-            <label
-              htmlFor="show_metrics"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
+            <Label htmlFor="show_metrics" className="text-sm cursor-pointer">
               显示统计指标
-            </label>
+            </Label>
           </div>
-          <p className="text-xs text-gray-500 ml-6">
+          <p className="text-xs text-gray-500 pl-6">
             显示均值和中位数线及标签
           </p>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="show_tiles"
-              checked={showTiles}
-              onCheckedChange={(checked) => updateParam('show_tiles', checked)}
-            />
-            <label
-              htmlFor="show_tiles"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              显示等分线
-            </label>
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="show_tiles"
+                checked={showTiles}
+                onCheckedChange={(checked) => updateParam('show_tiles', checked)}
+              />
+              <Label htmlFor="show_tiles" className="text-sm cursor-pointer">
+                显示等分线
+              </Label>
+            </div>
+            <p className="text-xs text-gray-500 pl-6">
+              显示将数据等分的百分位线（如十分位线）
+            </p>
+
+            {showTiles && (
+              <div className="space-y-2 pl-6 pt-2 border-t">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="tiles" className="text-sm font-medium">
+                    等分线数量 (tiles)
+                  </Label>
+                  <span className="text-xs text-gray-500">{tiles}</span>
+                </div>
+                <Slider
+                  id="tiles"
+                  min={2}
+                  max={20}
+                  step={1}
+                  value={[tiles]}
+                  onValueChange={(value) => updateParam('tiles', value[0])}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500">等分线的个数</p>
+              </div>
+            )}
           </div>
-          <p className="text-xs text-gray-500 ml-6">
-            显示将数据等分的百分位线（如十分位线）
-          </p>
         </TabsContent>
 
         {/* Tab 3: 颜色方案 */}

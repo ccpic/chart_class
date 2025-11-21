@@ -1,0 +1,4 @@
+# 此文件已清空 - 所有机器学习相关依赖已删除
+# torch, transformers 等大包在项目中未使用，已移除
+# scipy 已移至 requirements-plot.txt（在 chart/plots/utils.py 中使用）
+

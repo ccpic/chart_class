@@ -13,6 +13,9 @@ RUN npm ci
 # 复制前端源代码
 COPY frontend/ .
 
+# 确保 public 目录存在（如果不存在则创建空目录）
+RUN mkdir -p public
+
 # 构建 Next.js 应用
 RUN npm run build
 
@@ -27,7 +30,8 @@ RUN adduser --system --uid 1001 nextjs
 
 # 从构建阶段复制必要文件
 # Next.js standalone 模式会生成一个独立的 server.js
-COPY --from=builder /app/public ./public
+# public 目录已在构建阶段确保存在（即使为空）
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 

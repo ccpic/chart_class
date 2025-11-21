@@ -1,21 +1,121 @@
 # 后端 Dockerfile - Python FastAPI 服务
-FROM python:3.11-slim
+ FROM python:3.11
 
 # 设置工作目录
 WORKDIR /app
 
+# 配置 pip 使用清华大学镜像源（加速安装）
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
+    pip config set global.trusted-host pypi.tuna.tsinghua.edu.cn
+
 # 安装系统依赖（matplotlib 需要这些库）
+# 安装字体配置工具（用于支持微软雅黑字体）
 RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libpng-dev \
     libjpeg-dev \
+    fontconfig \
     && rm -rf /var/lib/apt/lists/*
 
-# 复制依赖文件（从项目根目录）
-COPY requirements.txt .
+# 创建字体目录（用于存放微软雅黑字体文件）
+RUN mkdir -p /usr/share/fonts/truetype/msyh
 
-# 安装 Python 依赖
-RUN pip install --no-cache-dir -r requirements.txt
+# 复制所有微软雅黑字体变体文件（常规、粗体、斜体等）
+# 注意：字体文件需要用户提供，从 Windows 系统 C:\Windows\Fonts\ 目录复制
+# 复制常规和粗体字体文件（必需）
+COPY docker/fonts/msyh.ttc /usr/share/fonts/truetype/msyh/msyh.ttc
+COPY docker/fonts/msyhbd.ttc /usr/share/fonts/truetype/msyh/msyhbd.ttc
+# 复制其他字体变体（如果存在）
+COPY docker/fonts/msyhl.ttc /usr/share/fonts/truetype/msyh/msyhl.ttc
+# 注意：如果斜体字体文件 msyhi.ttc 存在，请取消下面的注释
+# COPY docker/fonts/msyhi.ttc /usr/share/fonts/truetype/msyh/msyhi.ttc
+
+# 设置字体文件权限
+RUN chmod 644 /usr/share/fonts/truetype/msyh/*.ttc
+
+# 更新字体缓存并验证字体安装
+RUN fc-cache -fv && \
+    echo "=== 已安装的微软雅黑字体 ===" && \
+    fc-list | grep -i "microsoft\|msyh" || echo "警告: 字体可能未正确安装" && \
+    echo "=== 字体变体检查 ===" && \
+    fc-match "Microsoft YaHei:style=Regular" && \
+    fc-match "Microsoft YaHei:style=Bold" && \
+    fc-match "Microsoft YaHei:style=Italic" || echo "注意: 某些字体变体可能不可用"
+
+# 升级 pip、setuptools、wheel（确保使用最新版本，提高安装速度）
+RUN pip install --upgrade pip setuptools wheel
+
+# ===== 本地 Python 包支持 =====
+# 支持三种方式使用本地包（按优先级排序）：
+# 1. requirements-venv.txt - 从本地 .venv 导出的完整依赖列表（最高优先级）
+# 2. requirements-local.txt - 本地修改过的特定包
+# 3. requirements-*.txt - 标准依赖文件
+#
+# 使用方法：
+# - 使用 .venv: 运行 docker/export-venv-requirements.bat 导出依赖
+# - 使用本地包: 将包放入 docker/local_packages/ 并创建 requirements-local.txt
+
+# 创建本地包目录
+RUN mkdir -p /app/docker/local_packages
+
+# 复制 docker 目录（包括本地包和配置文件）
+# 注意：如果某些文件不存在，不会导致构建失败
+COPY docker/ /tmp/docker-build/
+
+# 将本地包文件移动到目标位置（如果存在）
+RUN if [ -d /tmp/docker-build/local_packages ]; then \
+        cp -r /tmp/docker-build/local_packages/* /app/docker/local_packages/ && \
+        echo "=== 本地包文件已复制 ==="; \
+    else \
+        echo "=== 未找到本地包目录，将使用 PyPI 安装 ==="; \
+    fi
+
+# ===== 优先级 1: 使用 .venv 导出的依赖（最高优先级） =====
+# 如果存在 requirements-venv.txt，使用它安装所有依赖（完全匹配本地环境）
+RUN if [ -f /tmp/docker-build/requirements-venv.txt ]; then \
+        cp /tmp/docker-build/requirements-venv.txt /tmp/requirements-venv.txt && \
+        echo "=== 检测到 requirements-venv.txt，将使用 .venv 中的包版本 ===" && \
+        echo "=== 开始安装 .venv 依赖（这可能需要几分钟） ===" && \
+        pip install --retries=5 -r /tmp/requirements-venv.txt && \
+        echo "=== .venv 依赖安装完成 ==="; \
+    else \
+        echo "=== 未找到 requirements-venv.txt，将使用标准依赖文件 ==="; \
+    fi
+
+# ===== 优先级 2: 安装本地修改的包（如果未使用 requirements-venv.txt） =====
+# 如果存在 requirements-local.txt 且未使用 requirements-venv.txt，安装本地包
+RUN if [ ! -f /tmp/requirements-venv.txt ] && [ -f /tmp/docker-build/requirements-local.txt ]; then \
+        cp /tmp/docker-build/requirements-local.txt /tmp/requirements-local.txt && \
+        echo "=== 开始安装本地修改的 Python 包 ===" && \
+        pip install --retries=5 -r /tmp/requirements-local.txt && \
+        echo "=== 本地包安装完成 ==="; \
+    elif [ -f /tmp/requirements-venv.txt ]; then \
+        echo "=== 已使用 requirements-venv.txt，跳过 requirements-local.txt ==="; \
+    else \
+        echo "=== 跳过本地包安装（未找到 requirements-local.txt） ==="; \
+    fi
+
+# ===== 优先级 3: 安装标准依赖（仅在未使用 requirements-venv.txt 时） =====
+# 如果使用了 requirements-venv.txt，跳过标准依赖安装（因为已全部安装）
+# 如果未使用，则按标准流程安装
+RUN if [ ! -f /tmp/requirements-venv.txt ]; then \
+        echo "=== 使用标准依赖文件安装 ===" && \
+        cp /tmp/docker-build/requirements-core.txt /tmp/requirements-core.txt && \
+        cp /tmp/docker-build/requirements-plot.txt /tmp/requirements-plot.txt && \
+        cp /tmp/docker-build/requirements-other.txt /tmp/requirements-other.txt && \
+        echo "=== 开始安装核心依赖 ===" && \
+        pip install --retries=5 -r /tmp/requirements-core.txt && \
+        echo "=== 核心依赖安装完成 ===" && \
+        echo "=== 开始安装绘图依赖 ===" && \
+        pip install --retries=5 -r /tmp/requirements-plot.txt && \
+        echo "=== 绘图依赖安装完成 ===" && \
+        echo "=== 开始安装其他依赖 ===" && \
+        pip install --retries=5 -r /tmp/requirements-other.txt && \
+        echo "=== 所有依赖安装完成 ===" || \
+        echo "警告: 部分可选包可能安装失败，但不影响核心功能"; \
+    else \
+        echo "=== 已使用 requirements-venv.txt，跳过标准依赖安装 ==="; \
+    fi
 
 # 复制应用代码
 COPY . .
@@ -24,13 +124,13 @@ COPY . .
 RUN mkdir -p /app/data
 
 # 暴露端口
-EXPOSE 8000
+EXPOSE 8001
 
 # 设置环境变量
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
 # 启动命令
-CMD ["uvicorn", "web_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "web_api.main:app", "--host", "0.0.0.0", "--port", "8001"]
 
 

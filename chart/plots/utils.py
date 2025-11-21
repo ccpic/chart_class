@@ -3,12 +3,14 @@ Utility functions for plotting.
 """
 
 from __future__ import annotations
-from typing import Sequence
+from typing import Sequence, List, Optional
 import matplotlib as mpl
 import numpy as np
 import scipy.stats as stats
 import pandas as pd
 from typing import Callable, Literal
+from textalloc import allocate_text
+
 
 def scatter_hist(ax: mpl.axes.Axes, x: Sequence, y: Sequence) -> mpl.axes.Axes:
     """在指定scatter ax绘制x,y轴histogram
@@ -180,17 +182,22 @@ def format_value(
     :param unit: 单位（亿、百万、万、千）或 None
     :return: 转换后的字符串
     """
+    # 如果值不是数值类型（如字符串），直接返回字符串表示
+    if not isinstance(val, (int, float, np.number)):
+        return str(val) if val is not None else ""
+
+    # 检查是否为 NaN（仅对数值类型）
+    if np.isnan(val):
+        if empty_nan:
+            return ""
+        else:
+            return "nan"
 
     if val == 0:
         if empty_zero:
             return ""
         else:
             return fmt.format(val)
-    elif np.isnan(val):
-        if empty_nan:
-            return ""
-        else:
-            return "nan"
 
     if unit:
         scale = {"亿": 1e8, "百万": 1e6, "万": 1e4, "千": 1e3}.get(unit)

@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 import os
+import platform
 from typing import Any, Dict, List, Tuple, Optional, Literal, Union
 import matplotlib as mpl
 from chart.color.color import is_color_dark
@@ -26,9 +27,47 @@ from chart.components.annotation import Connection
 import inspect
 import re
 
-mpl.rcParams["font.sans-serif"] = ["Microsoft YaHei"]
-mpl.rcParams["font.serif"] = ["Microsoft YaHei"]
+# 配置中文字体 - 仅使用微软雅黑
+# 在 Linux 中，如果已安装微软雅黑字体文件，matplotlib 会自动使用
+# 否则会回退到系统默认字体（需要确保 Docker 容器中已安装微软雅黑）
+mpl.rcParams["font.sans-serif"] = ["Microsoft YaHei", "微软雅黑"] + mpl.rcParams["font.sans-serif"]
+mpl.rcParams["font.serif"] = ["Microsoft YaHei", "微软雅黑"] + mpl.rcParams["font.serif"]
 mpl.rcParams["axes.unicode_minus"] = False
+
+# 配置字体权重和样式映射，确保粗体和斜体正常工作
+# 在 Linux 中，matplotlib 通过 fontconfig 查找字体变体
+# 需要确保所有字体文件（常规、粗体、斜体）都已正确安装
+try:
+    from matplotlib.font_manager import FontProperties, findfont
+    import matplotlib.font_manager as fm
+    
+    # 清除 matplotlib 字体缓存，强制重新扫描字体
+    # 这在 Docker 容器中特别重要，因为字体可能在运行时才安装
+    try:
+        fm._rebuild()
+    except Exception:
+        pass
+    
+    # 测试常规字体是否可用
+    test_font = FontProperties(family="Microsoft YaHei", weight="normal", style="normal")
+    font_path = findfont(test_font)
+    
+    # 测试粗体字体是否可用
+    test_font_bold = FontProperties(family="Microsoft YaHei", weight="bold", style="normal")
+    font_path_bold = findfont(test_font_bold)
+    
+    # 测试斜体字体是否可用
+    test_font_italic = FontProperties(family="Microsoft YaHei", weight="normal", style="italic")
+    font_path_italic = findfont(test_font_italic)
+    
+    # 如果字体可用，确保 matplotlib 使用正确的字体映射
+    if font_path and os.path.exists(font_path):
+        # matplotlib 会自动通过 fontconfig 查找字体变体
+        # 不需要额外配置，只要字体文件正确安装即可
+        pass
+except Exception:
+    # 如果字体配置失败，使用默认设置
+    pass
 
 
 class GridFigure(Figure):

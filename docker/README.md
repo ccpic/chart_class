@@ -12,7 +12,9 @@ docker/
 ├── docker-compose.prod.yml      # 生产环境配置
 ├── env.example                  # 环境变量示例
 ├── docker-start.sh              # Linux/Mac 启动脚本
-├── docker-start.bat             # Windows 启动脚本
+├── docker-start.bat             # Windows 启动脚本（中文，已修复乱码）
+├── docker-start.ps1             # PowerShell 启动脚本（推荐，中文支持更好）
+├── docker-start-en.bat          # Windows 启动脚本（英文版本，兼容性更好）
 └── README.md                    # 本文档
 
 项目根目录/
@@ -58,8 +60,8 @@ docker-compose logs -f frontend
 ## 服务访问
 
 - **前端**: http://localhost:3000
-- **后端 API**: http://localhost:8000
-- **API 文档**: http://localhost:8000/docs
+- **后端 API**: http://localhost:8001
+- **API 文档**: http://localhost:8001/docs
 
 ## 环境变量配置
 
@@ -77,9 +79,9 @@ cp env.example .env
 
 ### 环境变量说明
 
-- `BACKEND_PORT`: 后端端口（默认 8000）
+- `BACKEND_PORT`: 后端端口（默认 8001）
 - `FRONTEND_PORT`: 前端端口（默认 3000）
-- `NEXT_PUBLIC_API_URL`: 前端访问后端的地址（默认 http://localhost:8000）
+- `NEXT_PUBLIC_API_URL`: 前端访问后端的地址（默认 http://localhost:8001）
 - `CORS_ORIGINS`: CORS 允许的来源，逗号分隔
 
 ## 数据持久化
@@ -90,7 +92,7 @@ cp env.example .env
 
 ### 1. 端口冲突
 
-如果 3000 或 8000 端口被占用，修改 `docker-compose.yml` 中的端口映射，或设置环境变量：
+如果 3000 或 8001 端口被占用，修改 `docker-compose.yml` 中的端口映射，或设置环境变量：
 
 ```bash
 # 在 docker/ 目录下
@@ -101,7 +103,7 @@ docker-compose up -d
 
 ### 2. 前端无法连接后端
 
-确保 `NEXT_PUBLIC_API_URL` 环境变量正确设置。在 Docker 环境中，浏览器访问的是 `localhost:8000`，所以通常使用 `http://localhost:8000`。
+确保 `NEXT_PUBLIC_API_URL` 环境变量正确设置。在 Docker 环境中，浏览器访问的是 `localhost:8001`，所以通常使用 `http://localhost:8001`。
 
 ### 3. 构建失败
 
@@ -118,7 +120,7 @@ docker-compose up -d
 
 1. 确保安装了 Docker Desktop for Windows
 2. 启用 WSL2 后端（推荐）
-3. 确保防火墙允许 3000 和 8000 端口
+3. 确保防火墙允许 3000 和 8001 端口
 4. 使用 PowerShell 或 Git Bash 运行命令
 5. 使用 `docker-start.bat` 脚本（在 docker/ 目录下）
 
@@ -188,9 +190,27 @@ docker-compose down --rmi all
 
 ### Windows
 
-```bash
+**方式 1: PowerShell 脚本（推荐，中文显示正常）**
+```powershell
+# 在 docker/ 目录下
+.\docker-start.ps1
+```
+
+如果遇到执行策略限制，先运行：
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+**方式 2: 批处理文件（已修复乱码）**
+```cmd
 # 在 docker/ 目录下
 docker-start.bat
+```
+
+**方式 3: 英文版本（如果中文仍有问题）**
+```cmd
+# 在 docker/ 目录下
+docker-start-en.bat
 ```
 
 ### Linux/Mac

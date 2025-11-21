@@ -90,6 +90,7 @@ class Plot:
                 # 图表的一些风格
                 "title": None,  # 图表标题
                 "title_fontsize": plot.fontsize,  # 图表标题字体大小
+                "title_y": 1.0,  # 标题垂直位置 (0.0-1.2, 默认1.0)
                 "major_grid": None,  # 主网格线
                 "minor_grid": None,  # 次网格线
                 "hide_top_right_spines": False,  # 是否隐藏上/右边框
@@ -127,7 +128,7 @@ class Plot:
 
         def apply_style(self) -> None:
             """执行一遍风格设置，不能放在初始化阶段因为一些风格在绘图后才生效"""
-            self.title(self._title, self._title_fontsize)
+            self.title(self._title, self._title_fontsize, self._title_y)
             self.xlabel(self._xlabel, self._xlabel_fontsize)
             self.ylabel(self._ylabel, self._ylabel_fontsize)
             self.tick_params(
@@ -166,7 +167,10 @@ class Plot:
                 )
 
         def title(
-            self, title: Optional[str] = None, fontsize: Optional[float] = None
+            self,
+            title: Optional[str] = None,
+            fontsize: Optional[float] = None,
+            y: float = 1.0,
         ) -> None:
             """添加图表的标题
 
@@ -176,8 +180,10 @@ class Plot:
                 标题文字内容, by default None
             fontsize : Optional[float], optional
                 标题字体大小, by default None
+            y : float, optional
+                标题垂直位置 (0.0表示底部, 1.0表示顶部), by default 1.0
             """
-            self._plot.ax.set_title(title, fontsize=fontsize)
+            self._plot.ax.set_title(title, fontsize=fontsize, y=y)
 
         def all_xticks(self):
             self._plot.ax.set(xticks=self._plot.data.index)

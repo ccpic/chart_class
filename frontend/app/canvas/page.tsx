@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useCanvasStore } from '@/store/canvasStore';
 import MainContent from '@/components/layout/MainContent';
@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download, Grid3x3, Eye, Info, AlertCircle, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function CanvasPage() {
+function CanvasPageContent() {
   const { canvas, subplots, renderedImage, renderError, setRenderedImage, setRenderError } = useCanvasStore();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('grid');
@@ -186,5 +186,19 @@ export default function CanvasPage() {
         </div>
       </RightPanel>
     </div>
+  );
+}
+
+export default function CanvasPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-gray-600">加载中...</p>
+        </div>
+      </div>
+    }>
+      <CanvasPageContent />
+    </Suspense>
   );
 }

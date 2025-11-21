@@ -78,7 +78,7 @@ interface ColumnDefinition {
   };
   // 文字颜色映射配置
   text_cmap_config?: {
-    mode: 'numeric' | 'categorical';
+    mode: 'numeric' | 'categorical' | 'negative_red';
     numeric?: {
       cmap: string;
       num_stds?: number;
@@ -302,6 +302,19 @@ export default function TableParamsEditor({ subplot }: Props) {
         plot_kw: {
           ...currentDef.plot_kw,
           formatter: updates.formatter
+        }
+      };
+    }
+    
+    // 如果更新了formatter_config且存在plot_fn，同步到plot_kw.formatter
+    // 注意：后端会自动使用列定义的formatter_config（包括unit），但前端需要确保plot_kw.formatter存在
+    if (updates.formatter_config !== undefined && currentDef.plot_fn) {
+      const fmtValue = updates.formatter_config.fmt || currentDef.formatter_config?.fmt || currentDef.formatter || '{:,.0f}';
+      updates = {
+        ...updates,
+        plot_kw: {
+          ...currentDef.plot_kw,
+          formatter: fmtValue
         }
       };
     }
@@ -811,63 +824,55 @@ export default function TableParamsEditor({ subplot }: Props) {
                       </div>
                     </div>
 
-                    {/* 颜色映射 */}
+                    {/* 背景色映射 */}
                     <div className="space-y-3 pt-3 border-t">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-semibold text-gray-700">颜色映射</h4>
+                        <h4 className="text-xs font-semibold text-gray-700">背景色映射 (cmap)</h4>
                         <Checkbox
                           id={`enable-cmap-${index}`}
-                          checked={!!colDef.cmap_config || !!colDef.text_cmap_config}
+                          checked={!!colDef.cmap_config}
                           onCheckedChange={(checked) => {
                             if (checked) {
                               updateColumnDef(index, {
-                                cmap_config: { mode: 'numeric', numeric: { cmap: 'PiYG', num_stds: 2.5 } },
-                                text_cmap_config: { mode: 'numeric', numeric: { cmap: 'RdYlGn', num_stds: 2.5 } }
+                                cmap_config: { mode: 'numeric', numeric: { cmap: 'PiYG', num_stds: 2.5 } }
                               });
                             } else {
                               updateColumnDef(index, {
-                                cmap_config: undefined,
-                                text_cmap_config: undefined
+                                cmap_config: undefined
                               });
                             }
                           }}
                         />
                       </div>
 
-                      {(colDef.cmap_config || colDef.text_cmap_config) && (
+                      {colDef.cmap_config && (
                         <div className="space-y-3 pl-2 border-l-2 border-gray-200">
-                          {/* 背景色映射 (cmap) */}
-                          <div className="space-y-2">
-                            <Label className="text-xs font-medium">背景色映射 (cmap)</Label>
-                            
-                            {/* 模式选择 */}
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">映射模式</Label>
-                              <Select
-                                value={colDef.cmap_config?.mode || 'numeric'}
-                                onValueChange={(value: 'numeric' | 'categorical') => {
-                                  if (value === 'numeric') {
-                                    updateColumnDef(index, {
-                                      cmap_config: { mode: 'numeric', numeric: { cmap: 'PiYG', num_stds: 2.5 } }
-                                    });
-                                  } else {
-                                    updateColumnDef(index, {
-                                      cmap_config: { mode: 'categorical', categorical: {} }
-                                    });
-                                  }
-                                }}
-                              >
-                                <SelectTrigger className="h-8 text-sm">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="numeric">数值映射</SelectItem>
-                                  <SelectItem value="categorical">分类映射</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {/* 数值映射配置 */}
+                          {/* 模式选择 */}
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">映射模式</Label>
+                            <Select
+                              value={colDef.cmap_config?.mode || 'numeric'}
+                              onValueChange={(value: 'numeric' | 'categorical') => {
+                                if (value === 'numeric') {
+                                  updateColumnDef(index, {
+                                    cmap_config: { mode: 'numeric', numeric: { cmap: 'PiYG', num_stds: 2.5 } }
+                                  });
+                                } else {
+                                  updateColumnDef(index, {
+                                    cmap_config: { mode: 'categorical', categorical: {} }
+                                  });
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-sm">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="numeric">数值映射</SelectItem>
+                                <SelectItem value="categorical">分类映射</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>                              {/* 数值映射配置 */}
                             {colDef.cmap_config?.mode === 'numeric' && (
                               <div className="grid grid-cols-2 gap-2 pl-2 border-l border-gray-200">
                                 {/* Colormap选择 */}
@@ -1008,25 +1013,51 @@ export default function TableParamsEditor({ subplot }: Props) {
                                 ))}
                               </div>
                             )}
-                          </div>
+                        </div>
+                      )}
+                    </div>
 
-                          {/* 文字色映射 (text_cmap) */}
-                          <div className="space-y-2 pt-2 border-t">
-                            <Label className="text-xs font-medium">文字色映射 (text_cmap)</Label>
-                            
-                            {/* 模式选择 */}
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">映射模式</Label>
+                    {/* 文字色映射 */}
+                    <div className="space-y-3 pt-3 border-t">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-semibold text-gray-700">文字色映射 (text_cmap)</h4>
+                        <Checkbox
+                          id={`enable-text-cmap-${index}`}
+                          checked={!!colDef.text_cmap_config}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              // 默认使用负值标红模式
+                              updateColumnDef(index, {
+                                text_cmap_config: { mode: 'negative_red' }
+                              });
+                            } else {
+                              updateColumnDef(index, {
+                                text_cmap_config: undefined
+                              });
+                            }
+                          }}
+                        />
+                      </div>
+
+                      {colDef.text_cmap_config && (
+                        <div className="space-y-3 pl-2 border-l-2 border-gray-200">
+                          {/* 模式选择 */}
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">映射模式</Label>
                               <Select
                                 value={colDef.text_cmap_config?.mode || 'numeric'}
-                                onValueChange={(value: 'numeric' | 'categorical') => {
+                                onValueChange={(value: 'numeric' | 'categorical' | 'negative_red') => {
                                   if (value === 'numeric') {
                                     updateColumnDef(index, {
                                       text_cmap_config: { mode: 'numeric', numeric: { cmap: 'RdYlGn', num_stds: 2.5 } }
                                     });
-                                  } else {
+                                  } else if (value === 'categorical') {
                                     updateColumnDef(index, {
                                       text_cmap_config: { mode: 'categorical', categorical: {} }
+                                    });
+                                  } else if (value === 'negative_red') {
+                                    updateColumnDef(index, {
+                                      text_cmap_config: { mode: 'negative_red' }
                                     });
                                   }
                                 }}
@@ -1037,6 +1068,7 @@ export default function TableParamsEditor({ subplot }: Props) {
                                 <SelectContent>
                                   <SelectItem value="numeric">数值映射</SelectItem>
                                   <SelectItem value="categorical">分类映射</SelectItem>
+                                  <SelectItem value="negative_red">负值标红</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -1182,7 +1214,15 @@ export default function TableParamsEditor({ subplot }: Props) {
                                 ))}
                               </div>
                             )}
-                          </div>
+
+                            {/* 负值标红配置 */}
+                            {colDef.text_cmap_config?.mode === 'negative_red' && (
+                              <div className="pl-2 border-l border-gray-200">
+                                <p className="text-xs text-gray-500">
+                                  负数值将显示为红色，非负数值显示为默认颜色（黑色）
+                                </p>
+                              </div>
+                            )}
                         </div>
                       )}
                     </div>
@@ -1492,10 +1532,11 @@ export default function TableParamsEditor({ subplot }: Props) {
                       value={rowName}
                       onChange={(e) => {
                         const newRowName = e.target.value;
-                        const colors = { ...subplot.params.row_facecolors };
+                        const colors = { ...(subplot.params.row_facecolors || {}) };
                         delete colors[rowName];
-                        if (newRowName) colors[newRowName] = color as string;
-                        updateParam('row_facecolors', Object.keys(colors).length > 0 ? colors : undefined);
+                        // 允许空值，仅在用户删除该行时才移除配置
+                        colors[newRowName] = color as string;
+                        updateParam('row_facecolors', colors);
                       }}
                       placeholder="行名称（如：总计）"
                       className="h-8 text-xs flex-1"
@@ -1503,7 +1544,7 @@ export default function TableParamsEditor({ subplot }: Props) {
                     <ColorPicker
                       value={(color as string) || '#C0C0C0'}
                       onChange={(newColor) => {
-                        const colors = { ...subplot.params.row_facecolors, [rowName]: newColor };
+                        const colors = { ...(subplot.params.row_facecolors || {}), [rowName]: newColor };
                         updateParam('row_facecolors', colors);
                       }}
                     />
@@ -1511,7 +1552,7 @@ export default function TableParamsEditor({ subplot }: Props) {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        const colors = { ...subplot.params.row_facecolors };
+                        const colors = { ...(subplot.params.row_facecolors || {}) };
                         delete colors[rowName];
                         updateParam('row_facecolors', Object.keys(colors).length > 0 ? colors : undefined);
                       }}
@@ -1525,7 +1566,15 @@ export default function TableParamsEditor({ subplot }: Props) {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const colors = { ...subplot.params.row_facecolors, '总计': 'silver' };
+                    const existing = subplot.params.row_facecolors || {};
+                    // 生成唯一的键名
+                    let newKey = '新行';
+                    let counter = 1;
+                    while (existing[newKey]) {
+                      newKey = `新行${counter}`;
+                      counter++;
+                    }
+                    const colors = { ...existing, [newKey]: 'silver' };
                     updateParam('row_facecolors', colors);
                   }}
                   className="h-8 text-xs"
@@ -1545,10 +1594,11 @@ export default function TableParamsEditor({ subplot }: Props) {
                       value={rowName}
                       onChange={(e) => {
                         const newRowName = e.target.value;
-                        const colors = { ...subplot.params.row_fontcolors };
+                        const colors = { ...(subplot.params.row_fontcolors || {}) };
                         delete colors[rowName];
-                        if (newRowName) colors[newRowName] = color as string;
-                        updateParam('row_fontcolors', Object.keys(colors).length > 0 ? colors : undefined);
+                        // 允许空值，仅在用户删除该行时才移除配置
+                        colors[newRowName] = color as string;
+                        updateParam('row_fontcolors', colors);
                       }}
                       placeholder="行名称（如：总计）"
                       className="h-8 text-xs flex-1"
@@ -1556,7 +1606,7 @@ export default function TableParamsEditor({ subplot }: Props) {
                     <ColorPicker
                       value={(color as string) || '#000000'}
                       onChange={(newColor) => {
-                        const colors = { ...subplot.params.row_fontcolors, [rowName]: newColor };
+                        const colors = { ...(subplot.params.row_fontcolors || {}), [rowName]: newColor };
                         updateParam('row_fontcolors', colors);
                       }}
                     />
@@ -1564,7 +1614,7 @@ export default function TableParamsEditor({ subplot }: Props) {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        const colors = { ...subplot.params.row_fontcolors };
+                        const colors = { ...(subplot.params.row_fontcolors || {}) };
                         delete colors[rowName];
                         updateParam('row_fontcolors', Object.keys(colors).length > 0 ? colors : undefined);
                       }}
@@ -1578,7 +1628,15 @@ export default function TableParamsEditor({ subplot }: Props) {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const colors = { ...subplot.params.row_fontcolors, '总计': 'black' };
+                    const existing = subplot.params.row_fontcolors || {};
+                    // 生成唯一的键名
+                    let newKey = '新行';
+                    let counter = 1;
+                    while (existing[newKey]) {
+                      newKey = `新行${counter}`;
+                      counter++;
+                    }
+                    const colors = { ...existing, [newKey]: 'black' };
                     updateParam('row_fontcolors', colors);
                   }}
                   className="h-8 text-xs"

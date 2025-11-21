@@ -1,8 +1,6 @@
 # 生产环境配置
 # 使用方式: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
-version: '3.8'
-
 services:
   backend:
     environment:
@@ -14,7 +12,7 @@ services:
 
   frontend:
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8001}
       - NODE_ENV=production
 
 

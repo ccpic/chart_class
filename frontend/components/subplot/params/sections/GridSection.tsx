@@ -10,8 +10,9 @@ interface GridSectionProps {
 }
 
 export function GridSection({ style, onChange }: GridSectionProps) {
-  const majorEnabled = style.major_grid !== null;
-  const minorEnabled = style.minor_grid !== null;
+  // 修复：undefined 和 null 都应该被视为未启用
+  const majorEnabled = !!style.major_grid;
+  const minorEnabled = !!style.minor_grid;
 
   const toggleMajorGrid = (checked: boolean) => {
     onChange({

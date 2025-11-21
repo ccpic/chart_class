@@ -15,10 +15,10 @@ class ChartType(str, Enum):
     LINE = "line"
     PIE = "pie"
     AREA = "area"
-    SCATTER = "scatter"
     BUBBLE = "bubble"
     TABLE = "table"
     HIST = "hist"
+    BOXDOT = "boxdot"
 
 
 class ChartDataModel(BaseModel):

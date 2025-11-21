@@ -88,15 +88,15 @@ class PlotBar(Plot):
                 gr = df_gr.loc[index, col]
                 total_gr = df.iloc[k, :].sum() / df.iloc[k - 1, :].sum() - 1
 
-                # 使用基类方法创建标签字典
-                d_label = self._create_label_dict(
-                    value=v,
-                    share=share,
-                    gr=gr,
-                    index=index,
-                    col=col,
-                    total_gr=d_style.get("fmt_gr").format(total_gr),
-                )
+                # 直接创建标签字典，和气泡图一样的实现方式
+                d_label = {
+                    "abs": self.fmt.format(v),
+                    "share": "{:.1%}".format(share),
+                    "gr": "{:+.1%}".format(gr),
+                    "index": str(index),
+                    "col": str(col),
+                    "total_gr": d_style.get("fmt_gr").format(total_gr),
+                }
 
                 # 使用基类方法获取颜色
                 if d_style.get("bar_color"):
@@ -191,6 +191,7 @@ class PlotBar(Plot):
                             color=fontcolor,
                             va=va,
                             ha="center",
+                            multialignment="center",
                             fontsize=d_style.get("label_fontsize"),
                             zorder=5,
                             bbox=d_style.get("bbox"),
@@ -409,14 +410,14 @@ class PlotBarh(Plot):
                 share = df_share.loc[index, col]
                 share_total = df_share_total.loc[index, col]
 
-                # 使用基类方法创建标签字典
-                d_label = self._create_label_dict(
-                    value=v,
-                    share=share,
-                    index=index,
-                    col=col,
-                    share_total=d_style.get("fmt_share").format(share_total),
-                )
+                # 直接创建标签字典，和气泡图一样的实现方式
+                d_label = {
+                    "abs": self.fmt.format(v),
+                    "share": "{:.1%}".format(share),
+                    "index": str(index),
+                    "col": str(col),
+                    "share_total": d_style.get("fmt_share").format(share_total),
+                }
 
                 # 使用基类方法获取颜色
                 if d_style.get("bar_color"):
@@ -499,6 +500,7 @@ class PlotBarh(Plot):
                             color=fontcolor,
                             va="center",
                             ha=ha,
+                            multialignment="center",
                             fontsize=d_style.get("label_fontsize"),
                             zorder=5,
                         )

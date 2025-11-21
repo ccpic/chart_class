@@ -26,6 +26,7 @@ class PlotPie(Plot):
 
         Args:
             size (Optional[str], optional): 指定size列，如不指定则默认为第1列. Defaults to None.
+            label_formatter (str, optional): 标签格式化字符串. Defaults to "{abs}".
             donut (bool, optional): 甜甜圈图还是饼图. Defaults to False.
             donut_title (Optional[str], optional): 甜甜圈图中间的文字. Defaults to None.
 

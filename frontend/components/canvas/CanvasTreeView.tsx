@@ -7,7 +7,7 @@ import {
   BarChart3,
   LineChart,
   PieChart,
-  ScatterChart,
+  AreaChart,
   Circle,
   Flame,
   TreePine,
@@ -23,25 +23,15 @@ import {
 import { TreeView } from '@/components/tree-view';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { useCanvasStore } from '@/store/canvasStore';
+import DeleteSubplotDialog from './DeleteSubplotDialog';
 
 // 图表类型的中文名称
 const chartTypeNames: Record<string, string> = {
   bar: '柱状图',
   line: '折线图',
   pie: '饼图',
-  scatter: '散点图',
+  area: '面积图',
   bubble: '气泡图',
   hist: '直方图',
   heatmap: '热力图',
@@ -50,7 +40,7 @@ const chartTypeNames: Record<string, string> = {
   funnel: '漏斗图',
   venn2: '韦恩图(2)',
   venn3: '韦恩图(3)',
-  boxdot: '箱线图',
+  boxdot: '箱型图',
   stripdot: '算珠图',
   word_cloud: '词云',
   table: '高级表格',
@@ -61,7 +51,7 @@ const chartTypeIcons: Record<string, React.ComponentType<any>> = {
   bar: BarChart3,
   line: LineChart,
   pie: PieChart,
-  scatter: ScatterChart,
+  area: AreaChart,
   bubble: Circle,
   hist: BarChart3,
   heatmap: Flame,
@@ -150,34 +140,19 @@ export default function CanvasTreeView({
                 onClick: () => router.push(`/subplot/${subplot.subplotId}`),
                 // 添加删除按钮
                 actions: (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
+                  <DeleteSubplotDialog
+                    subplot={subplot}
+                    trigger={
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                        onClick={(e) => e.stopPropagation()}
                       >
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>确认删除子图</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          此操作将删除子图 {subplot.axIndex + 1} ({chartTypeNames[subplot.chartType]}) 及其所有数据和配置，无法撤销。确定要继续吗？
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={() => handleDeleteSubplot(subplot.subplotId, subplot.axIndex)}
-                        >
-                          确认删除
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                    }
+                    onConfirm={handleDeleteSubplot}
+                  />
                 ),
               };
             })

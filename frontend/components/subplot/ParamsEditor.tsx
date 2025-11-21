@@ -3,6 +3,8 @@
 import React from 'react';
 import { useCanvasStore } from '@/store/canvasStore';
 import { SubplotConfig } from '@/types/canvas';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import BubbleParamsEditor from './params/BubbleParamsEditor';
 
 interface Props {
@@ -22,25 +24,21 @@ function BarParams({ subplot }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
+        <Checkbox
           id="stacked"
           checked={subplot.params.stacked ?? true}
-          onChange={(e) => updateParam('stacked', e.target.checked)}
-          className="rounded"
+          onCheckedChange={(checked) => updateParam('stacked', checked)}
         />
-        <label htmlFor="stacked" className="text-sm">堆叠显示</label>
+        <Label htmlFor="stacked" className="text-sm cursor-pointer">堆叠显示</Label>
       </div>
       
       <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
+        <Checkbox
           id="show_label"
           checked={subplot.params.show_label ?? true}
-          onChange={(e) => updateParam('show_label', e.target.checked)}
-          className="rounded"
+          onCheckedChange={(checked) => updateParam('show_label', checked)}
         />
-        <label htmlFor="show_label" className="text-sm">显示数值标签</label>
+        <Label htmlFor="show_label" className="text-sm cursor-pointer">显示数值标签</Label>
       </div>
       
       <div className="space-y-1">
@@ -101,14 +99,12 @@ function LineParams({ subplot }: Props) {
       </div>
       
       <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
+        <Checkbox
           id="show_label_line"
           checked={subplot.params.show_label ?? false}
-          onChange={(e) => updateParam('show_label', e.target.checked)}
-          className="rounded"
+          onCheckedChange={(checked) => updateParam('show_label', checked)}
         />
-        <label htmlFor="show_label_line" className="text-sm">显示数值标签</label>
+        <Label htmlFor="show_label_line" className="text-sm cursor-pointer">显示数值标签</Label>
       </div>
     </div>
   );
@@ -127,14 +123,12 @@ function PieParams({ subplot }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
+        <Checkbox
           id="show_label_pie"
           checked={subplot.params.show_label ?? true}
-          onChange={(e) => updateParam('show_label', e.target.checked)}
-          className="rounded"
+          onCheckedChange={(checked) => updateParam('show_label', checked)}
         />
-        <label htmlFor="show_label_pie" className="text-sm">显示标签</label>
+        <Label htmlFor="show_label_pie" className="text-sm cursor-pointer">显示标签</Label>
       </div>
       
       <div className="space-y-1">
@@ -182,70 +176,12 @@ function AreaParams({ subplot }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
+        <Checkbox
           id="stacked_area"
           checked={subplot.params.stacked ?? true}
-          onChange={(e) => updateParam('stacked', e.target.checked)}
-          className="rounded"
+          onCheckedChange={(checked) => updateParam('stacked', checked)}
         />
-        <label htmlFor="stacked_area" className="text-sm">堆叠显示</label>
-      </div>
-      
-      <div className="space-y-1">
-        <label className="text-sm">透明度</label>
-        <input
-          type="number"
-          value={subplot.params.alpha ?? 0.6}
-          onChange={(e) => updateParam('alpha', parseFloat(e.target.value))}
-          min="0"
-          max="1"
-          step="0.1"
-          className="w-full px-2 py-1 border rounded text-sm"
-        />
-      </div>
-    </div>
-  );
-}
-
-// 散点图参数
-function ScatterParams({ subplot }: Props) {
-  const { updateSubplot } = useCanvasStore();
-  
-  const updateParam = (key: string, value: any) => {
-    updateSubplot(subplot.subplotId, {
-      params: { ...subplot.params, [key]: value },
-    });
-  };
-  
-  return (
-    <div className="space-y-3">
-      <div className="space-y-1">
-        <label className="text-sm">点大小</label>
-        <input
-          type="number"
-          value={subplot.params.s ?? 50}
-          onChange={(e) => updateParam('s', parseInt(e.target.value))}
-          min="10"
-          max="200"
-          step="10"
-          className="w-full px-2 py-1 border rounded text-sm"
-        />
-      </div>
-      
-      <div className="space-y-1">
-        <label className="text-sm">标记样式</label>
-        <select
-          value={subplot.params.marker ?? 'o'}
-          onChange={(e) => updateParam('marker', e.target.value)}
-          className="w-full px-2 py-1 border rounded text-sm"
-        >
-          <option value="o">圆形 (o)</option>
-          <option value="s">方形 (s)</option>
-          <option value="^">三角形 (^)</option>
-          <option value="D">菱形 (D)</option>
-          <option value="*">星形 (*)</option>
-        </select>
+        <Label htmlFor="stacked_area" className="text-sm cursor-pointer">堆叠显示</Label>
       </div>
       
       <div className="space-y-1">
@@ -275,8 +211,6 @@ export default function ParamsEditor({ subplot }: Props) {
         return <PieParams subplot={subplot} />;
       case 'area':
         return <AreaParams subplot={subplot} />;
-      case 'scatter':
-        return <ScatterParams subplot={subplot} />;
       case 'bubble':
         return <BubbleParamsEditor subplot={subplot} />;
       default:

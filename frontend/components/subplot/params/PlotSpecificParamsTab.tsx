@@ -17,7 +17,6 @@ function getChartTypeName(kind: string): string {
     bar: '柱状图',
     line: '折线图',
     pie: '饼图',
-    scatter: '散点图',
     heatmap: '热力图',
     treemap: '矩形树图',
     waffle: '华夫饼图',

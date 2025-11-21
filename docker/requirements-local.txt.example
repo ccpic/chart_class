@@ -1,0 +1,31 @@
+# 本地 Python 包配置示例
+# 
+# 使用方法：
+# 1. 复制此文件为 requirements-local.txt
+# 2. 取消注释需要使用的本地包
+# 3. 在 Dockerfile 中会先安装本地包，再安装其他依赖
+#
+# 本地包支持三种方式：
+# - Wheel 文件: file:///app/docker/local_packages/package.whl
+# - 源码目录: file:///app/docker/local_packages/package (包含 setup.py 或 pyproject.toml)
+# - Git 仓库: git+https://github.com/user/repo.git@branch
+
+# 示例 1: 使用本地 wheel 文件（推荐，最快）
+# 将 wheel 文件放在 docker/local_packages/ 目录下
+# file:///app/docker/local_packages/matplotlib-3.10.5-custom.whl
+
+# 示例 2: 使用本地源码目录（开发时使用）
+# 将修改过的包源码放在 docker/local_packages/ 目录下
+# file:///app/docker/local_packages/matplotlib
+
+# 示例 3: 使用可编辑安装（推荐用于开发，修改代码后无需重新构建镜像）
+# -e file:///app/docker/local_packages/matplotlib
+
+# 示例 4: 使用 Git 仓库（如果包在 Git 中）
+# git+https://github.com/your-username/matplotlib.git@your-branch
+
+# 注意：
+# 1. 路径是容器内的路径，不是主机路径
+# 2. 在 Dockerfile 中会先复制本地包到容器，所以路径是 /app/docker/local_packages/
+# 3. 如果本地包和标准依赖中有同名包，本地包会优先使用
+# 4. 多个本地包可以写多行，每行一个

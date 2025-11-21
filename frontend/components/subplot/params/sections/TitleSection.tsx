@@ -1,5 +1,6 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { PlotStyle } from '@/types/plotStyle';
 
@@ -43,6 +44,30 @@ export function TitleSection({ style, onChange }: TitleSectionProps) {
         </div>
         <p className="text-xs text-gray-500">
           推荐字号：12-24
+        </p>
+      </div>
+
+      {/* 标题垂直位置 */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="title-y" className="text-xs font-medium text-gray-700">
+            标题位置（上下）
+          </Label>
+          <span className="text-xs text-gray-600 font-mono">
+            {(style.title_y || 1.0).toFixed(2)}
+          </span>
+        </div>
+        <Slider
+          id="title-y"
+          value={[style.title_y || 1.0]}
+          onValueChange={(values) => onChange({ title_y: values[0] })}
+          min={0.8}
+          max={1.2}
+          step={0.01}
+          className="w-full"
+        />
+        <p className="text-xs text-gray-500">
+          向左拖动降低标题，向右拖动提高标题
         </p>
       </div>
     </div>

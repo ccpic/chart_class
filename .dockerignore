@@ -7,7 +7,11 @@
 Dockerfile*
 docker-compose*.yml
 .dockerignore
-docker/
+docker/*
+!docker/requirements*.txt
+!docker/fonts/
+!docker/local_packages/
+!docker/export-venv-requirements.*
 
 # Python
 __pycache__

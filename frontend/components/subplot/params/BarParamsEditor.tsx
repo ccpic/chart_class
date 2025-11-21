@@ -1,14 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useCanvasStore } from '@/store/canvasStore';
 import { SubplotConfig } from '@/types/canvas';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import NumberFormatEditor from '@/components/ui/number-format-editor';
 
 interface Props {
   subplot: SubplotConfig;
@@ -39,13 +40,32 @@ export default function BarParamsEditor({ subplot }: Props) {
   const showAvgLine = params.show_avg_line ?? false;
   const labelThreshold = params.label_threshold ?? 0.02;
   const periodChange = params.period_change ?? 1;
+  const barWidth = params.bar_width ?? 0.8;
+  const fmtAbs = params.fmt_abs ?? '{:,.0f}';
+  const fmtShare = params.fmt_share ?? '{:.1%}';
+  const fmtGr = params.fmt_gr ?? '{:+.1%}';
+
+  // 获取数据行数，用于设置 period_change 的最大值
+  const dataRowCount = subplot.data?.data?.length || 1;
+  const maxPeriodChange = Math.max(1, dataRowCount - 1);
+  
+  // 确保 periodChange 不超过最大值（用于显示）
+  const validPeriodChange = Math.min(periodChange, maxPeriodChange);
+  
+  // 如果当前值超过最大值，自动调整
+  useEffect(() => {
+    if (periodChange > maxPeriodChange && maxPeriodChange > 0) {
+      updateParam('period_change', maxPeriodChange);
+    }
+  }, [dataRowCount, maxPeriodChange]);
 
   return (
     <div className="space-y-4">
       <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="basic" className="text-xs">基础设置</TabsTrigger>
           <TabsTrigger value="label" className="text-xs">标签选项</TabsTrigger>
+          <TabsTrigger value="growth" className="text-xs">增长率</TabsTrigger>
           <TabsTrigger value="advanced" className="text-xs">高级功能</TabsTrigger>
         </TabsList>
 
@@ -70,25 +90,30 @@ export default function BarParamsEditor({ subplot }: Props) {
           </div>
 
           <div className="space-y-3 pt-3 border-t">
-            <h4 className="text-sm font-semibold text-gray-800">增长率设置</h4>
+            <h4 className="text-sm font-semibold text-gray-800">柱宽设置</h4>
             
             <div className="space-y-2">
-              <Label htmlFor="period_change" className="text-sm">
-                同比期数 (period_change)
-              </Label>
-              <Input
-                id="period_change"
-                type="number"
-                min={1}
-                value={periodChange}
-                onChange={(e) => updateParam('period_change', parseInt(e.target.value) || 1)}
-                className="h-8 text-sm"
+              <div className="flex items-center justify-between">
+                <Label htmlFor="bar_width" className="text-sm">
+                  柱宽 (bar_width)
+                </Label>
+                <span className="text-xs text-gray-500">{barWidth.toFixed(1)}</span>
+              </div>
+              <Slider
+                id="bar_width"
+                min={0.1}
+                max={1.0}
+                step={0.1}
+                value={[barWidth]}
+                onValueChange={(value) => updateParam('bar_width', value[0])}
+                className="w-full"
               />
               <p className="text-xs text-gray-500">
-                计算增长率时对比的期数（1=同比上期，4=同比去年同期）
+                控制柱状图的宽度（0.1-1.0，默认0.8）
               </p>
             </div>
           </div>
+
         </TabsContent>
 
         {/* Tab 2: 标签选项 */}
@@ -110,27 +135,19 @@ export default function BarParamsEditor({ subplot }: Props) {
             {showLabel && (
               <>
                 <div className="space-y-2 pl-6">
-                  <Label htmlFor="label_formatter" className="text-sm">
-                    标签格式 (label_formatter)
+                  <Label htmlFor="label_formatter" className="text-sm font-medium">
+                    标签格式化 <span className="text-gray-400">(Shift+Enter换行)</span>
                   </Label>
-                  <Select
+                  <Textarea
+                    id="label_formatter"
                     value={labelFormatter}
-                    onValueChange={(value) => updateParam('label_formatter', value)}
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="{abs}">绝对值</SelectItem>
-                      <SelectItem value="{share}">占比</SelectItem>
-                      <SelectItem value="{gr}">增长率</SelectItem>
-                      <SelectItem value="{abs}\n{share}">绝对值 + 占比</SelectItem>
-                      <SelectItem value="{abs}\n{gr}">绝对值 + 增长率</SelectItem>
-                      <SelectItem value="{share}\n{gr}">占比 + 增长率</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => updateParam('label_formatter', e.target.value)}
+                    placeholder="{abs}, {share}, {gr}, {index}, {col}"
+                    className="min-h-[32px] text-sm resize-y"
+                    rows={1}
+                  />
                   <p className="text-xs text-gray-500">
-                    支持占位符：{'{abs}'} (绝对值), {'{share}'} (占比), {'{gr}'} (增长率), {'{index}'} (索引), {'{col}'} (列名)
+                    支持: {'{abs}'} (绝对值), {'{share}'} (占比), {'{gr}'} (增长率), {'{index}'} (索引), {'{col}'} (列名)
                   </p>
                 </div>
 
@@ -159,6 +176,45 @@ export default function BarParamsEditor({ subplot }: Props) {
           </div>
 
           <div className="space-y-3 pt-3 border-t">
+            <h4 className="text-sm font-semibold text-gray-800">标签格式设置</h4>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs text-gray-500 mb-2">
+                  用于格式化 {'{abs}'} 占位符
+                </p>
+                <NumberFormatEditor
+                  value={fmtAbs}
+                  onChange={(format) => updateParam('fmt_abs', format)}
+                  label="绝对值格式 (fmt_abs)"
+                />
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500 mb-2">
+                  用于格式化 {'{share}'} 占位符（通常使用百分比格式）
+                </p>
+                <NumberFormatEditor
+                  value={fmtShare}
+                  onChange={(format) => updateParam('fmt_share', format)}
+                  label="占比格式 (fmt_share)"
+                />
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500 mb-2">
+                  用于格式化 {'{gr}'} 占位符（通常使用带正负号的百分比格式）
+                </p>
+                <NumberFormatEditor
+                  value={fmtGr}
+                  onChange={(format) => updateParam('fmt_gr', format)}
+                  label="增长率格式 (fmt_gr)"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-3 border-t">
             <h4 className="text-sm font-semibold text-gray-800">总计标签</h4>
             
             <div className="flex items-center space-x-2">
@@ -177,8 +233,8 @@ export default function BarParamsEditor({ subplot }: Props) {
           </div>
         </TabsContent>
 
-        {/* Tab 3: 高级功能 */}
-        <TabsContent value="advanced" className="space-y-4 mt-4">
+        {/* Tab 3: 增长率 */}
+        <TabsContent value="growth" className="space-y-4 mt-4">
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-800">增长率显示</h4>
             
@@ -212,6 +268,34 @@ export default function BarParamsEditor({ subplot }: Props) {
           </div>
 
           <div className="space-y-3 pt-3 border-t">
+            <h4 className="text-sm font-semibold text-gray-800">增长率设置</h4>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="period_change" className="text-sm">
+                  同比期数 (period_change)
+                </Label>
+                <span className="text-xs text-gray-500">{validPeriodChange}</span>
+              </div>
+              <Slider
+                id="period_change"
+                min={1}
+                max={maxPeriodChange}
+                step={1}
+                value={[validPeriodChange]}
+                onValueChange={(value) => updateParam('period_change', value[0])}
+                className="w-full"
+              />
+              <p className="text-xs text-gray-500">
+                计算增长率时对比的期数（1=同比上期，4=同比去年同期，最大{maxPeriodChange}）
+              </p>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Tab 4: 高级功能 */}
+        <TabsContent value="advanced" className="space-y-4 mt-4">
+          <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-800">辅助线</h4>
             
             <div className="flex items-center space-x-2">
@@ -240,12 +324,6 @@ export default function BarParamsEditor({ subplot }: Props) {
             </div>
             <p className="text-xs text-gray-500">
               在柱状图外显示总体表现的虚线框
-            </p>
-          </div>
-
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-xs text-blue-700">
-              💡 提示：增长率和平均线功能适用于时间序列数据
             </p>
           </div>
         </TabsContent>

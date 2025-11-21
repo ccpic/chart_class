@@ -8,10 +8,10 @@ export type ChartType =
   | "line"
   | "pie"
   | "area"
-  | "scatter"
   | "bubble"
   | "table"
-  | "hist"; // 直方图
+  | "hist" // 直方图
+  | "boxdot"; // 箱型图
 
 export interface ChartData {
   columns: string[];

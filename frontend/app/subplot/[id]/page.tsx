@@ -5,21 +5,11 @@ import { Trash2 } from 'lucide-react';
 import { useCanvasStore } from '@/store/canvasStore';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import MainContent from '@/components/layout/MainContent';
 import RightPanel from '@/components/layout/RightPanel';
 import SubplotTabs from '@/components/subplot/SubplotTabs';
 import SubplotParams from '@/components/subplot/SubplotParams';
+import DeleteSubplotDialog from '@/components/canvas/DeleteSubplotDialog';
 
 export default function SubplotPage() {
   const params = useParams();
@@ -30,12 +20,12 @@ export default function SubplotPage() {
   const { subplots, deleteSubplot } = useCanvasStore();
   const subplot = subplots.find((s) => s.subplotId === subplotId);
 
-  const handleDelete = () => {
+  const handleDelete = (subplotId: string, axIndex: number) => {
     deleteSubplot(subplotId);
     router.push('/canvas');
     toast({
       title: '删除成功',
-      description: '子图已删除',
+      description: `子图 ${axIndex + 1} 已删除`,
     });
   };
 
@@ -72,8 +62,9 @@ export default function SubplotPage() {
               </div>
               
               {/* 删除按钮 */}
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
+              <DeleteSubplotDialog
+                subplot={subplot}
+                trigger={
                   <Button
                     variant="outline"
                     size="sm"
@@ -82,22 +73,10 @@ export default function SubplotPage() {
                     <Trash2 className="h-4 w-4" />
                     <span>删除子图</span>
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>确认删除子图</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      此操作将删除子图 {subplot.axIndex + 1} 及其所有数据和配置，无法撤销。确定要继续吗？
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>取消</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>
-                      确认删除
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                }
+                onConfirm={handleDelete}
+                showChartType={false}
+              />
             </div>
           </div>
 

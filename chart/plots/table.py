@@ -118,7 +118,21 @@ class PlotTable(Plot):
             col_label_divider_kw={"linewidth": 1, "linestyle": "-"},
             col_label_cell_kw={"height": 2},
             column_border_kw={"linewidth": 1, "linestyle": "-"},
-        ).autoset_fontcolors(colnames=[df.index.name] + list(df.columns))
+        )
+        
+        # 检查是否有列定义了 text_cmap，如果有则排除这些列，避免 autoset_fontcolors 覆盖
+        colnames_with_text_cmap = []
+        if col_defs:
+            for col_def in col_defs:
+                # ColumnDefinition 对象，检查是否有 text_cmap 属性
+                if hasattr(col_def, 'text_cmap') and col_def.text_cmap is not None:
+                    colnames_with_text_cmap.append(col_def.name)
+        
+        # 只对没有 text_cmap 的列调用 autoset_fontcolors
+        all_colnames = [df.index.name] + list(df.columns)
+        colnames_to_autoset = [name for name in all_colnames if name not in colnames_with_text_cmap]
+        if colnames_to_autoset:
+            self.table.autoset_fontcolors(colnames=colnames_to_autoset)
 
         # 指定行背景色
         if kwargs.get("row_facecolors") is not None:

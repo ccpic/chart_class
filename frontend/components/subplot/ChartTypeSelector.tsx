@@ -8,9 +8,9 @@ import {
   LineChart,
   PieChart,
   AreaChart,
-  ScatterChart,
   Table2,
   BarChart4,
+  Box,
 } from 'lucide-react';
 
 const CHART_TYPES: { value: ChartType; label: string; icon: React.ReactNode }[] = [
@@ -18,8 +18,8 @@ const CHART_TYPES: { value: ChartType; label: string; icon: React.ReactNode }[] 
   { value: 'line', label: '折线图', icon: <LineChart className="h-5 w-5" /> },
   { value: 'pie', label: '饼图', icon: <PieChart className="h-5 w-5" /> },
   { value: 'area', label: '面积图', icon: <AreaChart className="h-5 w-5" /> },
-  { value: 'scatter', label: '散点图', icon: <ScatterChart className="h-5 w-5" /> },
   { value: 'hist', label: '直方图', icon: <BarChart4 className="h-5 w-5" /> },
+  { value: 'boxdot', label: '箱型图', icon: <Box className="h-5 w-5" /> },
   { value: 'table', label: '高级表格', icon: <Table2 className="h-5 w-5" /> },
 ];
 

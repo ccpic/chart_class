@@ -4,6 +4,10 @@ import BubbleParamsEditor from './BubbleParamsEditor';
 import TableParamsEditor from './TableParamsEditor';
 import HistParamsEditor from './HistParamsEditor';
 import BarParamsEditor from './BarParamsEditor';
+import LineParamsEditor from './LineParamsEditor';
+import AreaParamsEditor from './AreaParamsEditor';
+import PieParamsEditor from './PieParamsEditor';
+import BoxdotParamsEditor from './BoxdotParamsEditor';
 import type { SubplotConfig } from '@/types/canvas';
 
 interface PlotSpecificParamsRouterProps {
@@ -21,7 +25,7 @@ function getChartTypeName(kind: string): string {
     bar: '柱状图',
     line: '折线图',
     pie: '饼图',
-    scatter: '散点图',
+    boxdot: '箱型图',
     heatmap: '热力图',
     treemap: '矩形树图',
     waffle: '华夫饼图',
@@ -56,6 +60,26 @@ export function PlotSpecificParamsRouter({ subplot }: PlotSpecificParamsRouterPr
   // 柱状图
   if (subplot.chartType === 'bar') {
     return <BarParamsEditor subplot={subplot} />;
+  }
+
+  // 折线图
+  if (subplot.chartType === 'line') {
+    return <LineParamsEditor subplot={subplot} />;
+  }
+
+  // 面积图
+  if (subplot.chartType === 'area') {
+    return <AreaParamsEditor subplot={subplot} />;
+  }
+
+  // 饼图
+  if (subplot.chartType === 'pie') {
+    return <PieParamsEditor subplot={subplot} />;
+  }
+
+  // 箱型图
+  if (subplot.chartType === 'boxdot') {
+    return <BoxdotParamsEditor subplot={subplot} />;
   }
 
   // 其他图表类型显示开发中提示

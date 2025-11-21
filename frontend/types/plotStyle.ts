@@ -19,6 +19,7 @@ export interface PlotStyle {
   // ===== 标题 =====
   title?: string;
   title_fontsize?: number;
+  title_y?: number; // 标题垂直位置 (0.0-1.2, 默认1.0)
   title_loc?: "left" | "center" | "right";
 
   // ===== 网格 =====

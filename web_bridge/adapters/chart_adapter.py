@@ -12,6 +12,15 @@ from typing import Dict, Any, List
 # 导入现有库（只读引用）
 from chart import GridFigure
 
+# 导入颜色管理器
+try:
+    from chart.color.color_manager import ColorManager
+    _color_manager = ColorManager()
+    _USE_COLOR_MANAGER = True
+except ImportError:
+    _color_manager = None
+    _USE_COLOR_MANAGER = False
+
 
 class WebChartAdapter:
     """Web 图表适配器 - 支持单图和多子图渲染"""
@@ -46,7 +55,19 @@ class WebChartAdapter:
             # 移除 None 值和空字符串，避免传递无效参数
             style = {k: v for k, v in style.items() if v is not None and v != ""}
 
-            # 2. 创建 GridFigure
+            # 2. 从 ColorManager 加载最新的颜色字典
+            if _USE_COLOR_MANAGER and _color_manager:
+                # 获取所有颜色映射，优先使用 named_color（如果存在），否则使用 color（HEX）
+                color_dict = {}
+                for name, mapping in _color_manager._colors.items():
+                    # 优先使用 named_color（matplotlib 命名颜色），否则使用 color（HEX）
+                    color_dict[name] = mapping.named_color if mapping.named_color else mapping.color
+            else:
+                # 如果 ColorManager 不可用，使用默认颜色字典
+                from chart.color.color import COLOR_DICT
+                color_dict = COLOR_DICT
+
+            # 3. 创建 GridFigure
             f = plt.figure(
                 FigureClass=GridFigure,
                 width=canvas_config.get("width", 15),
@@ -59,12 +80,13 @@ class WebChartAdapter:
                 height_ratios=canvas_config.get("height_ratios"),
                 fontsize=canvas_config.get("fontsize", 14),
                 style=style,
+                color_dict=color_dict,  # 传递颜色字典
             )
 
-            # 3. 按 ax_index 排序子图，确保顺序正确
+            # 4. 按 ax_index 排序子图，确保顺序正确
             sorted_subplots = sorted(subplots, key=lambda x: x["ax_index"])
 
-            # 4. 循环渲染每个子图
+            # 5. 循环渲染每个子图
             for subplot in sorted_subplots:
                 try:
                     # 转换数据为 DataFrame
@@ -88,6 +110,20 @@ class WebChartAdapter:
                     # 获取图表类型和参数
                     chart_type = subplot["chart_type"]
                     params = subplot["params"].copy()
+
+                    # 统一处理 whis 参数（用于箱型图等）
+                    if "whis" in params:
+                        whis_value = params["whis"]
+                        if isinstance(whis_value, str):
+                            if whis_value.lower() == "inf" or whis_value == "∞":
+                                params["whis"] = np.inf
+                            else:
+                                try:
+                                    params["whis"] = float(whis_value)
+                                except ValueError:
+                                    params.pop("whis", None)
+                        elif whis_value is None:
+                            params.pop("whis", None)
                     ax_index = subplot["ax_index"]
 
                     # 特殊处理：table 类型需要转换 col_defs
@@ -118,6 +154,7 @@ class WebChartAdapter:
                                 }
 
                                 # 处理 formatter_config：转换为 partial(format_value, ...)
+                                col_formatter = None  # 保存列定义的 formatter，供 plot_kw 使用
                                 if "formatter_config" in clean_def:
                                     fmt_cfg = clean_def.pop("formatter_config")
                                     fmt = fmt_cfg.get("fmt", "{:,.0f}")
@@ -127,24 +164,26 @@ class WebChartAdapter:
                                     empty_zero = fmt_cfg.get("empty_zero", True)
                                     empty_nan = fmt_cfg.get("empty_nan", True)
 
-                                    clean_def["formatter"] = partial(
+                                    col_formatter = partial(
                                         format_value,
                                         fmt=fmt,
                                         unit=unit,
                                         empty_zero=empty_zero,
                                         empty_nan=empty_nan,
                                     )
+                                    clean_def["formatter"] = col_formatter
                                 # 向后兼容：如果只有 formatter 字符串，也转换为 format_value
                                 elif "formatter" in clean_def and isinstance(
                                     clean_def["formatter"], str
                                 ):
                                     fmt_str = clean_def["formatter"]
-                                    clean_def["formatter"] = partial(
+                                    col_formatter = partial(
                                         format_value,
                                         fmt=fmt_str,
                                         empty_zero=True,
                                         empty_nan=True,
                                     )
+                                    clean_def["formatter"] = col_formatter
 
                                 # 转换 plot_fn 字符串为实际函数
                                 if "plot_fn" in clean_def and isinstance(
@@ -157,21 +196,24 @@ class WebChartAdapter:
                                         # 如果不支持的类型，移除该字段
                                         clean_def.pop("plot_fn", None)
 
-                                # 处理 plot_kw.formatter：也转换为 format_value 函数
+                                # 处理 plot_kw.formatter：优先使用列定义的 formatter_config
                                 if "plot_kw" in clean_def and isinstance(
                                     clean_def["plot_kw"], dict
                                 ):
                                     plot_kw = clean_def["plot_kw"]
-                                    if "formatter" in plot_kw and isinstance(
-                                        plot_kw["formatter"], str
-                                    ):
-                                        fmt_str = plot_kw["formatter"]
-                                        plot_kw["formatter"] = partial(
-                                            format_value,
-                                            fmt=fmt_str,
-                                            empty_zero=True,
-                                            empty_nan=True,
-                                        )
+                                    if "formatter" in plot_kw:
+                                        # 如果列定义有 formatter_config，使用它的配置（包括 unit）
+                                        if col_formatter is not None:
+                                            plot_kw["formatter"] = col_formatter
+                                        # 否则，如果 plot_kw.formatter 是字符串，转换为 format_value
+                                        elif isinstance(plot_kw["formatter"], str):
+                                            fmt_str = plot_kw["formatter"]
+                                            plot_kw["formatter"] = partial(
+                                                format_value,
+                                                fmt=fmt_str,
+                                                empty_zero=True,
+                                                empty_nan=True,
+                                            )
 
                                 # 处理 cmap_config：支持数值映射和分类映射
                                 if "cmap_config" in clean_def:
@@ -285,6 +327,35 @@ class WebChartAdapter:
                                                 str(x), default_color
                                             )
                                         )
+
+                                    elif mode == "negative_red":
+                                        # 负值标红：负数值显示红色，非负数值显示默认颜色
+                                        # 注意：分类映射返回十六进制字符串，数值映射返回 rgba 元组
+                                        # 为了与分类映射保持一致，我们也返回十六进制字符串
+                                        def negative_red_mapper(x):
+                                            try:
+                                                # 处理各种可能的输入类型
+                                                if isinstance(x, (int, float, np.number)):
+                                                    val = float(x)
+                                                elif isinstance(x, str):
+                                                    # 如果是字符串，尝试解析（去除千位符、空格、百分号等）
+                                                    cleaned = x.replace(',', '').replace(' ', '').replace('%', '').strip()
+                                                    if not cleaned:
+                                                        return "#000000"  # 黑色
+                                                    val = float(cleaned)
+                                                else:
+                                                    # 其他类型，尝试直接转换
+                                                    val = float(x)
+                                                
+                                                if val < 0:
+                                                    return "#FF0000"  # 红色
+                                                else:
+                                                    return "#000000"  # 黑色（默认）
+                                            except (ValueError, TypeError):
+                                                # 如果无法转换为数值，返回默认颜色
+                                                return "#000000"  # 黑色
+                                        
+                                        clean_def["text_cmap"] = negative_red_mapper
 
                                     # 向后兼容旧格式
                                     elif "cmap" in text_cmap_cfg:
@@ -452,7 +523,7 @@ class WebChartAdapter:
 
     def get_supported_chart_types(self) -> List[str]:
         """返回支持的图表类型列表"""
-        return ["bar", "line", "pie", "area", "scatter", "bubble", "table", "hist"]
+        return ["bar", "line", "pie", "area", "bubble", "table", "hist", "boxdot"]
 
     def get_default_params(self, chart_type: str) -> Dict[str, Any]:
         """
@@ -462,10 +533,35 @@ class WebChartAdapter:
         """
         defaults = {
             "bar": {"stacked": True, "show_label": True, "label_formatter": "{abs}"},
-            "line": {"marker": "o", "show_label": False, "linewidth": 2},
-            "pie": {"show_label": True, "autopct": "%1.1f%%"},
-            "area": {"stacked": True, "alpha": 0.7},
-            "scatter": {"marker": "o", "size": 50},
+            "line": {
+                "marker": "o",
+                "show_label": [],
+                "linewidth": 2,
+                "endpoint_label_only": False,
+                "adjust_labels": True,
+            },
+            "pie": {
+                "size": None,
+                "label_formatter": "{abs}",
+                "donut": False,
+                "donut_title": None,
+                "pct_distance": 0.8,
+                "start_angle": 90,
+                "counter_clock": False,
+                "line_width": 1,
+                "edgecolor": "white",
+                "label_fontsize": None,  # 使用全局字体大小
+                "circle_distance": 0.7,
+                "fmt_abs": None,
+                "fmt_share": None,
+            },
+            "area": {
+                "stacked": True,
+                "alpha": 1,
+                "show_label": [],
+                "endpoint_label_only": False,
+                "linewidth": 2,
+            },
             "bubble": {
                 "alpha": 0.6,
                 "bubble_scale": 1,
@@ -498,6 +594,14 @@ class WebChartAdapter:
                 "color_kde": "darkorange",
                 "color_mean": "purple",
                 "color_median": "crimson",
+            },
+            "boxdot": {
+                "x": None,
+                "y": None,
+                "label_limit": 0,
+                "label_threshold": 0,
+                "show_stats": True,
+                "order": None,
             },
         }
         return defaults.get(chart_type, {})

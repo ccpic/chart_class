@@ -1,5 +1,8 @@
 'use client';
 
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+
 interface Params {
   stacked: boolean;
   show_label: boolean;
@@ -19,25 +22,23 @@ export default function ParamControls({ params, onChange }: Props) {
   return (
     <div className="space-y-4">
       {/* 堆叠显示 */}
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium">堆叠显示</label>
-        <input
-          type="checkbox"
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="stacked"
           checked={params.stacked}
-          onChange={(e) => updateParam('stacked', e.target.checked)}
-          className="w-5 h-5"
+          onCheckedChange={(checked) => updateParam('stacked', checked)}
         />
+        <Label htmlFor="stacked" className="text-sm font-medium cursor-pointer">堆叠显示</Label>
       </div>
 
       {/* 显示标签 */}
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium">显示标签</label>
-        <input
-          type="checkbox"
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="show_label"
           checked={params.show_label}
-          onChange={(e) => updateParam('show_label', e.target.checked)}
-          className="w-5 h-5"
+          onCheckedChange={(checked) => updateParam('show_label', checked)}
         />
+        <Label htmlFor="show_label" className="text-sm font-medium cursor-pointer">显示标签</Label>
       </div>
 
       {/* 标签格式 */}
