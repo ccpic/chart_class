@@ -10,12 +10,14 @@ interface ChartStore {
   isLoading: boolean;
 
   loadCharts: () => Promise<void>;
-  saveCurrentAsChart: (name: string, description?: string) => Promise<void>;
+  saveCurrentAsChart: (name: string, tags?: string[]) => Promise<void>;
   updateCurrentChart: () => Promise<void>; // 更新当前图表
-  saveAs: (name: string, description?: string) => Promise<void>; // 另存为新图表
+  saveAs: (name: string, tags?: string[]) => Promise<void>; // 另存为新图表
   loadChart: (id: string) => Promise<void>;
   deleteChart: (id: string) => Promise<void>;
   clearCurrentChartId: () => void; // 清除当前图表ID（新建时）
+  getAllTags: () => Promise<string[]>; // 获取所有唯一tag列表
+  filterChartsByTags: (tags: string[]) => Promise<SavedChart[]>; // 按tag筛选图表
 }
 
 export const useChartStore = create<ChartStore>((set, get) => ({
@@ -35,13 +37,13 @@ export const useChartStore = create<ChartStore>((set, get) => ({
     }
   },
 
-  saveCurrentAsChart: async (name, description) => {
+  saveCurrentAsChart: async (name, tags) => {
     const canvasState = useCanvasStore.getState();
     const now = Date.now();
     const chart: SavedChart = {
       id: crypto.randomUUID(),
       name,
-      description,
+      tags: tags || [],
       createdAt: now,
       updatedAt: now,
       canvas: canvasState.canvas,
@@ -68,18 +70,22 @@ export const useChartStore = create<ChartStore>((set, get) => ({
       subplots: canvasState.subplots,
     };
 
-    await chartDB.saveChart(updatedChart);
-    set({ currentChart: updatedChart });
+    const savedChart = await chartDB.saveChart(updatedChart);
+    // 如果降级为创建新图表，更新 currentChartId
+    set({
+      currentChart: savedChart,
+      currentChartId: savedChart.id,
+    });
     await get().loadCharts();
   },
 
-  saveAs: async (name, description) => {
+  saveAs: async (name, tags) => {
     const canvasState = useCanvasStore.getState();
     const now = Date.now();
     const chart: SavedChart = {
       id: crypto.randomUUID(),
       name,
-      description,
+      tags: tags || [],
       createdAt: now,
       updatedAt: now,
       canvas: canvasState.canvas,
@@ -112,5 +118,13 @@ export const useChartStore = create<ChartStore>((set, get) => ({
 
   clearCurrentChartId: () => {
     set({ currentChartId: null, currentChart: null });
+  },
+
+  getAllTags: async () => {
+    return await chartDB.getAllTags();
+  },
+
+  filterChartsByTags: async (tags) => {
+    return await chartDB.filterChartsByTags(tags);
   },
 }));

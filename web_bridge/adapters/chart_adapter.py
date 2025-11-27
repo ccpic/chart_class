@@ -7,7 +7,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from io import BytesIO
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+from matplotlib.colors import ListedColormap
 
 # 导入现有库（只读引用）
 from chart import GridFigure
@@ -15,6 +16,7 @@ from chart import GridFigure
 # 导入颜色管理器
 try:
     from chart.color.color_manager import ColorManager
+
     _color_manager = ColorManager()
     _USE_COLOR_MANAGER = True
 except ImportError:
@@ -26,7 +28,11 @@ class WebChartAdapter:
     """Web 图表适配器 - 支持单图和多子图渲染"""
 
     def render_canvas(
-        self, canvas_config: Dict[str, Any], subplots: List[Dict[str, Any]]
+        self,
+        canvas_config: Dict[str, Any],
+        subplots: List[Dict[str, Any]],
+        color_dict: Optional[Dict[str, str]] = None,
+        palette: Optional[List[str]] = None,
     ) -> bytes:
         """
         渲染多子图画布
@@ -55,17 +61,25 @@ class WebChartAdapter:
             # 移除 None 值和空字符串，避免传递无效参数
             style = {k: v for k, v in style.items() if v is not None and v != ""}
 
-            # 2. 从 ColorManager 加载最新的颜色字典
-            if _USE_COLOR_MANAGER and _color_manager:
-                # 获取所有颜色映射，优先使用 named_color（如果存在），否则使用 color（HEX）
-                color_dict = {}
-                for name, mapping in _color_manager._colors.items():
-                    # 优先使用 named_color（matplotlib 命名颜色），否则使用 color（HEX）
-                    color_dict[name] = mapping.named_color if mapping.named_color else mapping.color
-            else:
-                # 如果 ColorManager 不可用，使用默认颜色字典
-                from chart.color.color import COLOR_DICT
-                color_dict = COLOR_DICT
+            # 2. 从 ColorManager 加载最新的颜色字典（如果未指定）
+            if color_dict is None:
+                if _USE_COLOR_MANAGER and _color_manager:
+                    # 获取所有颜色映射，优先使用 named_color（如果存在），否则使用 color（HEX）
+                    color_dict = {}
+                    for name, mapping in _color_manager._colors.items():
+                        # 优先使用 named_color（matplotlib 命名颜色），否则使用 color（HEX）
+                        color_dict[name] = (
+                            mapping.named_color
+                            if mapping.named_color
+                            else mapping.color
+                        )
+                else:
+                    # 如果 ColorManager 不可用，使用默认颜色字典
+                    from chart.color.color import COLOR_DICT
+
+                    color_dict = COLOR_DICT
+
+            cmap_qual = ListedColormap(palette) if palette else None
 
             # 3. 创建 GridFigure
             f = plt.figure(
@@ -81,6 +95,7 @@ class WebChartAdapter:
                 fontsize=canvas_config.get("fontsize", 14),
                 style=style,
                 color_dict=color_dict,  # 传递颜色字典
+                cmap_qual=cmap_qual,
             )
 
             # 4. 按 ax_index 排序子图，确保顺序正确
@@ -110,6 +125,9 @@ class WebChartAdapter:
                     # 获取图表类型和参数
                     chart_type = subplot["chart_type"]
                     params = subplot["params"].copy()
+
+                    # 提取连接线参数（如果存在），不传递给 plot 方法
+                    connections = params.pop("connections", [])
 
                     # 统一处理 whis 参数（用于箱型图等）
                     if "whis" in params:
@@ -154,7 +172,9 @@ class WebChartAdapter:
                                 }
 
                                 # 处理 formatter_config：转换为 partial(format_value, ...)
-                                col_formatter = None  # 保存列定义的 formatter，供 plot_kw 使用
+                                col_formatter = (
+                                    None  # 保存列定义的 formatter，供 plot_kw 使用
+                                )
                                 if "formatter_config" in clean_def:
                                     fmt_cfg = clean_def.pop("formatter_config")
                                     fmt = fmt_cfg.get("fmt", "{:,.0f}")
@@ -335,18 +355,25 @@ class WebChartAdapter:
                                         def negative_red_mapper(x):
                                             try:
                                                 # 处理各种可能的输入类型
-                                                if isinstance(x, (int, float, np.number)):
+                                                if isinstance(
+                                                    x, (int, float, np.number)
+                                                ):
                                                     val = float(x)
                                                 elif isinstance(x, str):
                                                     # 如果是字符串，尝试解析（去除千位符、空格、百分号等）
-                                                    cleaned = x.replace(',', '').replace(' ', '').replace('%', '').strip()
+                                                    cleaned = (
+                                                        x.replace(",", "")
+                                                        .replace(" ", "")
+                                                        .replace("%", "")
+                                                        .strip()
+                                                    )
                                                     if not cleaned:
                                                         return "#000000"  # 黑色
                                                     val = float(cleaned)
                                                 else:
                                                     # 其他类型，尝试直接转换
                                                     val = float(x)
-                                                
+
                                                 if val < 0:
                                                     return "#FF0000"  # 红色
                                                 else:
@@ -354,7 +381,7 @@ class WebChartAdapter:
                                             except (ValueError, TypeError):
                                                 # 如果无法转换为数值，返回默认颜色
                                                 return "#000000"  # 黑色
-                                        
+
                                         clean_def["text_cmap"] = negative_red_mapper
 
                                     # 向后兼容旧格式
@@ -422,6 +449,167 @@ class WebChartAdapter:
 
                     # 调用 f.plot() 绘制子图
                     f.plot(kind=chart_type, data=df, ax_index=ax_index, **params)
+
+                    # 如果存在连接线参数，绘制连接线（仅对柱状图有效）
+                    if (
+                        connections
+                        and isinstance(connections, list)
+                        and chart_type == "bar"
+                    ):
+                        from chart.components.annotation import Connection
+
+                        ax = f._axes[ax_index]
+
+                        # 计算每个柱子的高度和 x 位置
+                        stacked = params.get("stacked", True)
+                        bar_width = params.get("bar_width", 0.8)
+
+                        if stacked:
+                            # 堆积柱状图：每个柱子的高度是所有系列的总和
+                            bar_heights = df.sum(axis=1).values
+                            # x 位置就是索引位置（每个索引对应一个柱子）
+                            bar_x_positions = list(range(len(df.index)))
+                        else:
+                            # 非堆积柱状图：每个索引对应多个柱子（每个系列一个）
+                            # 连接线应该连接"柱子组"的中心，高度取所有系列的最大值
+                            bar_heights = (
+                                df.max(axis=1).values if df.shape[1] > 0 else []
+                            )
+                            # x 位置是柱子组的中心位置
+                            # 第 k 个柱子组的中心位置：k + bar_width * (n_series - 1) / 2
+                            n_series = df.shape[1]
+                            bar_x_positions = [
+                                k + bar_width * (n_series - 1) / 2
+                                for k in range(len(df.index))
+                            ]
+
+                        # 调试信息：打印连接线数量
+                        print(f"准备绘制 {len(connections)} 条连接线")
+
+                        for idx, conn in enumerate(connections):
+                            if not isinstance(conn, dict):
+                                continue
+                            try:
+                                x1_idx = conn.get("x1")
+                                x2_idx = conn.get("x2")
+                                text = conn.get("text", "")
+
+                                # 调试信息
+                                print(
+                                    f"连接线 {idx + 1}: x1={x1_idx}, x2={x2_idx}, text='{text}'"
+                                )
+
+                                # 验证必需参数（允许空文本，使用默认值）
+                                if x1_idx is None or x2_idx is None:
+                                    print(
+                                        f"连接线 {idx + 1} 缺少必需参数: x1={x1_idx}, x2={x2_idx}"
+                                    )
+                                    continue
+
+                                # 如果文本为空，使用默认文本
+                                if not text:
+                                    text = ""
+
+                                # 转换为整数索引
+                                x1_idx = int(x1_idx)
+                                x2_idx = int(x2_idx)
+
+                                # 验证索引范围
+                                if (
+                                    x1_idx < 0
+                                    or x1_idx >= len(bar_heights)
+                                    or x2_idx < 0
+                                    or x2_idx >= len(bar_heights)
+                                ):
+                                    print(
+                                        f"连接线索引超出范围: x1={x1_idx}, x2={x2_idx}, 数据长度={len(bar_heights)}"
+                                    )
+                                    continue
+
+                                # 获取柱子的 x 位置和高度
+                                x1 = float(bar_x_positions[x1_idx])
+                                x2 = float(bar_x_positions[x2_idx])
+                                y1 = float(bar_heights[x1_idx])
+                                y2 = float(bar_heights[x2_idx])
+
+                                # 创建 Connection 对象
+                                offset = conn.get("offset")
+                                connection = Connection(
+                                    ax, x1, x2, y1, y2, text, offset
+                                )
+
+                                # 构建 draw 方法的参数
+                                draw_kwargs = {}
+                                if "color" in conn and conn["color"]:
+                                    draw_kwargs["color"] = str(conn["color"])
+                                if (
+                                    "linewidth" in conn
+                                    and conn["linewidth"] is not None
+                                ):
+                                    draw_kwargs["linewidth"] = float(conn["linewidth"])
+                                if "linestyle" in conn and conn["linestyle"]:
+                                    draw_kwargs["linestyle"] = str(conn["linestyle"])
+                                if "arrow" in conn and conn["arrow"] is not None:
+                                    arrow_val = conn["arrow"]
+                                    if arrow_val in [1, 2]:
+                                        draw_kwargs["arrow"] = int(arrow_val)
+
+                                # 文本样式参数
+                                if "text_color" in conn and conn["text_color"]:
+                                    draw_kwargs["text_color"] = str(conn["text_color"])
+                                if "text_weight" in conn and conn["text_weight"]:
+                                    draw_kwargs["text_weight"] = str(
+                                        conn["text_weight"]
+                                    )
+                                if (
+                                    "text_size" in conn
+                                    and conn["text_size"] is not None
+                                ):
+                                    draw_kwargs["text_size"] = float(conn["text_size"])
+                                if (
+                                    "text_offset" in conn
+                                    and conn["text_offset"] is not None
+                                ):
+                                    draw_kwargs["text_offset"] = float(
+                                        conn["text_offset"]
+                                    )
+
+                                # 文本框样式参数
+                                if "bbox_facecolor" in conn and conn["bbox_facecolor"]:
+                                    draw_kwargs["bbox_facecolor"] = str(
+                                        conn["bbox_facecolor"]
+                                    )
+                                if "bbox_edgecolor" in conn and conn["bbox_edgecolor"]:
+                                    draw_kwargs["bbox_edgecolor"] = str(
+                                        conn["bbox_edgecolor"]
+                                    )
+                                if (
+                                    "bbox_alpha" in conn
+                                    and conn["bbox_alpha"] is not None
+                                ):
+                                    draw_kwargs["bbox_alpha"] = float(
+                                        conn["bbox_alpha"]
+                                    )
+                                if "bbox_boxstyle" in conn and conn["bbox_boxstyle"]:
+                                    draw_kwargs["bbox_boxstyle"] = str(
+                                        conn["bbox_boxstyle"]
+                                    )
+                                if (
+                                    "bbox_linewidth" in conn
+                                    and conn["bbox_linewidth"] is not None
+                                ):
+                                    draw_kwargs["bbox_linewidth"] = float(
+                                        conn["bbox_linewidth"]
+                                    )
+
+                                # 绘制连接线
+                                connection.draw(**draw_kwargs)
+                                print(f"连接线 {idx + 1} 绘制成功")
+                            except Exception as conn_error:
+                                import traceback
+
+                                print(f"连接线 {idx + 1} 渲染失败: {str(conn_error)}")
+                                print(traceback.format_exc())
 
                 except Exception as e:
                     # 错误处理：在对应位置显示错误信息

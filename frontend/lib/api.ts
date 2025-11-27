@@ -1,4 +1,5 @@
 import { CanvasConfig, SubplotConfig } from "@/types/canvas";
+import { useAuthStore } from "@/store/authStore";
 
 /**
  * API 工具库
@@ -44,6 +45,19 @@ function convertKeysToSnakeCase(obj: any): any {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
+function buildAuthHeaders(): HeadersInit {
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  try {
+    const token = useAuthStore.getState().token;
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  } catch {
+    // ignore (可能在服务端渲染环境)
+  }
+  return headers;
+}
+
 /**
  * 渲染整个画布（多子图）
  * @param canvas 画布配置
@@ -58,12 +72,12 @@ export async function renderCanvas(
 
   const response = await fetch(`${API_BASE_URL}/api/render/canvas`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: buildAuthHeaders(),
     body: JSON.stringify(requestData),
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json().catch(() => ({}));
     throw new Error(error.detail || "渲染失败");
   }
 
@@ -81,12 +95,12 @@ export async function renderSubplot(subplot: SubplotConfig): Promise<Blob> {
 
   const response = await fetch(`${API_BASE_URL}/api/render/subplot`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: buildAuthHeaders(),
     body: JSON.stringify(requestData),
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json().catch(() => ({}));
     throw new Error(error.detail || "渲染失败");
   }
 
@@ -137,9 +151,7 @@ export async function renderChart(data: any, params: any): Promise<Blob> {
 
   const response = await fetch(`${API_BASE_URL}/api/render`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: buildAuthHeaders(),
     body: JSON.stringify({ data, params }),
   });
 

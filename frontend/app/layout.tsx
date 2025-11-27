@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
-import AppSidebar from '@/components/layout/AppSidebar'
 import { Toaster } from '@/components/ui/toaster'
+import AuthGuard from '@/components/auth/AuthGuard'
+import ConditionalLayout from '@/components/layout/ConditionalLayout'
 
 export const metadata: Metadata = {
   title: 'Chart Class - 可视化工具',
@@ -17,15 +17,11 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body>
-        <SidebarProvider>
-          {/* 左侧：可折叠侧边栏 */}
-          <AppSidebar />
-          
-          {/* 右侧：主内容区（水平布局容器） */}
-          <SidebarInset className="flex h-screen overflow-hidden">
+        <AuthGuard>
+          <ConditionalLayout>
             {children}
-          </SidebarInset>
-        </SidebarProvider>
+          </ConditionalLayout>
+        </AuthGuard>
         <Toaster />
       </body>
     </html>

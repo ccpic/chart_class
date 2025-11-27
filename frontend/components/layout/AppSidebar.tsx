@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   LayoutGrid,
-  Settings,
-  HelpCircle,
+  Users,
+  User,
+  LogOut,
 } from 'lucide-react';
 
 import {
@@ -24,6 +26,7 @@ import {
 
 import { useCanvasStore } from '@/store/canvasStore';
 import { useChartStore } from '@/store/chartStore';
+import { useAuthStore } from '@/store/authStore';
 import CanvasTreeView from '@/components/canvas/CanvasTreeView';
 import ResetCanvasButton from '@/components/canvas/ResetCanvasButton';
 import SaveChartDialog from '@/components/chart/SaveChartDialog';
@@ -36,8 +39,15 @@ import ColorManagerSheet from '@/components/color/ColorManagerSheet';
  * 使用 TreeView 展示画布和子图的层级结构
  */
 export default function AppSidebar() {
+  const router = useRouter();
   const subplots = useCanvasStore((state) => state.subplots);
   const { currentChart, currentChartId } = useChartStore();
+  const { user, isAuthenticated, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -84,7 +94,7 @@ export default function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* 底部：图表管理、重置按钮、设置和帮助 */}
+      {/* 底部：图表管理、重置按钮 */}
       <SidebarFooter className="group-data-[collapsible=icon]:items-center">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -99,30 +109,45 @@ export default function AppSidebar() {
           <SidebarMenuItem>
             <ChartImport />
           </SidebarMenuItem>
-          <SidebarSeparator />
           <SidebarMenuItem>
             <ColorManagerSheet />
           </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link href="/settings">
-                <Settings className="size-4" />
-                <span>设置</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <a
-                href="https://github.com/ccpic/chart_class"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <HelpCircle className="size-4" />
-                <span>帮助文档</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          
+          {/* 超级管理员显示用户管理链接 */}
+          {isAuthenticated && user && (user.role === "superadmin" || user.role === "admin") && (
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link href="/admin/users">
+                  <Users className="size-4" />
+                  <span>用户管理</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+
+          {/* 当前用户信息 - 放在最底部 */}
+          {isAuthenticated && user && (
+            <>
+              <SidebarSeparator />
+              <SidebarMenuItem>
+                <div className="px-2 py-2 group-data-[collapsible=icon]:px-2">
+                  <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
+                    <User className="size-4 text-muted-foreground" />
+                    <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
+                      <div className="text-xs text-muted-foreground mb-1">当前用户</div>
+                      <span className="text-sm font-medium truncate">{user.username}</span>
+                    </div>
+                  </div>
+                </div>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={handleLogout}>
+                  <LogOut className="size-4" />
+                  <span>退出登录</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </>
+          )}
         </SidebarMenu>
       </SidebarFooter>
 

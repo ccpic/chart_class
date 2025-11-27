@@ -3,7 +3,9 @@
 提供增删改查接口，支持前后端使用
 """
 
-from typing import Dict, List, Optional
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
 import json
 from pathlib import Path
@@ -12,6 +14,24 @@ from pathlib import Path
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 COLOR_JSON_PATH = DATA_DIR / "color_dict.json"
 
+DEFAULT_PALETTE = [
+    "teal",
+    "crimson",
+    "navy",
+    "darkorange",
+    "darkgreen",
+    "olivedrab",
+    "purple",
+    "pink",
+    "deepskyblue",
+    "saddlebrown",
+    "tomato",
+    "cornflowerblue",
+    "magenta",
+]
+
+DEFAULT_COLOR_MAP: Dict[str, str] = {name: name for name in DEFAULT_PALETTE}
+
 
 @dataclass
 class ColorMapping:
@@ -19,13 +39,22 @@ class ColorMapping:
 
     name: str
     color: str  # 永远是 HEX 值
-    named_color: Optional[str] = None  # 可选的 matplotlib 命名颜色
+    named_color: str | None = None  # 可选的 matplotlib 命名颜色
+    category: str | None = None
+    description: str | None = None
+    aliases: list[str] | None = None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         """转为字典"""
-        result = {"name": self.name, "color": self.color}
+        result: Dict[str, Any] = {"name": self.name, "color": self.color}
         if self.named_color:
             result["named_color"] = self.named_color
+        if self.category:
+            result["category"] = self.category
+        if self.description:
+            result["description"] = self.description
+        if self.aliases:
+            result["aliases"] = self.aliases
         return result
 
 
@@ -40,16 +69,21 @@ class ColorManager:
     - 验证颜色值
     """
 
-    def __init__(self, json_path: str = None):
+    def __init__(self, json_path: Optional[str] = None):
         """
         初始化颜色管理器
 
         Args:
             json_path: JSON 文件路径，默认使用 data/color_dict.json
         """
-        self.json_path = Path(json_path) if json_path else COLOR_JSON_PATH
-        self._colors: Dict[str, ColorMapping] = {}
+        self.json_path: Path = Path(json_path) if json_path else COLOR_JSON_PATH
+        self._colors: dict[str, ColorMapping] = {}
+        self.palette: list[str] = list(DEFAULT_PALETTE)
         self._load_from_json()
+        changed = self._ensure_default_colors()
+        self._sync_palette_with_colors()
+        if changed:
+            self._save_to_json()
 
     def _load_from_json(self):
         """从 JSON 文件加载颜色"""
@@ -63,6 +97,16 @@ class ColorManager:
             # 兼容两种格式
             if isinstance(data, dict):
                 for name, value in data.items():
+                    if name == "__palette__":
+                        if isinstance(value, list):
+                            cleaned = [
+                                str(item)
+                                for item in value
+                                if isinstance(item, str) and item
+                            ]
+                            if cleaned:
+                                self.palette = cleaned
+                        continue
                     if isinstance(value, str):
                         # 简单映射: {"name": "color"}
                         self._colors[name] = ColorMapping(name=name, color=value)
@@ -75,15 +119,46 @@ class ColorManager:
         except Exception as e:
             print(f"警告: 加载颜色文件失败 - {e}")
 
+    def _ensure_default_colors(self) -> bool:
+        """
+        确保默认调色板中的颜色在当前颜色集合中存在。
+        如缺失则自动创建，返回是否发生修改。
+        """
+        changed = False
+        for name in DEFAULT_PALETTE:
+            if name not in self._colors:
+                color_value = DEFAULT_COLOR_MAP.get(name, name)
+                self._colors[name] = ColorMapping(
+                    name=name,
+                    color=color_value,
+                    named_color=name,
+                )
+                changed = True
+        return changed
+
     def _save_to_json(self):
         """保存到 JSON 文件"""
         self.json_path.parent.mkdir(parents=True, exist_ok=True)
 
         # 导出为完整格式（保存所有字段）
-        full_dict = {name: mapping.to_dict() for name, mapping in self._colors.items()}
+        full_dict: dict[str, Any] = {
+            name: mapping.to_dict() for name, mapping in self._colors.items()
+        }
+        full_dict["__palette__"] = self.palette
 
         with open(self.json_path, "w", encoding="utf-8") as f:
             json.dump(full_dict, f, ensure_ascii=False, indent=2)
+
+    def _sync_palette_with_colors(self):
+        """确保调色板与当前颜色集合保持同步"""
+        existing_names = list(self._colors.keys())
+        filtered = [name for name in self.palette if name in self._colors]
+        for name in existing_names:
+            if name not in filtered:
+                filtered.append(name)
+        if not filtered:
+            filtered = existing_names or list(DEFAULT_PALETTE)
+        self.palette = filtered
 
     # ===== CRUD 操作 =====
 
@@ -91,8 +166,11 @@ class ColorManager:
         self,
         name: str,
         color: str,
-        named_color: Optional[str] = None,
+        named_color: str | None = None,
         overwrite: bool = False,
+        category: str | None = None,
+        description: str | None = None,
+        aliases: list[str] | None = None,
     ) -> bool:
         """
         添加颜色映射
@@ -110,12 +188,19 @@ class ColorManager:
             return False
 
         self._colors[name] = ColorMapping(
-            name=name, color=color, named_color=named_color
+            name=name,
+            color=color,
+            named_color=named_color,
+            category=category,
+            description=description,
+            aliases=aliases,
         )
+        if name not in self.palette:
+            self.palette.append(name)
         self._save_to_json()
         return True
 
-    def get(self, name: str) -> Optional[ColorMapping]:
+    def get(self, name: str) -> ColorMapping | None:
         """
         获取颜色映射
 
@@ -144,8 +229,11 @@ class ColorManager:
     def update(
         self,
         name: str,
-        color: Optional[str] = None,
-        named_color: Optional[str] = None,
+        color: str | None = None,
+        named_color: str | None = None,
+        category: str | None = None,
+        description: str | None = None,
+        aliases: list[str] | None = None,
     ) -> bool:
         """
         更新颜色映射
@@ -174,6 +262,13 @@ class ColorManager:
             else:
                 mapping.named_color = named_color
 
+        if category is not None:
+            mapping.category = category or None
+        if description is not None:
+            mapping.description = description or None
+        if aliases is not None:
+            mapping.aliases = aliases or None
+
         self._save_to_json()
         return True
 
@@ -191,10 +286,13 @@ class ColorManager:
             return False
 
         del self._colors[name]
+        if name in self.palette:
+            self.palette.remove(name)
+        self._sync_palette_with_colors()
         self._save_to_json()
         return True
 
-    def list_all(self, search: Optional[str] = None) -> List[ColorMapping]:
+    def list_all(self, search: str | None = None) -> list[ColorMapping]:
         """
         列出所有颜色映射
 
@@ -210,6 +308,9 @@ class ColorManager:
             search_lower = search.lower()
             results = [m for m in results if search_lower in m.name.lower()]
 
+        order_map = {name: idx for idx, name in enumerate(self.palette)}
+        results.sort(key=lambda mapping: order_map.get(mapping.name, len(order_map)))
+
         return results
 
     def to_dict(self) -> Dict[str, str]:
@@ -221,7 +322,28 @@ class ColorManager:
         """
         return {name: mapping.color for name, mapping in self._colors.items()}
 
-    def export_to_typescript(self, output_path: str):
+    def get_palette(self) -> List[str]:
+        """获取调色板顺序"""
+        self._sync_palette_with_colors()
+        return list(self.palette)
+
+    def set_palette(self, palette: List[str]):
+        """设置调色板顺序"""
+        cleaned: List[str] = []
+        seen = set()
+        for name in palette:
+            if name in self._colors and name not in seen:
+                cleaned.append(name)
+                seen.add(name)
+        for name in self._colors:
+            if name not in seen:
+                cleaned.append(name)
+        if not cleaned:
+            cleaned = list(self._colors.keys()) or list(DEFAULT_PALETTE)
+        self.palette = cleaned
+        self._save_to_json()
+
+    def export_to_typescript(self, output_path: str | Path):
         """
         导出为 TypeScript 文件
 
@@ -344,53 +466,3 @@ def delete_color(name: str) -> bool:
 def list_colors(**kwargs) -> List[ColorMapping]:
     """列出颜色（便捷函数）"""
     return get_color_manager().list_all(**kwargs)
-
-
-# ===== 测试代码 =====
-if __name__ == "__main__":
-    manager = ColorManager()
-
-    print(f"📊 当前颜色总数: {len(manager.to_dict())}")
-
-    # 测试添加
-    print("\n✅ 测试添加颜色...")
-    success = manager.add(
-        "测试药品A",
-        "#FF5733",
-        category="drug",
-        description="用于测试的药品",
-        aliases=["DrugA", "药品A"],
-    )
-    print(f"  添加结果: {success}")
-
-    # 测试查询
-    print("\n🔍 测试查询...")
-    mapping = manager.get("测试药品A")
-    if mapping:
-        print(f"  名称: {mapping.name}")
-        print(f"  颜色: {mapping.color}")
-        print(f"  分类: {mapping.category}")
-
-    # 测试别名
-    print("\n🔍 测试别名查询...")
-    alias_color = manager.get_color("DrugA")
-    print(f"  DrugA 的颜色: {alias_color}")
-
-    # 测试更新
-    print("\n✏️  测试更新...")
-    manager.update("测试药品A", color="#00FF00")
-    print(f"  更新后颜色: {manager.get_color('测试药品A')}")
-
-    # 测试分类查询
-    print("\n📁 测试分类查询...")
-    categories = manager.get_categories()
-    print(f"  所有分类: {categories[:5]}...")  # 只显示前5个
-
-    # 测试删除
-    print("\n🗑️  测试删除...")
-    manager.delete("测试药品A")
-    manager.delete("DrugA")
-    manager.delete("药品A")
-    print("  已删除测试数据")
-
-    print("\n✅ 测试完成！")

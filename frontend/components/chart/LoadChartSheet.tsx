@@ -24,10 +24,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { FolderOpen, Trash2, Download, Search } from 'lucide-react';
+import { FolderOpen, Trash2, Download, Search, X } from 'lucide-react';
 import { chartDB } from '@/lib/db/chartDB';
 import { saveAs } from 'file-saver';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface LoadChartDialogProps {
   trigger?: React.ReactNode;
@@ -53,25 +55,60 @@ export default function LoadChartDialog({ trigger }: LoadChartDialogProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [chartToDelete, setChartToDelete] = useState<{ id: string; name: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const charts = useChartStore((s) => s.charts);
   const loadCharts = useChartStore((s) => s.loadCharts);
   const loadChart = useChartStore((s) => s.loadChart);
   const deleteChart = useChartStore((s) => s.deleteChart);
+  const getAllTags = useChartStore((s) => s.getAllTags);
+  const filterChartsByTags = useChartStore((s) => s.filterChartsByTags);
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
       loadCharts();
+      getAllTags().then(setAvailableTags).catch(console.error);
     }
-  }, [open, loadCharts]);
+  }, [open, loadCharts, getAllTags]);
 
-  // 按更新时间排序（新到旧）并筛选
-  const filteredAndSortedCharts = charts
-    .filter((chart) =>
-      chart.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => b.updatedAt - a.updatedAt);
+  // 筛选图表：关键词搜索 + Tag筛选（AND逻辑）
+  const filteredAndSortedCharts = React.useMemo(() => {
+    let filtered = charts;
+
+    // 关键词搜索（搜索图表名称）
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((chart) =>
+        chart.name.toLowerCase().includes(query)
+      );
+    }
+
+    // Tag筛选（AND逻辑：图表必须包含所有选中的tag）
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter((chart) => {
+        const chartTags = chart.tags || [];
+        return selectedTags.every((tag) => chartTags.includes(tag));
+      });
+    }
+
+    // 按更新时间倒序排序
+    return filtered.sort((a, b) => b.updatedAt - a.updatedAt);
+  }, [charts, searchQuery, selectedTags]);
+
+  // 切换tag选择
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
+  // 清除所有筛选
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedTags([]);
+  };
 
   const handleLoad = async (id: string) => {
     try {
@@ -167,6 +204,47 @@ export default function LoadChartDialog({ trigger }: LoadChartDialogProps) {
             />
           </div>
 
+          {/* Tag筛选区域 */}
+          {availableTags.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">按标签筛选</label>
+                {selectedTags.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="h-7 text-xs"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    清除筛选
+                  </Button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {availableTags.map((tag) => {
+                  const isSelected = selectedTags.includes(tag);
+                  return (
+                    <Badge
+                      key={tag}
+                      variant={isSelected ? 'default' : 'outline'}
+                      className="cursor-pointer hover:bg-accent"
+                      onClick={() => toggleTag(tag)}
+                    >
+                      {isSelected && '✓ '}
+                      {tag}
+                    </Badge>
+                  );
+                })}
+              </div>
+              {selectedTags.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  已选择 {selectedTags.length} 个标签（AND逻辑：图表必须包含所有选中的标签）
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="mt-4">
             {charts.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 text-gray-500">
@@ -189,8 +267,14 @@ export default function LoadChartDialog({ trigger }: LoadChartDialogProps) {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h3 className="font-medium text-sm">{chart.name}</h3>
-                        {chart.description && (
-                          <p className="text-xs text-gray-600 mt-1">{chart.description}</p>
+                        {chart.tags && chart.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {chart.tags.map((tag) => (
+                              <Badge key={tag} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
                         )}
                         <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                           <span>{chart.subplots?.length || 0} 个子图</span>

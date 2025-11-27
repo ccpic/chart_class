@@ -11,7 +11,7 @@ import warnings
 # ===== 新的颜色管理系统 =====
 # 尝试导入新的颜色管理器
 try:
-    from chart.color.color_manager import ColorManager
+    from chart.color.color_manager import ColorManager, DEFAULT_PALETTE
 
     # 创建全局实例
     _color_manager = ColorManager()
@@ -666,35 +666,7 @@ COLOR_DICT = {
     # "非洛地平": "navy",
 }
 
-# COLOR_LIST = [
-#     "#44546A",
-#     "#6F8DB9",
-#     "#BD2843",
-#     "#ED94B6",
-#     "#FAA53A",
-#     "#2B9B33",
-#     "Deepskyblue",
-#     "Saddlebrown",
-#     "Purple",
-#     "Olivedrab",
-#     "Pink",
-# ]
-
-COLOR_LIST = [
-    "teal",
-    "crimson",
-    "navy",
-    "darkorange",
-    "darkgreen",
-    "olivedrab",
-    "purple",
-    "pink",
-    "deepskyblue",
-    "saddlebrown",
-    "tomato",
-    "cornflowerblue",
-    "magenta",
-]
+COLOR_LIST = DEFAULT_PALETTE.copy()
 
 CMAP_QUAL = ListedColormap(COLOR_LIST)
 CMAP_NORM = plt.get_cmap("PiYG")

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useChartStore } from '@/store/chartStore';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -25,8 +25,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Save } from 'lucide-react';
+import TagSelector from './TagSelector';
 
 interface SaveChartDialogProps {
   trigger?: React.ReactNode;
@@ -36,11 +36,19 @@ export default function SaveChartDialog({ trigger }: SaveChartDialogProps) {
   const [inputDialogOpen, setInputDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   
-  const { currentChartId, currentChart, saveCurrentAsChart, updateCurrentChart, saveAs } = useChartStore();
+  const { currentChartId, currentChart, saveCurrentAsChart, updateCurrentChart, saveAs, getAllTags } = useChartStore();
   const { toast } = useToast();
+
+  // 加载可用tag列表
+  useEffect(() => {
+    if (inputDialogOpen) {
+      getAllTags().then(setAvailableTags).catch(console.error);
+    }
+  }, [inputDialogOpen, getAllTags]);
 
   // 点击保存按钮的入口
   const handleSaveClick = () => {
@@ -78,9 +86,9 @@ export default function SaveChartDialog({ trigger }: SaveChartDialogProps) {
   // 选择另存为
   const handleSaveAsChoice = () => {
     setConfirmDialogOpen(false);
-    // 预填充当前图表名称
+    // 预填充当前图表名称和tags
     setName(currentChart?.name || '');
-    setDescription(currentChart?.description || '');
+    setTags(currentChart?.tags || []);
     setInputDialogOpen(true);
   };
 
@@ -99,14 +107,14 @@ export default function SaveChartDialog({ trigger }: SaveChartDialogProps) {
     try {
       if (currentChartId && currentChart) {
         // 另存为
-        await saveAs(name.trim(), description.trim() || undefined);
+        await saveAs(name.trim(), tags);
         toast({
           title: '保存成功',
           description: `图表 "${name}" 已另存为新图表`,
         });
       } else {
         // 首次保存
-        await saveCurrentAsChart(name.trim(), description.trim() || undefined);
+        await saveCurrentAsChart(name.trim(), tags);
         toast({
           title: '保存成功',
           description: `图表 "${name}" 已保存`,
@@ -114,7 +122,7 @@ export default function SaveChartDialog({ trigger }: SaveChartDialogProps) {
       }
       setInputDialogOpen(false);
       setName('');
-      setDescription('');
+      setTags([]);
     } catch (error) {
       console.error('Save failed:', error);
       toast({
@@ -191,13 +199,12 @@ export default function SaveChartDialog({ trigger }: SaveChartDialogProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">描述（可选）</Label>
-              <Textarea
-                id="description"
-                placeholder="添加一些备注信息..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
+              <Label>标签（可选）</Label>
+              <TagSelector
+                value={tags}
+                onChange={setTags}
+                availableTags={availableTags}
+                placeholder="输入tag并按Enter添加..."
               />
             </div>
           </div>

@@ -1,4 +1,7 @@
 {
+  "/admin/login/page": "app/admin/login/page.js",
+  "/admin/users/page": "app/admin/users/page.js",
+  "/login/page": "app/login/page.js",
   "/canvas/page": "app/canvas/page.js",
   "/subplot/[id]/page": "app/subplot/[id]/page.js"
 }

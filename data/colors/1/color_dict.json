@@ -1,0 +1,87 @@
+{
+  "teal": {
+    "name": "teal",
+    "color": "teal",
+    "named_color": "teal"
+  },
+  "crimson": {
+    "name": "crimson",
+    "color": "crimson",
+    "named_color": "crimson"
+  },
+  "navy": {
+    "name": "navy",
+    "color": "navy",
+    "named_color": "navy"
+  },
+  "darkorange": {
+    "name": "darkorange",
+    "color": "darkorange",
+    "named_color": "darkorange"
+  },
+  "darkgreen": {
+    "name": "darkgreen",
+    "color": "darkgreen",
+    "named_color": "darkgreen"
+  },
+  "olivedrab": {
+    "name": "olivedrab",
+    "color": "olivedrab",
+    "named_color": "olivedrab"
+  },
+  "purple": {
+    "name": "purple",
+    "color": "purple",
+    "named_color": "purple"
+  },
+  "pink": {
+    "name": "pink",
+    "color": "pink",
+    "named_color": "pink"
+  },
+  "deepskyblue": {
+    "name": "deepskyblue",
+    "color": "deepskyblue",
+    "named_color": "deepskyblue"
+  },
+  "saddlebrown": {
+    "name": "saddlebrown",
+    "color": "saddlebrown",
+    "named_color": "saddlebrown"
+  },
+  "tomato": {
+    "name": "tomato",
+    "color": "tomato",
+    "named_color": "tomato"
+  },
+  "cornflowerblue": {
+    "name": "cornflowerblue",
+    "color": "cornflowerblue",
+    "named_color": "cornflowerblue"
+  },
+  "magenta": {
+    "name": "magenta",
+    "color": "magenta",
+    "named_color": "magenta"
+  },
+  "品牌绿色": {
+    "name": "品牌绿色",
+    "color": "#00CED3"
+  },
+  "__palette__": [
+    "teal",
+    "crimson",
+    "navy",
+    "darkorange",
+    "darkgreen",
+    "olivedrab",
+    "purple",
+    "pink",
+    "deepskyblue",
+    "saddlebrown",
+    "tomato",
+    "cornflowerblue",
+    "magenta",
+    "品牌绿色"
+  ]
+}

@@ -5,11 +5,11 @@ Chart Class Web API
 - 颜色管理 API（CRUD 操作）
 """
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import logging
 import os
 
@@ -30,20 +30,35 @@ from web_api.models import (
 # 导入颜色管理
 from chart.color.color_manager import ColorManager
 
+# 导入用户权限模块
+from web_api.database import init_db, User
+from web_api.routers import users, charts, colors
+from web_api.middleware import get_current_active_user
+from web_api.routers.colors import get_user_color_manager
+
 # 配置日志
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
+
+# 初始化数据库
+init_db()
 
 # 创建应用
 app = FastAPI(
     title="Chart Class Web API",
-    description="图表渲染 + 颜色管理统一 API",
-    version="0.3.0",
+    description="图表渲染 + 颜色管理 + 用户权限统一 API",
+    version="0.4.0",
 )
 
 # CORS 配置（支持环境变量）
-cors_origins_env = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:5173")
-cors_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+cors_origins_env = os.getenv(
+    "CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:5173"
+)
+cors_origins = [
+    origin.strip() for origin in cors_origins_env.split(",") if origin.strip()
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -53,8 +68,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 全局颜色管理器
+# 全局颜色管理器（保留用于向后兼容，新代码应使用用户隔离的颜色管理器）
 color_manager = ColorManager()
+
+# 集成路由
+app.include_router(users.router, prefix="/api/auth", tags=["认证"])
+app.include_router(charts.router, prefix="/api", tags=["图表管理"])
+app.include_router(colors.router, prefix="/api", tags=["颜色管理"])
 
 
 # 数据模型
@@ -94,6 +114,8 @@ async def root():
         "services": {
             "chart_rendering": "/api/render/*",
             "color_management": "/api/colors/*",
+            "user_auth": "/api/auth/*",
+            "chart_management": "/api/charts/*",
         },
         "docs": "/docs",
     }
@@ -102,8 +124,42 @@ async def root():
 # ============ 新端点：多子图渲染 ============
 
 
+def _build_user_color_config(
+    user_id: int,
+) -> Tuple[Optional[Dict[str, str]], Optional[List[str]]]:
+    """
+    根据用户ID构建颜色字典和调色板
+    优先使用命名颜色，其次使用 HEX
+    """
+    try:
+        color_manager = get_user_color_manager(user_id)
+        user_colors = color_manager.list_all()
+        if not user_colors:
+            return None, None
+        mapping_lookup = {mapping.name: mapping for mapping in user_colors}
+        color_dict = {
+            name: (mapping.named_color if mapping.named_color else mapping.color)
+            for name, mapping in mapping_lookup.items()
+        }
+        palette_names = color_manager.get_palette()
+        palette_colors: List[str] = []
+        for name in palette_names:
+            mapping = mapping_lookup.get(name)
+            if mapping:
+                palette_colors.append(
+                    mapping.named_color if mapping.named_color else mapping.color
+                )
+        return color_dict or None, (palette_colors or None)
+    except Exception as exc:
+        logger.warning(f"加载用户颜色失败 user_id={user_id}: {exc}")
+        return None, None
+
+
 @app.post("/api/render/canvas")
-async def render_canvas(request: RenderRequestModel):
+async def render_canvas(
+    request: RenderRequestModel,
+    current_user: User = Depends(get_current_active_user),
+):
     """
     渲染多子图画布
 
@@ -158,7 +214,14 @@ async def render_canvas(request: RenderRequestModel):
         canvas_dict = request.canvas.dict()
         subplots_list = [s.dict() for s in request.subplots]
 
-        image_bytes = adapter.render_canvas(canvas_dict, subplots_list)
+        color_dict, palette_colors = _build_user_color_config(current_user.id)
+
+        image_bytes = adapter.render_canvas(
+            canvas_dict,
+            subplots_list,
+            color_dict=color_dict,
+            palette=palette_colors,
+        )
 
         logger.info(f"画布渲染成功，图片大小: {len(image_bytes)} bytes")
 
@@ -177,7 +240,9 @@ async def render_canvas(request: RenderRequestModel):
 
 
 @app.post("/api/render/subplot")
-async def render_subplot(subplot: SubplotConfigModel):
+async def render_subplot(
+    subplot: SubplotConfigModel, current_user: User = Depends(get_current_active_user)
+):
     """
     渲染单个子图（独立预览）
 
@@ -222,7 +287,14 @@ async def render_subplot(subplot: SubplotConfigModel):
         subplot_config = subplot.dict()
         subplot_config["ax_index"] = 0
 
-        image_bytes = adapter.render_canvas(canvas_config, [subplot_config])
+        color_dict, palette_colors = _build_user_color_config(current_user.id)
+
+        image_bytes = adapter.render_canvas(
+            canvas_config,
+            [subplot_config],
+            color_dict=color_dict,
+            palette=palette_colors,
+        )
 
         logger.info(f"子图渲染成功，图片大小: {len(image_bytes)} bytes")
 
@@ -309,168 +381,9 @@ async def render_chart(request: RenderRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-# ============ 颜色管理 API ============
-
-
-class ColorCreateRequest(BaseModel):
-    """创建颜色请求"""
-
-    name: str
-    color: str
-    named_color: Optional[str] = None  # 可选的 matplotlib 命名颜色
-    overwrite: bool = False
-
-
-class ColorUpdateRequest(BaseModel):
-    """更新颜色请求"""
-
-    color: Optional[str] = None
-    named_color: Optional[str] = None  # 可选的 matplotlib 命名颜色
-
-
-class ColorResponse(BaseModel):
-    """颜色响应"""
-
-    name: str
-    color: str  # 永远是 HEX 值
-    named_color: Optional[str] = None  # 可选的 matplotlib 命名颜色
-
-
-class MessageResponse(BaseModel):
-    """通用消息响应"""
-
-    message: str
-    success: bool
-
-
-@app.get("/api/colors", response_model=List[ColorResponse])
-def list_colors(
-    search: Optional[str] = Query(None, description="搜索关键词"),
-):
-    """
-    获取所有颜色映射
-
-    - **search**: 搜索关键词（可选）
-    """
-    mappings = color_manager.list_all(search=search)
-    return [
-        ColorResponse(name=m.name, color=m.color, named_color=m.named_color)
-        for m in mappings
-    ]
-
-
-@app.get("/api/colors/meta/stats")
-def get_color_stats():
-    """获取统计信息"""
-    all_colors = color_manager.to_dict()
-
-    return {
-        "total_colors": len(all_colors),
-    }
-
-
-@app.get("/api/colors/{name}", response_model=ColorResponse)
-def get_color(name: str):
-    """
-    获取指定颜色映射
-
-    - **name**: 颜色名称
-    """
-    mapping = color_manager.get(name)
-    if not mapping:
-        raise HTTPException(status_code=404, detail=f"颜色 '{name}' 不存在")
-
-    return ColorResponse(
-        name=mapping.name, color=mapping.color, named_color=mapping.named_color
-    )
-
-
-@app.post("/api/colors", response_model=MessageResponse)
-def create_color(request: ColorCreateRequest):
-    """
-    添加新颜色映射
-
-    - **name**: 颜色名称（必填）
-    - **color**: 颜色值（必填）
-    - **named_color**: 可选的 matplotlib 命名颜色（可选）
-    - **overwrite**: 是否覆盖已存在的（默认 false）
-    """
-    success = color_manager.add(
-        name=request.name,
-        color=request.color,
-        named_color=request.named_color,
-        overwrite=request.overwrite,
-    )
-
-    if not success:
-        raise HTTPException(
-            status_code=409,
-            detail=f"颜色 '{request.name}' 已存在，请设置 overwrite=true 覆盖",
-        )
-
-    return MessageResponse(message=f"成功添加颜色 '{request.name}'", success=True)
-
-
-@app.put("/api/colors/{name}", response_model=MessageResponse)
-def update_color(name: str, request: ColorUpdateRequest):
-    """
-    更新颜色映射
-
-    - **name**: 颜色名称（路径参数）
-    - **color**: 新颜色值（可选）
-    - **named_color**: 新的命名颜色（可选，null 表示清除）
-    """
-    # 获取当前映射
-    current = color_manager.get(name)
-    if not current:
-        raise HTTPException(status_code=404, detail=f"颜色 '{name}' 不存在")
-
-    # 准备更新参数
-    update_params = {}
-    if request.color is not None:
-        update_params["color"] = request.color
-
-    # 处理 named_color：如果请求中包含该字段（即使是 null），都应该更新
-    # Pydantic 会将 JSON 的 null 转为 Python 的 None
-    if "named_color" in request.model_dump(exclude_unset=True):
-        # 如果是 null，清空命名颜色；否则设置新值
-        update_params["named_color"] = request.named_color or ""
-
-    success = color_manager.update(name=name, **update_params)
-
-    if not success:
-        raise HTTPException(status_code=500, detail=f"更新颜色 '{name}' 失败")
-
-    return MessageResponse(message=f"成功更新颜色 '{name}'", success=True)
-
-
-@app.delete("/api/colors/{name}", response_model=MessageResponse)
-def delete_color(name: str):
-    """
-    删除颜色映射
-
-    - **name**: 颜色名称
-    """
-    success = color_manager.delete(name)
-
-    if not success:
-        raise HTTPException(status_code=404, detail=f"颜色 '{name}' 不存在")
-
-    return MessageResponse(message=f"成功删除颜色 '{name}'", success=True)
-
-
-@app.post("/api/colors/export/typescript", response_model=MessageResponse)
-def export_typescript(output_path: str = "frontend/lib/colors/schemes.ts"):
-    """
-    导出为 TypeScript 文件
-
-    - **output_path**: 输出文件路径（默认 frontend/lib/colors/schemes.ts）
-    """
-    try:
-        color_manager.export_to_typescript(output_path)
-        return MessageResponse(message=f"成功导出到 {output_path}", success=True)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# ============ 颜色管理 API（向后兼容，已迁移到 routers/colors.py） ============
+# 注意：这些端点已废弃，新代码应使用 /api/colors/*（需要认证）
+# 保留这些端点以确保向后兼容，但建议迁移到新的用户隔离 API
 
 
 # ============ 启动服务 ============

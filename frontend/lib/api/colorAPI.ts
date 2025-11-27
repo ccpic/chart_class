@@ -1,10 +1,10 @@
 /**
  * 颜色管理 API 客户端
  * 提供前端调用后端颜色管理接口的方法
+ * 使用统一的 API 客户端，自动添加 JWT Token
  */
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_COLOR_API_URL || "http://localhost:8001";
+import { apiGet, apiPost, apiPut, apiDelete } from "./client";
 
 export interface ColorMapping {
   name: string;
@@ -34,41 +34,6 @@ export interface ColorStats {
 }
 
 class ColorAPIClient {
-  private baseUrl: string;
-
-  constructor(baseUrl: string = API_BASE_URL) {
-    this.baseUrl = baseUrl;
-  }
-
-  private async request<T>(
-    endpoint: string,
-    options?: RequestInit
-  ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          "Content-Type": "application/json",
-          ...options?.headers,
-        },
-      });
-
-      if (!response.ok) {
-        const error = await response
-          .json()
-          .catch(() => ({ detail: response.statusText }));
-        throw new Error(error.detail || `HTTP ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error(`API 请求失败 [${endpoint}]:`, error);
-      throw error;
-    }
-  }
-
   /**
    * 获取所有颜色映射
    * @param search - 搜索关键词（可选）
@@ -80,7 +45,7 @@ class ColorAPIClient {
     const queryString = query.toString();
     const endpoint = `/api/colors${queryString ? `?${queryString}` : ""}`;
 
-    return this.request<ColorMapping[]>(endpoint);
+    return apiGet<ColorMapping[]>(endpoint);
   }
 
   /**
@@ -88,9 +53,7 @@ class ColorAPIClient {
    * @param name - 颜色名称
    */
   async getColor(name: string): Promise<ColorMapping> {
-    return this.request<ColorMapping>(
-      `/api/colors/${encodeURIComponent(name)}`
-    );
+    return apiGet<ColorMapping>(`/api/colors/${encodeURIComponent(name)}`);
   }
 
   /**
@@ -98,10 +61,7 @@ class ColorAPIClient {
    * @param color - 颜色配置
    */
   async createColor(color: ColorCreateRequest): Promise<MessageResponse> {
-    return this.request<MessageResponse>("/api/colors", {
-      method: "POST",
-      body: JSON.stringify(color),
-    });
+    return apiPost<MessageResponse>("/api/colors", color);
   }
 
   /**
@@ -113,12 +73,9 @@ class ColorAPIClient {
     name: string,
     updates: ColorUpdateRequest
   ): Promise<MessageResponse> {
-    return this.request<MessageResponse>(
+    return apiPut<MessageResponse>(
       `/api/colors/${encodeURIComponent(name)}`,
-      {
-        method: "PUT",
-        body: JSON.stringify(updates),
-      }
+      updates
     );
   }
 
@@ -127,11 +84,8 @@ class ColorAPIClient {
    * @param name - 颜色名称
    */
   async deleteColor(name: string): Promise<MessageResponse> {
-    return this.request<MessageResponse>(
-      `/api/colors/${encodeURIComponent(name)}`,
-      {
-        method: "DELETE",
-      }
+    return apiDelete<MessageResponse>(
+      `/api/colors/${encodeURIComponent(name)}`
     );
   }
 
@@ -139,23 +93,21 @@ class ColorAPIClient {
    * 获取统计信息
    */
   async getStats(): Promise<ColorStats> {
-    return this.request<ColorStats>("/api/colors/meta/stats");
+    return apiGet<ColorStats>("/api/colors/meta/stats");
   }
 
   /**
-   * 导出为 TypeScript 文件
-   * @param outputPath - 输出路径
+   * 获取全局调色板顺序
    */
-  async exportToTypeScript(outputPath?: string): Promise<MessageResponse> {
-    const query = outputPath
-      ? `?output_path=${encodeURIComponent(outputPath)}`
-      : "";
-    return this.request<MessageResponse>(
-      `/api/colors/export/typescript${query}`,
-      {
-        method: "POST",
-      }
-    );
+  async getPalette(): Promise<string[]> {
+    return apiGet<string[]>("/api/colors/palette");
+  }
+
+  /**
+   * 更新调色板顺序
+   */
+  async updatePalette(palette: string[]): Promise<MessageResponse> {
+    return apiPut<MessageResponse>("/api/colors/palette", { palette });
   }
 }
 

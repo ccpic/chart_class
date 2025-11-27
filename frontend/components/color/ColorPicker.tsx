@@ -272,6 +272,7 @@ const sortColorsBySimilarity = (colors: [string, string][]): [string, string][] 
 
 interface ColorPickerProps {
   value: string;
+  namedColor?: string; // 外部传入的命名颜色（如果有）
   onChange: (color: string, namedColor?: string) => void; // 返回 HEX 值和可选的命名颜色
   label?: string;
   disabled?: boolean;
@@ -289,6 +290,7 @@ interface ColorPickerProps {
  */
 export default function ColorPicker({
   value,
+  namedColor: externalNamedColor,
   onChange,
   label,
   disabled = false,
@@ -296,7 +298,7 @@ export default function ColorPicker({
 }: ColorPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentColor, setCurrentColor] = useState(value);
-  const [currentNamedColor, setCurrentNamedColor] = useState<string | undefined>(undefined); // 追踪命名颜色
+  const [currentNamedColor, setCurrentNamedColor] = useState<string | undefined>(externalNamedColor); // 追踪命名颜色
   const [hexInput, setHexInput] = useState(value);
   const [rgbInput, setRgbInput] = useState({ r: 0, g: 0, b: 0 });
   const [searchTerm, setSearchTerm] = useState('');
@@ -306,7 +308,14 @@ export default function ColorPicker({
     setCurrentColor(value);
     setHexInput(value);
     updateRgbFromHex(value);
-  }, [value]);
+    // 同步外部命名颜色，如果没有则尝试从HEX值查找
+    if (externalNamedColor) {
+      setCurrentNamedColor(externalNamedColor);
+    } else {
+      const named = getNamedColorFromHex(value);
+      setCurrentNamedColor(named);
+    }
+  }, [value, externalNamedColor]);
 
   // HEX 转 RGB
   const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
@@ -342,21 +351,18 @@ export default function ColorPicker({
     }
   };
 
-  // 更新 HEX 值从 RGB
-  const updateHexFromRgb = (r: number, g: number, b: number) => {
-    const hex = rgbToHex(r, g, b);
-    setHexInput(hex);
-    setCurrentColor(hex);
-    // RGB 输入清除命名颜色
-    setCurrentNamedColor(undefined);
-  };
-
-  // 处理颜色选择 - 仅更新预览，不关闭
-  const handleColorSelect = (color: string, namedColor?: string) => {
+  // 应用颜色并通知外部
+  const applyColor = (color: string, namedColor?: string) => {
     setCurrentColor(color);
     setHexInput(color);
     updateRgbFromHex(color);
     setCurrentNamedColor(namedColor);
+    onChange(color, namedColor);
+  };
+
+  // 处理颜色选择
+  const handleColorSelect = (color: string, namedColor?: string) => {
+    applyColor(color, namedColor);
   };
 
   // 处理 HEX 输入（支持颜色名称）
@@ -366,21 +372,15 @@ export default function ColorPicker({
     // 检查是否为命名颜色
     if (COLOR_NAME_MAP[trimmedInput]) {
       const hex = COLOR_NAME_MAP[trimmedInput].toUpperCase();
-      setHexInput(hex);
-      setCurrentColor(hex);
-      updateRgbFromHex(hex);
-      setCurrentNamedColor(trimmedInput);
+      applyColor(hex, trimmedInput);
       return;
     }
     
     // 尝试将输入转换为 HEX
     const hex = getHexFromColorNameOrHex(input);
     if (hex) {
-      setHexInput(hex);
-      setCurrentColor(hex);
-      updateRgbFromHex(hex);
-      // 检查是否对应命名颜色
-      setCurrentNamedColor(getNamedColorFromHex(hex));
+      const named = getNamedColorFromHex(hex);
+      applyColor(hex, named);
     } else {
       // 如果不是有效格式，仍然更新输入框（允许用户输入）
       setHexInput(input);
@@ -392,7 +392,8 @@ export default function ColorPicker({
     const numValue = parseInt(value) || 0;
     const newRgb = { ...rgbInput, [channel]: numValue };
     setRgbInput(newRgb);
-    updateHexFromRgb(newRgb.r, newRgb.g, newRgb.b);
+    const hex = rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+    applyColor(hex, undefined);
   };
 
   // 弹窗关闭时应用颜色
@@ -441,8 +442,8 @@ export default function ColorPicker({
               style={{ backgroundColor: currentColor }}
             />
             {showColorValue && (
-              <span className="flex-1 text-left font-mono text-sm">
-                {currentColor}
+              <span className="flex-1 text-left text-sm">
+                {currentNamedColor || currentColor}
               </span>
             )}
           </Button>
