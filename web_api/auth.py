@@ -9,7 +9,14 @@ import bcrypt
 import os
 
 # JWT 配置
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+# 生产环境必须设置 JWT_SECRET_KEY 环境变量，否则启动失败
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError(
+        "JWT_SECRET_KEY 环境变量未设置！"
+        "生产环境必须设置一个强随机秘钥。"
+        "例如：export JWT_SECRET_KEY=$(openssl rand -hex 32)"
+    )
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 7  # Token 过期时间（天）
 

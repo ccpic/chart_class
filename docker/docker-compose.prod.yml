@@ -1,18 +1,33 @@
 # 生产环境配置
 # 使用方式: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# 重要：部署前必须设置以下环境变量（在 .env 文件中）：
+# - JWT_SECRET_KEY: 强随机字符串（例如：openssl rand -hex 32）
+# - NEXT_PUBLIC_API_URL: 前端访问后端的完整 URL（例如：https://your-domain.com/api 或 http://your-server-ip:8001）
 
 services:
   backend:
     environment:
-      # 生产环境可以添加更多配置
-      - LOG_LEVEL=INFO
+      # JWT 秘钥（必须设置，否则服务无法启动）
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      # 日志级别
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # CORS 允许的来源（生产环境必须设置实际域名）
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
     # 生产环境建议移除 volumes 挂载，使用 COPY 到镜像中
     # volumes:
     #   - ../data:/app/data
 
   frontend:
+    build:
+      # 构建参数：API URL（必须在构建时传递）
+      # Next.js 的 NEXT_PUBLIC_* 环境变量在构建时注入，运行时无法修改
+      # 重要：生产环境必须设置正确的 API URL，不能使用 localhost
+      # 示例：https://your-domain.com/api 或 http://your-server-ip:8001
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8001}
       - NODE_ENV=production
+      # 注意：NEXT_PUBLIC_API_URL 在构建时已注入，运行时设置无效
 
 
