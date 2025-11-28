@@ -8,7 +8,7 @@
 > 改进要点：强制从环境变量读取 `JWT_SECRET_KEY`，并在启动时拒绝默认值；将数据库 URL、日志级别、CORS 列表改为环境配置；若将来需要多副本，迁移至 PostgreSQL 等外部数据库，并用 Alembic 维护 schema。
 
 ### 2. 状态持久化 (`state-persistence`)
-- **图表保存未持久化**：`web_api/routers/charts.py` 使用 `_charts_storage` 内存字典保存用户图表，容器重启或多实例时完全丢失，同时缺乏锁，写并发会互相覆盖。
+- ✅ **图表保存已持久化**：`web_api/routers/charts.py` 已迁移到数据库存储（`SavedChart` 模型），使用 `ChartDBManager` 管理，支持用户隔离和数据持久化。容器重启不会丢失数据，支持多实例部署。
 - **颜色管理为 JSON 文件写放大器**：`chart/color/color_manager.py`/`web_api/routers/colors.py` 为每个用户写 `data/colors/<user>/color_dict.json`。`ColorManager` 在每次写操作都直接 `json.dump`，无文件锁、无版本校验。多个请求在 Docker 中并行运行会导致文件损坏；同时这些 JSON 依旧挂在容器本地卷上，备份策略缺失。
 - **全局 ColorManager**：`web_api/main.py` 和 `web_bridge/adapters/chart_adapter.py` 在模块级创建 `ColorManager()`，这会把默认颜色保存在单个 JSON 里，对用户隔离和热更新都有副作用。
 
@@ -31,7 +31,7 @@
 | 等级 | 风险 | 影响 | 建议 |
 | --- | --- | --- | --- |
 | 高 | 前端 API 指向 `localhost` | 所有浏览器请求失败 | 在构建/运行阶段注入正确的公网 API URL，或改为相对路径并加反向代理 |
-| 高 | 图表存储只在内存 | 容器重启即丢数据，无法水平扩展 | 上线前明确定义持久化方案（数据库/文件），至少提供“实验性质”警告 |
+| ~~高~~ ✅ | ~~图表存储只在内存~~ | ~~容器重启即丢数据，无法水平扩展~~ | ✅ **已解决**：已迁移到数据库存储，使用 `saved_charts` 表，支持用户隔离和数据持久化 |
 | 高 | JWT 秘钥默认值 | Token 可伪造，导致账户被接管 | 通过环境变量强制设置随机秘钥，并在启动脚本中校验 |
 | 中 | 颜色 JSON 并发写 | 可能写花用户颜色库，且难于备份 | 切换到数据库或加文件锁/版本号 |
 | 中 | pip 源硬编码清华 | 非大陆网络下构建失败 | 允许通过 `ARG PIP_INDEX_URL` 覆盖，默认使用官方源 |

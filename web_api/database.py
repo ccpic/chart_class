@@ -3,7 +3,7 @@
 使用 SQLAlchemy ORM 管理用户数据
 """
 
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Enum as SQLEnum, UniqueConstraint
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Enum as SQLEnum, UniqueConstraint, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from datetime import datetime
@@ -99,6 +99,29 @@ class ColorPalette(Base):
 
     def __repr__(self):
         return f"<ColorPalette(id={self.id}, user_id={self.user_id}, name='{self.name}', is_default={self.is_default})>"
+
+
+class SavedChart(Base):
+    """保存的图表模型（用户隔离）"""
+    __tablename__ = "saved_charts"
+
+    id = Column(String(36), primary_key=True, index=True)  # UUID 字符串
+    user_id = Column(Integer, nullable=False, index=True)  # 用户ID，支持用户隔离
+    name = Column(String(200), nullable=False)  # 图表名称
+    tags = Column(String(1000), nullable=True)  # 标签列表（JSON 字符串）
+    canvas = Column(Text, nullable=False)  # 画布配置（JSON 字符串）
+    subplots = Column(Text, nullable=False)  # 子图列表（JSON 字符串）
+    version = Column(String(20), default="1.0", nullable=False)  # 数据格式版本
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # 唯一约束：同一用户不能有重复的图表ID（虽然ID是UUID，但为了数据完整性）
+    __table_args__ = (
+        UniqueConstraint("user_id", "id", name="uq_user_chart_id"),
+    )
+
+    def __repr__(self):
+        return f"<SavedChart(id='{self.id}', user_id={self.user_id}, name='{self.name}')>"
 
 
 def init_db():
