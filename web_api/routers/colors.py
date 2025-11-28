@@ -1,29 +1,18 @@
 """
 颜色管理 API（支持用户隔离）
-每个用户有独立的颜色字典文件
+使用数据库存储颜色映射，解决并发写问题
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
-from pathlib import Path
-import json
 
 from web_api.database import get_db, User
 from web_api.middleware import get_current_active_user
-from chart.color.color_manager import ColorManager, DEFAULT_PALETTE
+from web_api.color_db_manager import ColorDBManager
 
 router = APIRouter()
-
-DEFAULT_COLOR_VALUE_MAP = {name: name for name in DEFAULT_PALETTE}
-
-
-def ensure_default_palette(cm: ColorManager) -> None:
-    """确保用户初次使用时拥有默认调色板颜色."""
-    for name, color in DEFAULT_COLOR_VALUE_MAP.items():
-        if cm.get(name) is None:
-            cm.add(name=name, color=color, named_color=name, overwrite=False)
 
 
 # ============ 数据模型 ============
@@ -66,25 +55,19 @@ class PaletteUpdateRequest(BaseModel):
     palette: List[str]
 
 
-def get_user_color_manager(user_id: int) -> ColorManager:
-    """获取用户的颜色管理器"""
-    # 每个用户有独立的颜色文件
-    DATA_DIR = Path(__file__).parent.parent.parent / "data" / "colors"
-    user_color_dir = DATA_DIR / str(user_id)
-    user_color_dir.mkdir(parents=True, exist_ok=True)
-    color_json_path = user_color_dir / "color_dict.json"
-
-    return ColorManager(json_path=str(color_json_path))
+def get_user_color_manager(db: Session, user_id: int) -> ColorDBManager:
+    """获取用户的颜色管理器（数据库版本）"""
+    return ColorDBManager(db, user_id)
 
 
 @router.get("/colors", response_model=List[ColorResponse])
 async def list_colors(
     search: Optional[str] = Query(None, description="搜索关键词"),
     current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
 ):
     """获取当前用户的所有颜色映射"""
-    color_manager = get_user_color_manager(current_user.id)
-    ensure_default_palette(color_manager)
+    color_manager = get_user_color_manager(db, current_user.id)
     mappings = color_manager.list_all(search=search)
     return [
         ColorResponse(name=m.name, color=m.color, named_color=m.named_color)
@@ -95,10 +78,10 @@ async def list_colors(
 @router.get("/colors/meta/stats")
 async def get_color_stats(
     current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
 ):
     """获取当前用户的颜色统计信息"""
-    color_manager = get_user_color_manager(current_user.id)
-    ensure_default_palette(color_manager)
+    color_manager = get_user_color_manager(db, current_user.id)
     all_colors = color_manager.to_dict()
     return {
         "total_colors": len(all_colors),
@@ -106,9 +89,12 @@ async def get_color_stats(
 
 
 @router.get("/colors/palette", response_model=List[str])
-async def get_color_palette(current_user: User = Depends(get_current_active_user)):
+async def get_color_palette(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
     """获取当前用户的调色板顺序"""
-    color_manager = get_user_color_manager(current_user.id)
+    color_manager = get_user_color_manager(db, current_user.id)
     return color_manager.get_palette()
 
 
@@ -116,9 +102,10 @@ async def get_color_palette(current_user: User = Depends(get_current_active_user
 async def update_color_palette(
     request: PaletteUpdateRequest,
     current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
 ):
     """更新当前用户的调色板顺序"""
-    color_manager = get_user_color_manager(current_user.id)
+    color_manager = get_user_color_manager(db, current_user.id)
     color_manager.set_palette(request.palette)
     return MessageResponse(message="调色板已更新", success=True)
 
@@ -127,10 +114,10 @@ async def update_color_palette(
 async def get_color(
     name: str,
     current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
 ):
     """获取指定颜色映射"""
-    color_manager = get_user_color_manager(current_user.id)
-    ensure_default_palette(color_manager)
+    color_manager = get_user_color_manager(db, current_user.id)
     mapping = color_manager.get(name)
     if not mapping:
         raise HTTPException(
@@ -146,9 +133,10 @@ async def get_color(
 async def create_color(
     request: ColorCreateRequest,
     current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
 ):
     """添加新颜色映射"""
-    color_manager = get_user_color_manager(current_user.id)
+    color_manager = get_user_color_manager(db, current_user.id)
     success = color_manager.add(
         name=request.name,
         color=request.color,
@@ -170,9 +158,10 @@ async def update_color(
     name: str,
     request: ColorUpdateRequest,
     current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
 ):
     """更新颜色映射"""
-    color_manager = get_user_color_manager(current_user.id)
+    color_manager = get_user_color_manager(db, current_user.id)
     current = color_manager.get(name)
     if not current:
         raise HTTPException(
@@ -202,9 +191,10 @@ async def update_color(
 async def delete_color(
     name: str,
     current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
 ):
     """删除颜色映射"""
-    color_manager = get_user_color_manager(current_user.id)
+    color_manager = get_user_color_manager(db, current_user.id)
     success = color_manager.delete(name)
 
     if not success:

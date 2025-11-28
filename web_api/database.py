@@ -3,7 +3,7 @@
 使用 SQLAlchemy ORM 管理用户数据
 """
 
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Enum as SQLEnum
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from datetime import datetime
@@ -53,6 +53,31 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', role='{self.role}')>"
+
+
+class ColorMapping(Base):
+    """颜色映射模型"""
+    __tablename__ = "color_mappings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)  # 用户ID，支持用户隔离
+    name = Column(String(100), nullable=False)  # 颜色名称
+    color = Column(String(20), nullable=False)  # HEX 颜色值
+    named_color = Column(String(50), nullable=True)  # matplotlib 命名颜色
+    category = Column(String(50), nullable=True)  # 分类
+    description = Column(String(255), nullable=True)  # 描述
+    aliases = Column(String(500), nullable=True)  # 别名列表（JSON 字符串）
+    palette_order = Column(Integer, nullable=True)  # 调色板顺序（NULL 表示不在调色板中）
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # 唯一约束：同一用户不能有重复的颜色名称
+    __table_args__ = (
+        UniqueConstraint("user_id", "name", name="uq_user_color_name"),
+    )
+
+    def __repr__(self):
+        return f"<ColorMapping(id={self.id}, user_id={self.user_id}, name='{self.name}')>"
 
 
 def init_db():

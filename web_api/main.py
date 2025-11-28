@@ -27,14 +27,12 @@ from web_api.models import (
     SubplotConfigModel,
 )
 
-# 导入颜色管理
-from chart.color.color_manager import ColorManager
-
 # 导入用户权限模块
-from web_api.database import init_db, User
+from web_api.database import init_db, User, get_db
 from web_api.routers import users, charts, colors
 from web_api.middleware import get_current_active_user
 from web_api.routers.colors import get_user_color_manager
+from sqlalchemy.orm import Session
 
 # 配置日志
 logging.basicConfig(
@@ -105,8 +103,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 全局颜色管理器（保留用于向后兼容，新代码应使用用户隔离的颜色管理器）
-color_manager = ColorManager()
+# 注意：颜色管理已迁移到数据库，使用 get_user_color_manager(db, user_id) 获取用户颜色管理器
 
 # 集成路由
 app.include_router(users.router, prefix="/api/auth", tags=["认证"])
@@ -163,13 +160,14 @@ async def root():
 
 def _build_user_color_config(
     user_id: int,
+    db: Session,
 ) -> Tuple[Optional[Dict[str, str]], Optional[List[str]]]:
     """
     根据用户ID构建颜色字典和调色板
     优先使用命名颜色，其次使用 HEX
     """
     try:
-        color_manager = get_user_color_manager(user_id)
+        color_manager = get_user_color_manager(db, user_id)
         user_colors = color_manager.list_all()
         if not user_colors:
             return None, None
@@ -196,6 +194,7 @@ def _build_user_color_config(
 async def render_canvas(
     request: RenderRequestModel,
     current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
 ):
     """
     渲染多子图画布
@@ -251,7 +250,7 @@ async def render_canvas(
         canvas_dict = request.canvas.dict()
         subplots_list = [s.dict() for s in request.subplots]
 
-        color_dict, palette_colors = _build_user_color_config(current_user.id)
+        color_dict, palette_colors = _build_user_color_config(current_user.id, db)
 
         image_bytes = adapter.render_canvas(
             canvas_dict,
@@ -278,7 +277,9 @@ async def render_canvas(
 
 @app.post("/api/render/subplot")
 async def render_subplot(
-    subplot: SubplotConfigModel, current_user: User = Depends(get_current_active_user)
+    subplot: SubplotConfigModel,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
 ):
     """
     渲染单个子图（独立预览）
@@ -324,7 +325,7 @@ async def render_subplot(
         subplot_config = subplot.dict()
         subplot_config["ax_index"] = 0
 
-        color_dict, palette_colors = _build_user_color_config(current_user.id)
+        color_dict, palette_colors = _build_user_color_config(current_user.id, db)
 
         image_bytes = adapter.render_canvas(
             canvas_config,
