@@ -711,7 +711,7 @@ class WebChartAdapter:
 
     def get_supported_chart_types(self) -> List[str]:
         """返回支持的图表类型列表"""
-        return ["bar", "line", "pie", "area", "bubble", "table", "hist", "boxdot"]
+        return ["bar", "barh", "line", "pie", "area", "bubble", "table", "hist", "boxdot"]
 
     def get_default_params(self, chart_type: str) -> Dict[str, Any]:
         """
@@ -721,6 +721,14 @@ class WebChartAdapter:
         """
         defaults = {
             "bar": {"stacked": True, "show_label": True, "label_formatter": "{abs}"},
+            "barh": {
+                "stacked": True,
+                "show_label": True,
+                "label_formatter": "{abs}",
+                "label_threshold": 0.02,
+                "label_pos": "smart",
+                "bar_height": 0.8,
+            },
             "line": {
                 "marker": "o",
                 "show_label": [],

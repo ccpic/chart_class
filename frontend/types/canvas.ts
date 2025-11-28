@@ -5,6 +5,7 @@
 
 export type ChartType =
   | "bar"
+  | "barh" // 条形图（横向柱状图）
   | "line"
   | "pie"
   | "area"

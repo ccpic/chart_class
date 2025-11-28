@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import {
   BarChart3,
+  BarChart2,
   LineChart,
   PieChart,
   AreaChart,
@@ -27,6 +28,7 @@ import DeleteSubplotDialog from './DeleteSubplotDialog';
 // 图表类型映射
 const CHART_TYPE_LABELS: Record<ChartType, string> = {
   bar: '柱状图',
+  barh: '条形图',
   line: '折线图',
   pie: '饼图',
   area: '面积图',
@@ -39,6 +41,7 @@ const CHART_TYPE_LABELS: Record<ChartType, string> = {
 // 图表类型图标映射
 const CHART_TYPE_ICONS: Record<ChartType, React.ReactNode> = {
   bar: <BarChart3 className="h-4 w-4" />,
+  barh: <BarChart2 className="h-4 w-4 rotate-90" />,
   line: <LineChart className="h-4 w-4" />,
   pie: <PieChart className="h-4 w-4" />,
   area: <AreaChart className="h-4 w-4" />,

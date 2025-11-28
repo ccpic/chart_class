@@ -11,10 +11,12 @@ import {
   Table2,
   BarChart4,
   Box,
+  BarChart2,
 } from 'lucide-react';
 
 const CHART_TYPES: { value: ChartType; label: string; icon: React.ReactNode }[] = [
   { value: 'bar', label: '柱状图', icon: <BarChart3 className="h-5 w-5" /> },
+  { value: 'barh', label: '条形图', icon: <BarChart2 className="h-5 w-5 rotate-90" /> },
   { value: 'line', label: '折线图', icon: <LineChart className="h-5 w-5" /> },
   { value: 'pie', label: '饼图', icon: <PieChart className="h-5 w-5" /> },
   { value: 'area', label: '面积图', icon: <AreaChart className="h-5 w-5" /> },

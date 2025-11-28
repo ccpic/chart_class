@@ -4,6 +4,7 @@ import BubbleParamsEditor from './BubbleParamsEditor';
 import TableParamsEditor from './TableParamsEditor';
 import HistParamsEditor from './HistParamsEditor';
 import BarParamsEditor from './BarParamsEditor';
+import BarhParamsEditor from './BarhParamsEditor';
 import LineParamsEditor from './LineParamsEditor';
 import AreaParamsEditor from './AreaParamsEditor';
 import PieParamsEditor from './PieParamsEditor';
@@ -23,6 +24,7 @@ function getChartTypeName(kind: string): string {
     table: '高级表格',
     hist: '直方图',
     bar: '柱状图',
+    barh: '条形图',
     line: '折线图',
     pie: '饼图',
     boxdot: '箱型图',
@@ -60,6 +62,11 @@ export function PlotSpecificParamsRouter({ subplot }: PlotSpecificParamsRouterPr
   // 柱状图
   if (subplot.chartType === 'bar') {
     return <BarParamsEditor subplot={subplot} />;
+  }
+
+  // 条形图（横向柱状图）
+  if (subplot.chartType === 'barh') {
+    return <BarhParamsEditor subplot={subplot} />;
   }
 
   // 折线图

@@ -12,6 +12,7 @@ class ChartType(str, Enum):
     """支持的图表类型"""
 
     BAR = "bar"
+    BARH = "barh"  # 条形图（横向柱状图）
     LINE = "line"
     PIE = "pie"
     AREA = "area"
