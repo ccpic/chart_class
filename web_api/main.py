@@ -42,8 +42,45 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# 初始化数据库
-init_db()
+# 启动前检查：验证关键配置
+def _startup_checks():
+    """启动前检查关键配置"""
+    import os
+    
+    # 获取环境
+    env = os.getenv("ENVIRONMENT") or os.getenv("NODE_ENV") or os.getenv("FLASK_ENV")
+    if env:
+        env = env.lower()
+    elif os.path.exists("/.dockerenv"):
+        env = "production"
+    else:
+        env = "development"
+    
+    logger.info(f"环境: {env}")
+    
+    # 检查 JWT 秘钥（导入时会自动验证，这里只是记录状态）
+    from web_api.auth import SECRET_KEY
+    if env in ("production", "prod"):
+        if not SECRET_KEY or len(SECRET_KEY) < 32:
+            logger.error("❌ 生产环境 JWT_SECRET_KEY 未设置或强度不足！")
+            raise ValueError("生产环境必须设置强 JWT 秘钥（至少 32 字符）")
+        logger.info("✅ JWT 秘钥已配置（长度: %d）", len(SECRET_KEY))
+    else:
+        if SECRET_KEY and len(SECRET_KEY) >= 32:
+            logger.info("✅ JWT 秘钥已配置（长度: %d）", len(SECRET_KEY))
+        else:
+            logger.warning("⚠️  开发环境使用默认 JWT 秘钥，生产环境请设置 JWT_SECRET_KEY")
+    
+    # 检查数据库
+    try:
+        init_db()
+        logger.info("✅ 数据库初始化成功")
+    except Exception as e:
+        logger.error(f"❌ 数据库初始化失败: {e}")
+        raise
+
+# 执行启动检查
+_startup_checks()
 
 # 创建应用
 app = FastAPI(

@@ -19,6 +19,21 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM 检查环境变量（如果使用生产配置）
+if exist "docker-compose.prod.yml" (
+    echo.
+    echo 🔍 检查环境配置...
+    python ..\scripts\check_env.py
+    if errorlevel 1 (
+        echo.
+        echo ❌ 环境检查失败，请修复问题后重试
+        echo 提示：检查 docker/.env 文件中的配置
+        pause
+        exit /b 1
+    )
+    echo.
+)
+
 REM 构建并启动服务
 docker-compose up -d --build
 
