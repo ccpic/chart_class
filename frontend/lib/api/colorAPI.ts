@@ -96,19 +96,7 @@ class ColorAPIClient {
     return apiGet<ColorStats>("/api/colors/meta/stats");
   }
 
-  /**
-   * 获取全局调色板顺序
-   */
-  async getPalette(): Promise<string[]> {
-    return apiGet<string[]>("/api/colors/palette");
-  }
-
-  /**
-   * 更新调色板顺序
-   */
-  async updatePalette(palette: string[]): Promise<MessageResponse> {
-    return apiPut<MessageResponse>("/api/colors/palette", { palette });
-  }
+  // 注意：调色板功能已独立到 paletteAPI.ts
 }
 
 // 单例实例

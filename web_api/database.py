@@ -56,7 +56,7 @@ class User(Base):
 
 
 class ColorMapping(Base):
-    """颜色映射模型"""
+    """颜色映射模型（已移除调色板相关字段）"""
     __tablename__ = "color_mappings"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -67,7 +67,7 @@ class ColorMapping(Base):
     category = Column(String(50), nullable=True)  # 分类
     description = Column(String(255), nullable=True)  # 描述
     aliases = Column(String(500), nullable=True)  # 别名列表（JSON 字符串）
-    palette_order = Column(Integer, nullable=True)  # 调色板顺序（NULL 表示不在调色板中）
+    # 注意：palette_order 已移除，调色板功能独立到 ColorPalette 表
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -78,6 +78,27 @@ class ColorMapping(Base):
 
     def __repr__(self):
         return f"<ColorMapping(id={self.id}, user_id={self.user_id}, name='{self.name}')>"
+
+
+class ColorPalette(Base):
+    """调色板模型（独立管理颜色值，与颜色映射完全分离）"""
+    __tablename__ = "color_palettes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)  # 用户ID，支持用户隔离
+    name = Column(String(100), nullable=False)  # 调色板名称（如"默认"、"主题1"）
+    is_default = Column(Boolean, default=False, nullable=False)  # 是否默认调色板
+    colors = Column(String(2000), nullable=False)  # 颜色值列表（JSON 字符串，存储 HEX 或命名颜色）
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # 唯一约束：同一用户不能有重复的调色板名称
+    __table_args__ = (
+        UniqueConstraint("user_id", "name", name="uq_user_palette_name"),
+    )
+
+    def __repr__(self):
+        return f"<ColorPalette(id={self.id}, user_id={self.user_id}, name='{self.name}', is_default={self.is_default})>"
 
 
 def init_db():

@@ -10,7 +10,7 @@ from datetime import datetime
 import json
 
 from web_api.database import ColorMapping
-from chart.color.color_manager import ColorMapping as ColorMappingData, DEFAULT_PALETTE
+from chart.color.color_manager import ColorMapping as ColorMappingData
 
 
 class ColorDBManager:
@@ -20,8 +20,9 @@ class ColorDBManager:
     功能:
     - 增删改查颜色映射（使用数据库）
     - 支持用户隔离
-    - 支持调色板顺序管理
     - 解决并发写问题（数据库事务保证）
+    
+    注意：调色板功能已独立到 PaletteDBManager
     """
 
     def __init__(self, db: Session, user_id: int):
@@ -31,32 +32,13 @@ class ColorDBManager:
         Args:
             db: 数据库会话
             user_id: 用户ID
+        
+        注意：颜色映射完全由用户控制，不自动创建任何默认颜色。
+        默认调色板由 PaletteDBManager 管理，与颜色映射完全分离。
         """
         self.db = db
         self.user_id = user_id
-        self._ensure_default_colors()
-
-    def _ensure_default_colors(self):
-        """确保用户拥有默认调色板颜色"""
-        for name in DEFAULT_PALETTE:
-            existing = (
-                self.db.query(ColorMapping)
-                .filter(
-                    and_(ColorMapping.user_id == self.user_id, ColorMapping.name == name)
-                )
-                .first()
-            )
-            if not existing:
-                # 创建默认颜色
-                color_mapping = ColorMapping(
-                    user_id=self.user_id,
-                    name=name,
-                    color=name,  # 默认使用名称作为颜色值
-                    named_color=name,
-                    palette_order=len(DEFAULT_PALETTE) - DEFAULT_PALETTE.index(name),
-                )
-                self.db.add(color_mapping)
-        self.db.commit()
+        # 不再自动创建默认颜色映射，颜色映射完全由用户管理
 
     def add(
         self,
@@ -105,21 +87,7 @@ class ColorDBManager:
             existing.aliases = aliases_json
             existing.updated_at = datetime.utcnow()
         else:
-            # 创建新记录
-            # 获取当前最大调色板顺序
-            max_order = (
-                self.db.query(ColorMapping.palette_order)
-                .filter(
-                    and_(
-                        ColorMapping.user_id == self.user_id,
-                        ColorMapping.palette_order.isnot(None),
-                    )
-                )
-                .order_by(ColorMapping.palette_order.desc())
-                .first()
-            )
-            next_order = (max_order[0] + 1) if max_order and max_order[0] else 1
-
+            # 创建新记录（不设置调色板顺序）
             color_mapping = ColorMapping(
                 user_id=self.user_id,
                 name=name,
@@ -128,7 +96,6 @@ class ColorDBManager:
                 category=category,
                 description=description,
                 aliases=aliases_json,
-                palette_order=next_order,
             )
             self.db.add(color_mapping)
 
@@ -308,26 +275,10 @@ class ColorDBManager:
                 )
             )
 
-        # 按调色板顺序排序
-        results.sort(
-            key=lambda m: (
-                self._get_palette_order(m.name),
-                m.name,
-            )
-        )
+        # 按名称排序（不再按调色板顺序，调色板由 PaletteDBManager 管理）
+        results.sort(key=lambda m: m.name)
 
         return results
-
-    def _get_palette_order(self, name: str) -> int:
-        """获取颜色在调色板中的顺序"""
-        mapping = (
-            self.db.query(ColorMapping)
-            .filter(
-                and_(ColorMapping.user_id == self.user_id, ColorMapping.name == name)
-            )
-            .first()
-        )
-        return mapping.palette_order if mapping and mapping.palette_order is not None else 999999
 
     def to_dict(self) -> Dict[str, str]:
         """
@@ -338,49 +289,4 @@ class ColorDBManager:
         """
         mappings = self.list_all()
         return {mapping.name: mapping.color for mapping in mappings}
-
-    def get_palette(self) -> List[str]:
-        """获取调色板顺序"""
-        mappings = (
-            self.db.query(ColorMapping)
-            .filter(
-                and_(
-                    ColorMapping.user_id == self.user_id,
-                    ColorMapping.palette_order.isnot(None),
-                )
-            )
-            .order_by(ColorMapping.palette_order.asc())
-            .all()
-        )
-        return [m.name for m in mappings]
-
-    def set_palette(self, palette: List[str]):
-        """
-        设置调色板顺序
-        
-        Args:
-            palette: 颜色名称列表（按顺序）
-        """
-        # 先清除所有调色板顺序
-        self.db.query(ColorMapping).filter(
-            ColorMapping.user_id == self.user_id
-        ).update({"palette_order": None})
-
-        # 设置新的调色板顺序
-        for order, name in enumerate(palette, start=1):
-            mapping = (
-                self.db.query(ColorMapping)
-                .filter(
-                    and_(ColorMapping.user_id == self.user_id, ColorMapping.name == name)
-                )
-                .first()
-            )
-            if mapping:
-                mapping.palette_order = order
-
-        try:
-            self.db.commit()
-        except Exception as e:
-            self.db.rollback()
-            raise e
 

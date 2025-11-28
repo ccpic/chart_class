@@ -16,7 +16,7 @@ interface Props {
  * 处理渲染逻辑和状态
  */
 export default function RenderButton({ onRenderComplete, onRenderError }: Props) {
-  const { canvas, subplots } = useCanvasStore();
+  const { canvas, subplots, selectedPaletteName } = useCanvasStore();
   const [isRendering, setIsRendering] = useState(false);
 
   // 检查是否可以渲染
@@ -43,8 +43,8 @@ export default function RenderButton({ onRenderComplete, onRenderError }: Props)
         }
       }
 
-      // 调用渲染 API
-      const blob = await renderCanvas(canvas, subplots);
+      // 调用渲染 API，传递选定的调色板名称
+      const blob = await renderCanvas(canvas, subplots, selectedPaletteName);
       const imageUrl = URL.createObjectURL(blob);
       onRenderComplete(imageUrl);
     } catch (err) {

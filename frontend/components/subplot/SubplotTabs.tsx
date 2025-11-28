@@ -22,7 +22,7 @@ interface Props {
  * 三个并列 tabs：渲染预览、表格编辑、JSON 编辑
  */
 export default function SubplotTabs({ subplot }: Props) {
-  const { updateSubplot } = useCanvasStore();
+  const { updateSubplot, selectedPaletteName } = useCanvasStore();
   
   // Tab 状态管理
   const [activeTab, setActiveTab] = useState('preview');
@@ -48,7 +48,7 @@ export default function SubplotTabs({ subplot }: Props) {
     setRenderError(null);
 
     try {
-      const blob = await renderSubplot(subplot);
+      const blob = await renderSubplot(subplot, selectedPaletteName);
       const imageUrl = URL.createObjectURL(blob);
       setRenderedImage(imageUrl);
       // 自动跳转到渲染预览 tab

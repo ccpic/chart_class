@@ -14,9 +14,11 @@ interface CanvasStore {
   currentSubplotId: string | null; // 当前正在编辑的子图（用于路由同步）
   renderedImage: string | null; // 画布渲染结果
   renderError: string | null; // 渲染错误信息
+  selectedPaletteName: string | null; // 当前选定的调色板名称（null 表示使用默认调色板）
 
   // Canvas Actions
   updateCanvas: (config: Partial<CanvasConfig>) => void;
+  setSelectedPalette: (paletteName: string | null) => void; // 设置选定的调色板
 
   // Subplot Actions
   addSubplot: (axIndex: number, chartType?: ChartType) => void;
@@ -82,11 +84,15 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   currentSubplotId: null,
   renderedImage: null,
   renderError: null,
+  selectedPaletteName: null, // 默认使用默认调色板
 
   updateCanvas: (config) =>
     set((state) => ({
       canvas: { ...state.canvas, ...config },
     })),
+
+  setSelectedPalette: (paletteName) =>
+    set({ selectedPaletteName: paletteName }),
 
   setRenderedImage: (imageUrl) =>
     set({ renderedImage: imageUrl, renderError: null }),
@@ -266,6 +272,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       subplots: [],
       selectedSubplotId: null,
       currentSubplotId: null,
+      selectedPaletteName: null,
     });
     // 同时清除本地存储
     try {

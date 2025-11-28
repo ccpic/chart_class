@@ -29,9 +29,10 @@ from web_api.models import (
 
 # 导入用户权限模块
 from web_api.database import init_db, User, get_db
-from web_api.routers import users, charts, colors
+from web_api.routers import users, charts, colors, palettes
 from web_api.middleware import get_current_active_user
 from web_api.routers.colors import get_user_color_manager
+from web_api.palette_db_manager import PaletteDBManager
 from sqlalchemy.orm import Session
 
 # 配置日志
@@ -109,6 +110,7 @@ app.add_middleware(
 app.include_router(users.router, prefix="/api/auth", tags=["认证"])
 app.include_router(charts.router, prefix="/api", tags=["图表管理"])
 app.include_router(colors.router, prefix="/api", tags=["颜色管理"])
+app.include_router(palettes.router, prefix="/api", tags=["调色板管理"])
 
 
 # 数据模型
@@ -148,6 +150,7 @@ async def root():
         "services": {
             "chart_rendering": "/api/render/*",
             "color_management": "/api/colors/*",
+            "palette_management": "/api/palettes/*",
             "user_auth": "/api/auth/*",
             "chart_management": "/api/charts/*",
         },
@@ -161,30 +164,49 @@ async def root():
 def _build_user_color_config(
     user_id: int,
     db: Session,
+    palette_name: Optional[str] = None,
 ) -> Tuple[Optional[Dict[str, str]], Optional[List[str]]]:
     """
     根据用户ID构建颜色字典和调色板
     优先使用命名颜色，其次使用 HEX
+    
+    注意：
+    - 颜色映射：用于图表中通过名称引用颜色
+    - 调色板：完全独立，直接存储颜色值（HEX 或命名颜色），不依赖颜色映射
+    
+    Args:
+        user_id: 用户ID
+        db: 数据库会话
+        palette_name: 调色板名称，如果为 None 或 "默认"，则使用默认调色板
     """
     try:
+        # 获取颜色映射（用于图表中通过名称引用颜色）
         color_manager = get_user_color_manager(db, user_id)
         user_colors = color_manager.list_all()
-        if not user_colors:
-            return None, None
-        mapping_lookup = {mapping.name: mapping for mapping in user_colors}
-        color_dict = {
-            name: (mapping.named_color if mapping.named_color else mapping.color)
-            for name, mapping in mapping_lookup.items()
-        }
-        palette_names = color_manager.get_palette()
-        palette_colors: List[str] = []
-        for name in palette_names:
-            mapping = mapping_lookup.get(name)
-            if mapping:
-                palette_colors.append(
-                    mapping.named_color if mapping.named_color else mapping.color
-                )
-        return color_dict or None, (palette_colors or None)
+        
+        color_dict = None
+        if user_colors:
+            color_dict = {
+                mapping.name: (mapping.named_color if mapping.named_color else mapping.color)
+                for mapping in user_colors
+            }
+        
+        # 获取调色板（直接使用颜色值，不依赖颜色映射）
+        palette_manager = PaletteDBManager(db, user_id)
+        if palette_name and palette_name != "默认":
+            # 获取指定调色板
+            palette_data = palette_manager.get_palette(palette_name)
+            if palette_data:
+                palette_colors = palette_data.get("colors", [])
+            else:
+                # 如果指定的调色板不存在，回退到默认调色板
+                logger.warning(f"调色板 '{palette_name}' 不存在，使用默认调色板")
+                palette_colors = palette_manager.get_default_palette()
+        else:
+            # 使用默认调色板
+            palette_colors = palette_manager.get_default_palette()
+        
+        return color_dict, (palette_colors if palette_colors else None)
     except Exception as exc:
         logger.warning(f"加载用户颜色失败 user_id={user_id}: {exc}")
         return None, None
@@ -250,7 +272,9 @@ async def render_canvas(
         canvas_dict = request.canvas.dict()
         subplots_list = [s.dict() for s in request.subplots]
 
-        color_dict, palette_colors = _build_user_color_config(current_user.id, db)
+        # 从请求中获取调色板名称
+        palette_name = request.palette_name
+        color_dict, palette_colors = _build_user_color_config(current_user.id, db, palette_name=palette_name)
 
         image_bytes = adapter.render_canvas(
             canvas_dict,
@@ -325,7 +349,9 @@ async def render_subplot(
         subplot_config = subplot.dict()
         subplot_config["ax_index"] = 0
 
-        color_dict, palette_colors = _build_user_color_config(current_user.id, db)
+        # 从请求中获取调色板名称
+        palette_name = subplot.palette_name
+        color_dict, palette_colors = _build_user_color_config(current_user.id, db, palette_name=palette_name)
 
         image_bytes = adapter.render_canvas(
             canvas_config,

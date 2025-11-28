@@ -5,6 +5,7 @@ import { Loader2, AlertCircle, BarChart3 } from 'lucide-react';
 import { SubplotConfig } from '@/types/canvas';
 import { renderSubplot } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { useCanvasStore } from '@/store/canvasStore';
 
 interface Props {
   subplot: SubplotConfig;
@@ -15,6 +16,7 @@ interface Props {
  * 显示单个子图的渲染效果
  */
 export default function SubplotPreview({ subplot }: Props) {
+  const { selectedPaletteName } = useCanvasStore();
   const [isRendering, setIsRendering] = useState(false);
   const [renderedImage, setRenderedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export default function SubplotPreview({ subplot }: Props) {
     setError(null);
 
     try {
-      const blob = await renderSubplot(subplot);
+      const blob = await renderSubplot(subplot, selectedPaletteName);
       const imageUrl = URL.createObjectURL(blob);
       setRenderedImage(imageUrl);
     } catch (err) {

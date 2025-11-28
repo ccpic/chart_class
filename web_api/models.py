@@ -37,6 +37,7 @@ class SubplotConfigModel(BaseModel):
     chart_type: ChartType = Field(..., description="图表类型")
     data: ChartDataModel = Field(..., description="数据")
     params: Dict[str, Any] = Field(default_factory=dict, description="图表参数")
+    palette_name: Optional[str] = Field(None, description="调色板名称，如果未设置则使用默认调色板")
 
 
 class CanvasConfigModel(BaseModel):
@@ -81,3 +82,4 @@ class RenderRequestModel(BaseModel):
 
     canvas: CanvasConfigModel = Field(..., description="画布配置")
     subplots: List[SubplotConfigModel] = Field(..., description="子图列表")
+    palette_name: Optional[str] = Field(None, description="调色板名称，如果未设置则使用默认调色板")

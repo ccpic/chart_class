@@ -62,13 +62,19 @@ function buildAuthHeaders(): HeadersInit {
  * 渲染整个画布（多子图）
  * @param canvas 画布配置
  * @param subplots 子图列表
+ * @param paletteName 调色板名称（可选，null 表示使用默认调色板）
  * @returns 图片 Blob
  */
 export async function renderCanvas(
   canvas: CanvasConfig,
-  subplots: SubplotConfig[]
+  subplots: SubplotConfig[],
+  paletteName?: string | null
 ): Promise<Blob> {
   const requestData = convertKeysToSnakeCase({ canvas, subplots });
+  // 如果指定了调色板名称，添加到请求数据中
+  if (paletteName !== undefined && paletteName !== null) {
+    (requestData as any).palette_name = paletteName;
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/render/canvas`, {
     method: "POST",
@@ -89,9 +95,16 @@ export async function renderCanvas(
  * @param subplot 子图配置
  * @returns 图片 Blob
  */
-export async function renderSubplot(subplot: SubplotConfig): Promise<Blob> {
+export async function renderSubplot(
+  subplot: SubplotConfig,
+  paletteName?: string | null
+): Promise<Blob> {
   // 直接发送完整的子图配置
   const requestData = convertKeysToSnakeCase(subplot);
+  // 如果指定了调色板名称，添加到请求数据中
+  if (paletteName !== undefined && paletteName !== null) {
+    (requestData as any).palette_name = paletteName;
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/render/subplot`, {
     method: "POST",

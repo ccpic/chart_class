@@ -49,12 +49,6 @@ class MessageResponse(BaseModel):
     success: bool
 
 
-class PaletteUpdateRequest(BaseModel):
-    """调色板更新请求"""
-
-    palette: List[str]
-
-
 def get_user_color_manager(db: Session, user_id: int) -> ColorDBManager:
     """获取用户的颜色管理器（数据库版本）"""
     return ColorDBManager(db, user_id)
@@ -86,28 +80,6 @@ async def get_color_stats(
     return {
         "total_colors": len(all_colors),
     }
-
-
-@router.get("/colors/palette", response_model=List[str])
-async def get_color_palette(
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db),
-):
-    """获取当前用户的调色板顺序"""
-    color_manager = get_user_color_manager(db, current_user.id)
-    return color_manager.get_palette()
-
-
-@router.put("/colors/palette", response_model=MessageResponse)
-async def update_color_palette(
-    request: PaletteUpdateRequest,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db),
-):
-    """更新当前用户的调色板顺序"""
-    color_manager = get_user_color_manager(db, current_user.id)
-    color_manager.set_palette(request.palette)
-    return MessageResponse(message="调色板已更新", success=True)
 
 
 @router.get("/colors/{name}", response_model=ColorResponse)
