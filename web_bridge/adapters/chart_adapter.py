@@ -49,6 +49,8 @@ class WebChartAdapter:
             style = {
                 "title": canvas_config.get("title"),
                 "title_fontsize": canvas_config.get("title_fontsize"),
+                "xtitle": canvas_config.get("xtitle"),
+                "xtitle_fontsize": canvas_config.get("xtitle_fontsize"),
                 "ytitle": canvas_config.get("ytitle"),
                 "ytitle_fontsize": canvas_config.get("ytitle_fontsize"),
                 "show_legend": canvas_config.get("show_legend", False),
@@ -93,6 +95,8 @@ class WebChartAdapter:
                 width_ratios=canvas_config.get("width_ratios"),
                 height_ratios=canvas_config.get("height_ratios"),
                 fontsize=canvas_config.get("fontsize", 14),
+                sharex=canvas_config.get("sharex", False),
+                sharey=canvas_config.get("sharey", False),
                 style=style,
                 color_dict=color_dict,  # 传递颜色字典
                 cmap_qual=cmap_qual,

@@ -60,6 +60,8 @@ class CanvasConfigModel(BaseModel):
     # 画布级别样式
     title: Optional[str] = Field(None, description="画布总标题")
     title_fontsize: Optional[float] = Field(None, description="总标题字体大小")
+    xtitle: Optional[str] = Field(None, description="X轴总标题")
+    xtitle_fontsize: Optional[float] = Field(None, description="X轴总标题字体大小")
     ytitle: Optional[str] = Field(None, description="Y轴总标题")
     ytitle_fontsize: Optional[float] = Field(None, description="Y轴总标题字体大小")
     fontsize: Optional[int] = Field(14, description="全局字体大小")
@@ -71,6 +73,10 @@ class CanvasConfigModel(BaseModel):
     bbox_to_anchor: Optional[Tuple[float, float]] = Field(
         (1, 0.5), description="图例相对位置"
     )
+
+    # 坐标轴共享
+    sharex: bool = Field(False, description="子图是否共享X轴")
+    sharey: bool = Field(False, description="子图是否共享Y轴")
 
     # 其他设置
     label_outer: bool = Field(False, description="仅显示外围刻度标签")

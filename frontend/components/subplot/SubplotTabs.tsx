@@ -11,6 +11,17 @@ import Image from 'next/image';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertCircle, BarChart3, Info, Save, RotateCcw } from 'lucide-react';
 import DataGridEditor from './DataGridEditor';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { PlotSpecificParamsTab } from './params/PlotSpecificParamsTab';
 
 interface Props {
@@ -35,6 +46,9 @@ export default function SubplotTabs({ subplot }: Props) {
   // JSON 编辑相关状态
   const [jsonText, setJsonText] = useState(JSON.stringify(subplot.data, null, 2));
   const [jsonError, setJsonError] = useState<string | null>(null);
+  
+  // 清空数据确认对话框状态
+  const [clearDataDialogOpen, setClearDataDialogOpen] = useState(false);
 
   const hasData =
     subplot.data.columns &&
@@ -74,6 +88,7 @@ export default function SubplotTabs({ subplot }: Props) {
     setRenderedImage(null);
     setRenderError(null);
     setJsonError(null);
+    setClearDataDialogOpen(false);
   };
 
   // 表格数据变化
@@ -135,14 +150,35 @@ export default function SubplotTabs({ subplot }: Props) {
           )}
         </Button>
 
-        <Button
-          onClick={handleClearData}
-          variant="outline"
-          className="gap-2"
-        >
-          <Trash2 className="h-4 w-4" />
-          清空数据
-        </Button>
+        <AlertDialog open={clearDataDialogOpen} onOpenChange={setClearDataDialogOpen}>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+            >
+              <Trash2 className="h-4 w-4" />
+              清空数据
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>确认清空数据</AlertDialogTitle>
+              <AlertDialogDescription>
+                此操作将清空子图 {subplot.axIndex + 1} 的所有数据（列名、行索引和数据内容），无法撤销。确定要继续吗？
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>取消</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleClearData}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                确认清空
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <div className="ml-auto text-sm text-gray-600">
           {hasData 

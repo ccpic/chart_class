@@ -61,9 +61,12 @@ export default function AppSidebar() {
                   <LayoutGrid className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="text-lg font-semibold">Chart Class</span>
+                  <span className="text-lg font-semibold flex items-center gap-1">
+                    Chart Class
+                    <span className="ml-1 rounded bg-gray-400 text-white text-xs leading-none px-1.5 py-0.5 font-bold shadow">2</span>
+                  </span>
                   <span className="text-xs text-muted-foreground">
-                    可视化工具
+                    画图助手
                   </span>
                 </div>
               </Link>

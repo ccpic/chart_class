@@ -5,8 +5,8 @@ import AuthGuard from '@/components/auth/AuthGuard'
 import ConditionalLayout from '@/components/layout/ConditionalLayout'
 
 export const metadata: Metadata = {
-  title: 'Chart Class - 可视化工具',
-  description: 'Web visualization tool for Chart Class library',
+  title: 'Chart Class2 - 画图助手',
+  description: 'Next.js前端控制后端Matplotlib绘图库的Web可视化工具',
 }
 
 export default function RootLayout({

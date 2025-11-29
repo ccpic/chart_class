@@ -46,6 +46,8 @@ export interface CanvasConfig {
   // 画布级别样式
   title?: string;
   titleFontsize?: number;
+  xtitle?: string;
+  xtitleFontsize?: number;
   ytitle?: string;
   ytitleFontsize?: number;
   fontsize?: number;

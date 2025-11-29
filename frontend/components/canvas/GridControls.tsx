@@ -4,6 +4,13 @@ import React from 'react';
 import { useCanvasStore } from '@/store/canvasStore';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { HelpCircle } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function GridControls() {
   const { canvas, updateCanvas } = useCanvasStore();
@@ -116,15 +123,28 @@ export default function GridControls() {
         />
       </div>
       
-      <div className="space-y-2">
-        <label className="text-xs text-gray-600">Y轴总标题</label>
-        <input
-          type="text"
-          value={canvas.ytitle || ''}
-          onChange={(e) => updateCanvas({ ytitle: e.target.value })}
-          placeholder="可选"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-xs text-gray-600">X轴总标题</label>
+          <input
+            type="text"
+            value={canvas.xtitle || ''}
+            onChange={(e) => updateCanvas({ xtitle: e.target.value })}
+            placeholder="可选"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <label className="text-xs text-gray-600">Y轴总标题</label>
+          <input
+            type="text"
+            value={canvas.ytitle || ''}
+            onChange={(e) => updateCanvas({ ytitle: e.target.value })}
+            placeholder="可选"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
+          />
+        </div>
       </div>
 
       {/* 字体大小 */}
@@ -155,7 +175,7 @@ export default function GridControls() {
         </div>
         
         {canvas.showLegend && (
-          <>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs text-gray-600">图例位置</label>
               <select
@@ -180,73 +200,130 @@ export default function GridControls() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
-          </>
+          </div>
         )}
       </div>
       
       {/* 导出设置 */}
       <div className="space-y-3 pt-3 border-t">
-        <div className="space-y-2">
-          <label className="text-xs text-gray-600">图片 DPI</label>
-          <input
-            type="number"
-            min={72}
-            max={600}
-            step={50}
-            value={canvas.dpi || 400}
-            onChange={(e) => updateCanvas({ dpi: parseInt(e.target.value) })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
-          />
-          <p className="text-xs text-gray-400">更高的 DPI 获得更清晰的图片</p>
-        </div>
+        <div className="grid grid-cols-2 gap-4 items-center">
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <label className="text-xs text-gray-600">图片 DPI</label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-3 h-3 text-gray-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">更高的 DPI 获得更清晰的图片</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <input
+              type="number"
+              min={72}
+              max={600}
+              step={50}
+              value={canvas.dpi || 400}
+              onChange={(e) => updateCanvas({ dpi: parseInt(e.target.value) })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
 
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="transparent"
-            checked={canvas.transparent ?? true}
-            onCheckedChange={(checked) => updateCanvas({ transparent: !!checked })}
-          />
-          <div className="flex-1">
-            <Label htmlFor="transparent" className="text-xs cursor-pointer">
-              透明背景
-            </Label>
-            <p className="text-xs text-gray-400">保存图片时使用透明背景</p>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="transparent"
+              checked={canvas.transparent ?? true}
+              onCheckedChange={(checked) => updateCanvas({ transparent: !!checked })}
+            />
+            <div className="flex items-center gap-1 flex-1">
+              <Label htmlFor="transparent" className="text-xs cursor-pointer">
+                透明背景
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-3 h-3 text-gray-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">保存图片时使用透明背景</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </div>
       </div>
       
-      {/* 其他设置 */}
+      {/* 坐标轴共享 */}
       <div className="space-y-3 pt-3 border-t">
-        <h3 className="text-sm font-semibold text-gray-700">坐标轴共享</h3>
-        
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="sharex"
-            checked={canvas.sharex ?? false}
-            onCheckedChange={(checked) => updateCanvas({ sharex: !!checked })}
-          />
-          <Label htmlFor="sharex" className="text-xs cursor-pointer">
-            共享 X 轴 (sharex)
-          </Label>
-        </div>
-        <p className="text-xs text-gray-400 pl-6">多子图共享 X 轴刻度和范围</p>
+        <label className="text-xs text-gray-600">坐标轴共享</label>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="sharex"
+              checked={canvas.sharex ?? false}
+              onCheckedChange={(checked) => updateCanvas({ sharex: !!checked })}
+            />
+            <div className="flex items-center gap-1 flex-1">
+              <Label htmlFor="sharex" className="text-xs cursor-pointer">
+                共享 X 轴
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-3 h-3 text-gray-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">多子图共享 X 轴刻度和范围</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
 
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="sharey"
-            checked={canvas.sharey ?? false}
-            onCheckedChange={(checked) => updateCanvas({ sharey: !!checked })}
-          />
-          <Label htmlFor="sharey" className="text-xs cursor-pointer">
-            共享 Y 轴 (sharey)
-          </Label>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="sharey"
+              checked={canvas.sharey ?? false}
+              onCheckedChange={(checked) => updateCanvas({ sharey: !!checked })}
+            />
+            <div className="flex items-center gap-1 flex-1">
+              <Label htmlFor="sharey" className="text-xs cursor-pointer">
+                共享 Y 轴
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-3 h-3 text-gray-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">多子图共享 Y 轴刻度和范围</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
         </div>
-        <p className="text-xs text-gray-400 pl-6">多子图共享 Y 轴刻度和范围</p>
       </div>
       
+      {/* 其他选项 */}
       <div className="space-y-3 pt-3 border-t">
-        <h3 className="text-sm font-semibold text-gray-700">其他选项</h3>
-        
+        <div className="flex items-center gap-1">
+          <label className="text-xs text-gray-600">Label Outer</label>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="w-3 h-3 text-gray-400 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">仅显示外围刻度标签</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <div className="flex items-center space-x-2">
           <Checkbox
             id="labelOuter"
@@ -254,10 +331,9 @@ export default function GridControls() {
             onCheckedChange={(checked) => updateCanvas({ labelOuter: !!checked })}
           />
           <Label htmlFor="labelOuter" className="text-xs cursor-pointer">
-            Label Outer
+            启用
           </Label>
         </div>
-        <p className="text-xs text-gray-400 pl-6">仅显示外围刻度标签</p>
       </div>
     </div>
   );

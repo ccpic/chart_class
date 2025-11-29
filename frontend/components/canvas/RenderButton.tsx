@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Play } from 'lucide-react';
 import { useCanvasStore } from '@/store/canvasStore';
 import { renderCanvas } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -60,9 +60,14 @@ export default function RenderButton({ onRenderComplete, onRenderError }: Props)
     <Button
       onClick={handleRender}
       disabled={isRendering || !canRender}
-      className="w-full"
+      size="sm"
+      className="gap-2"
     >
-      {isRendering && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      {isRendering ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Play className="h-4 w-4" />
+      )}
       {isRendering ? '渲染中...' : '渲染画布'}
     </Button>
   );

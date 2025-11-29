@@ -44,9 +44,9 @@ export default function ResetCanvasButton() {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <SidebarMenuButton>
-          <Trash2 className="size-4" />
-          <span>重置画布</span>
+        <SidebarMenuButton className="text-red-600 hover:text-red-700 hover:bg-red-50">
+          <Trash2 className="size-4 text-red-600" />
+          <span className="text-red-600">重置画布</span>
         </SidebarMenuButton>
       </AlertDialogTrigger>
       <AlertDialogContent>

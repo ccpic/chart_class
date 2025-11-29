@@ -219,6 +219,8 @@ class GridFigure(Figure):
                 # 整体画布的一些风格
                 "title": None,  # 总标题
                 "title_fontsize": figure.fontsize * 1.5,  # 总标题字体大小
+                "xtitle": None,  # x轴总标题
+                "xtitle_fontsize": figure.fontsize * 1.5,  # x轴总标题字体大小
                 "ytitle": None,  # y轴总标题
                 "ytitle_fontsize": figure.fontsize * 1.5,  # y轴总标题字体大小
                 # GridSpec子图的一些风格
@@ -239,6 +241,7 @@ class GridFigure(Figure):
             """执行一遍风格设置，不能在初始化中进行，因为一些风格在画图后才生效"""
 
             self.title(self._title, self._title_fontsize)
+            self.xtitle(self._xtitle, self._xtitle_fontsize)
             self.ytitle(self._ytitle, self._ytitle_fontsize)
             if self._show_legend:
                 self.fig_legend(
@@ -263,6 +266,23 @@ class GridFigure(Figure):
             """
 
             self._figure.suptitle(title, fontsize=fontsize)
+
+        def xtitle(
+            self, title: Optional[str] = None, fontsize: Optional[float] = None
+        ) -> None:
+            """添加整个画布的x轴标题
+
+            Parameters
+            ----------
+            title : Optional[str], optional
+                标题文字内容, by default None
+            fontsize : Optional[float], optional
+                标题字体大小, by default None
+            """
+            try:
+                self._figure.supxlabel(title, fontsize=fontsize)
+            except AttributeError:
+                pass
 
         def ytitle(
             self, title: Optional[str] = None, fontsize: Optional[float] = None

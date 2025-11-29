@@ -344,7 +344,15 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
   // 监听键盘事件（Delete/Backspace 删除，Ctrl+C 复制）
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedCells.size > 0) {
+      // 检查当前焦点是否在输入框内（Textarea 或 Input）
+      const activeElement = document.activeElement;
+      const isInputFocused = activeElement && (
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.tagName === 'INPUT'
+      );
+
+      // 只有当焦点不在输入框内，且有选中单元格时，才执行批量删除
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedCells.size > 0 && !isInputFocused) {
         e.preventDefault();
         deleteSelectedCells();
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedCells.size > 0) {
