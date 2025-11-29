@@ -21,6 +21,8 @@ import {
   Table2,
   Trash2,
   Box,
+  Filter,
+  TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DeleteSubplotDialog from './DeleteSubplotDialog';
@@ -35,6 +37,8 @@ const CHART_TYPE_LABELS: Record<ChartType, string> = {
   bubble: '气泡图',
   hist: '直方图',
   boxdot: '箱型图',
+  funnel: '漏斗图',
+  waterfall: '瀑布图',
   table: '高级表格',
 };
 
@@ -48,6 +52,8 @@ const CHART_TYPE_ICONS: Record<ChartType, React.ReactNode> = {
   bubble: <Droplets className="h-4 w-4" />,
   hist: <BarChart3 className="h-4 w-4" />,
   boxdot: <Box className="h-4 w-4" />,
+  funnel: <Filter className="h-4 w-4" />,
+  waterfall: <TrendingUp className="h-4 w-4" />,
   table: <Table2 className="h-4 w-4" />,
 };
 

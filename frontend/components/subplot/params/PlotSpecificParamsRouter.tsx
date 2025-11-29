@@ -9,6 +9,8 @@ import LineParamsEditor from './LineParamsEditor';
 import AreaParamsEditor from './AreaParamsEditor';
 import PieParamsEditor from './PieParamsEditor';
 import BoxdotParamsEditor from './BoxdotParamsEditor';
+import FunnelParamsEditor from './FunnelParamsEditor';
+import WaterfallParamsEditor from './WaterfallParamsEditor';
 import type { SubplotConfig } from '@/types/canvas';
 
 interface PlotSpecificParamsRouterProps {
@@ -28,10 +30,11 @@ function getChartTypeName(kind: string): string {
     line: '折线图',
     pie: '饼图',
     boxdot: '箱型图',
+    funnel: '漏斗图',
+    waterfall: '瀑布图',
     heatmap: '热力图',
     treemap: '矩形树图',
     waffle: '华夫饼图',
-    funnel: '漏斗图',
     venn: '韦恩图',
     wordcloud: '词云',
   };
@@ -87,6 +90,16 @@ export function PlotSpecificParamsRouter({ subplot }: PlotSpecificParamsRouterPr
   // 箱型图
   if (subplot.chartType === 'boxdot') {
     return <BoxdotParamsEditor subplot={subplot} />;
+  }
+
+  // 漏斗图
+  if (subplot.chartType === 'funnel') {
+    return <FunnelParamsEditor subplot={subplot} />;
+  }
+
+  // 瀑布图
+  if (subplot.chartType === 'waterfall') {
+    return <WaterfallParamsEditor subplot={subplot} />;
   }
 
   // 其他图表类型显示开发中提示

@@ -12,7 +12,9 @@ export type ChartType =
   | "bubble"
   | "table"
   | "hist" // 直方图
-  | "boxdot"; // 箱型图
+  | "boxdot" // 箱型图
+  | "funnel" // 漏斗图
+  | "waterfall"; // 瀑布图
 
 export interface ChartData {
   columns: string[];

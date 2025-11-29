@@ -3,7 +3,7 @@ Plot classes for bar chart types.
 """
 
 from __future__ import annotations
-from typing import Any, Literal
+from typing import Any, Literal, Optional, Dict
 from matplotlib.ticker import FuncFormatter
 import numpy as np
 from chart.plots.base import Plot
@@ -534,5 +534,229 @@ class PlotBarh(Plot):
         self.ax.axvline(0, color="black", linewidth=0.5)  # x轴为0的竖线
 
         self.ax.invert_yaxis()  # 翻转y轴，最上方显示排名靠前的序列
+
+        return self
+
+
+class PlotWaterfall(Plot):
+    """瀑布图绘制类
+
+    瀑布图用于展示累积变化，显示从起始值到结束值的过程。
+    第一个和最后一个柱子显示绝对值，中间柱子显示差值。
+    """
+
+    def plot(
+        self,
+        size: Optional[str] = None,
+        show_connector: bool = True,
+        connector_style: Optional[Dict[str, Any]] = None,
+        show_label: bool = True,
+        label_formatter: str = "{abs}",
+        label_pos: Literal["top", "center", "bottom"] = "top",
+        positive_color: str = "green",
+        negative_color: str = "red",
+        bar_width: float = 0.8,
+        **kwargs: Any,
+    ) -> PlotWaterfall:
+        """继承基本Plot类，绘制瀑布图
+
+        Args:
+            size (Optional[str], optional): 指定size列，如不指定则默认为第1列. Defaults to None.
+            show_connector (bool, optional): 是否显示连接线. Defaults to True.
+            connector_style (Optional[Dict[str, Any]], optional): 连接线样式字典. Defaults to None.
+            show_label (bool, optional): 是否显示数字标签. Defaults to True.
+            label_formatter (str, optional): 标签格式，支持{abs},{index}. Defaults to "{abs}".
+            label_pos (Literal["top", "center", "bottom"], optional): 标签位置. Defaults to "top".
+            positive_color (str, optional): 正值颜色. Defaults to "green".
+            negative_color (str, optional): 负值颜色. Defaults to "red".
+            bar_width (float, optional): 柱宽. Defaults to 0.8.
+
+        Returns:
+            PlotWaterfall: 返回自身实例
+        """
+        df = self.data
+
+        # 使用基类方法获取列数据
+        size_col = self._get_column(size, 0)
+        values = size_col.values
+        labels = df.index.tolist()
+
+        # 计算瀑布图数据
+        # 第一个值：从0到第一个值
+        # 中间值：使用原始数值，从前面所有值的累积和开始，高度为原始值
+        # 最后一个值：从0开始，高度为前面所有值的总和
+        waterfall_values = []
+        waterfall_bottom = []
+
+        for i in range(len(values)):
+            if i == 0:
+                # 第一个值：从0到第一个值
+                waterfall_values.append(values[i])
+                waterfall_bottom.append(0.0)
+            elif i == len(values) - 1:
+                # 最后一个值：从0开始，高度为前面所有值的总和
+                total_sum = sum(values[:-1])  # 前面所有值的总和（不包括最后一个值本身）
+                waterfall_values.append(total_sum)
+                waterfall_bottom.append(0.0)
+            else:
+                # 中间值：使用原始数值，从前面所有值的累积和开始，高度为原始值
+                # 第N个柱子的起点是前N个值的累积和
+                cumulative_sum = sum(values[:i])  # 前i个值的累积和
+                waterfall_values.append(values[i])
+                waterfall_bottom.append(cumulative_sum)
+
+        # 使用基类方法合并样式参数
+        d_style = self._merge_style_kwargs(
+            {
+                "bar_width": bar_width,
+                "label_fontsize": self.fontsize,
+                "fmt_abs": self.fmt,
+            },
+            **kwargs,
+        )
+
+        # 从 kwargs 或默认值获取颜色参数（避免被覆盖）
+        final_positive_color = kwargs.get("positive_color", positive_color)
+        final_negative_color = kwargs.get("negative_color", negative_color)
+
+        # 获取调色板第一个颜色（用于第一个和最后一个柱子）
+        # 重置颜色迭代器并获取第一个颜色
+        self._reset_color_cycle()
+        first_color = next(self._colors.iter_colors)
+
+        # 绘制柱子
+        for i in range(len(waterfall_values)):
+            value = waterfall_values[i]
+            bottom = waterfall_bottom[i]
+
+            # 确定颜色
+            if i == 0 or i == len(waterfall_values) - 1:
+                # 第一个和最后一个使用调色板第一个颜色
+                color = first_color
+            else:
+                # 中间柱子：根据数值正负使用不同颜色
+                # 直接根据 values[i] 的正负来判断颜色
+                if values[i] >= 0:
+                    color = final_positive_color
+                else:
+                    color = final_negative_color
+
+            # 绘制柱子
+            self.ax.bar(
+                i,
+                value,
+                width=d_style.get("bar_width"),
+                bottom=bottom,
+                color=color,
+                zorder=3,
+            )
+
+            # 绘制标签
+            if show_label:
+                # 创建标签字典
+                if i == 0:
+                    # 第一个柱子：显示原始值
+                    abs_value = values[i]
+                elif i == len(values) - 1:
+                    # 最后一个柱子：显示前面所有值的总和
+                    abs_value = sum(values[:-1])
+                else:
+                    # 中间柱子：显示原始值
+                    abs_value = values[i]
+
+                d_label = {
+                    "abs": d_style.get("fmt_abs").format(abs_value),
+                    "index": str(labels[i]),
+                }
+
+                # 确定标签位置
+                if label_pos == "top":
+                    label_y = (
+                        bottom
+                        + value
+                        + (abs(value) * 0.05 if value >= 0 else -abs(value) * 0.05)
+                    )
+                    va = "bottom" if value >= 0 else "top"
+                elif label_pos == "bottom":
+                    label_y = bottom + (
+                        abs(value) * 0.05 if value >= 0 else -abs(value) * 0.05
+                    )
+                    va = "bottom" if value >= 0 else "top"
+                else:  # center
+                    label_y = bottom + value / 2
+                    va = "center"
+
+                # 确定标签颜色
+                label_color = "white" if abs(value) > abs(bottom) * 0.3 else "black"
+
+                self.ax.text(
+                    i,
+                    label_y,
+                    label_formatter.format(**d_label),
+                    ha="center",
+                    va=va,
+                    fontsize=d_style.get("label_fontsize"),
+                    color=label_color,
+                    zorder=5,
+                )
+
+            # 绘制连接线
+            if show_connector and i < len(waterfall_values) - 1:
+                # 连接当前柱子顶部到下一个柱子
+                current_top = bottom + waterfall_values[i]
+
+                # 如果下一个柱子是最后一个（从0开始），则连接到它的顶部（前面所有值的总和）
+                if i + 1 == len(waterfall_values) - 1:
+                    next_y = sum(values[:-1])  # 连接到最后一个柱子的顶部
+                else:
+                    next_y = waterfall_bottom[i + 1]  # 连接到下一个柱子的底部
+
+                # 默认连接线样式
+                default_connector_style = {
+                    "color": "gray",
+                    "linestyle": "--",
+                    "linewidth": 1,
+                    "alpha": 0.7,
+                }
+                connector_style_final = {
+                    **default_connector_style,
+                    **(connector_style or {}),
+                }
+
+                self.ax.plot(
+                    [
+                        i + d_style.get("bar_width") / 2,
+                        i + 1 - d_style.get("bar_width") / 2,
+                    ],
+                    [current_top, next_y],
+                    color=connector_style_final.get("color"),
+                    linestyle=connector_style_final.get("linestyle"),
+                    linewidth=connector_style_final.get("linewidth"),
+                    alpha=connector_style_final.get("alpha"),
+                    zorder=2,
+                )
+
+        # 设置x轴刻度
+        self.ax.set_xticks(range(len(labels)), labels)
+
+        # 计算y轴最大值，留出一些空白
+        # 计算所有柱子的顶部位置的最大值
+        max_top = max(
+            bottom + value for bottom, value in zip(waterfall_bottom, waterfall_values)
+        )
+
+        # 计算y轴最大值，留出10%的余量
+        y_margin = max_top * 0.1  # 10%的余量
+        y_max = max_top + y_margin
+
+        # 只设置y轴最大值，让matplotlib自动处理最小值
+        current_ylim = self.ax.get_ylim()
+        self.ax.set_ylim(current_ylim[0], y_max)
+
+        # 使用基类方法格式化y轴
+        self._format_axis("y")
+
+        # 添加y=0的参考线
+        self.ax.axhline(0, color="black", linewidth=0.5, linestyle="-", zorder=1)
 
         return self

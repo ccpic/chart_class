@@ -20,6 +20,8 @@ class ChartType(str, Enum):
     TABLE = "table"
     HIST = "hist"
     BOXDOT = "boxdot"
+    FUNNEL = "funnel"  # 漏斗图
+    WATERFALL = "waterfall"  # 瀑布图
 
 
 class ChartDataModel(BaseModel):

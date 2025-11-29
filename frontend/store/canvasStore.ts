@@ -121,6 +121,50 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         avg_linewidth: 1,
         avg_color: "gray",
       };
+    } else if (chartType === "barh") {
+      defaultParams = {
+        stacked: true,
+        show_label: true,
+        label_formatter: "{abs}",
+        label_threshold: 0.02,
+        label_pos: "smart",
+        bar_height: 0.8,
+        fmt_abs: "{:,.0f}",
+        fmt_share: "{:.1%}",
+        fmt_gr: "{:+.1%}",
+      };
+    } else if (chartType === "funnel") {
+      defaultParams = {
+        size: null,
+        height: 0.7,
+        color: "navy",
+        show_label: true,
+        label_ha: "center",
+        bbox: {
+          boxstyle: "round,pad=0.5",
+          facecolor: "grey",
+          edgecolor: "black",
+          linewidth: 1,
+          alpha: 0.5,
+        },
+      };
+    } else if (chartType === "waterfall") {
+      defaultParams = {
+        size: null,
+        show_connector: true,
+        connector_style: {
+          color: "gray",
+          linestyle: "--",
+          linewidth: 1,
+          alpha: 0.7,
+        },
+        show_label: true,
+        label_formatter: "{abs}",
+        label_pos: "top",
+        positive_color: "green",
+        negative_color: "red",
+        bar_width: 0.8,
+      };
     }
 
     const newSubplot: SubplotConfig = {

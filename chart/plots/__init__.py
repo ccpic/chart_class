@@ -3,7 +3,7 @@ Plots module - Collection of plot classes for various chart types.
 """
 
 from chart.plots.base import Plot
-from chart.plots.bar import PlotBar, PlotBarh
+from chart.plots.bar import PlotBar, PlotBarh, PlotWaterfall
 from chart.plots.line import PlotLine, PlotArea
 from chart.plots.scatter import PlotBubble, PlotStripdot
 from chart.plots.statistical import PlotHist, PlotBoxdot
@@ -17,6 +17,7 @@ __all__ = [
     "Plot",
     "PlotBar",
     "PlotBarh",
+    "PlotWaterfall",
     "PlotLine",
     "PlotArea",
     "PlotBubble",

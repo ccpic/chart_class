@@ -5,17 +5,15 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutGrid,
   BarChart3,
+  BarChart2,
   LineChart,
   PieChart,
   AreaChart,
-  Circle,
-  Flame,
-  TreePine,
-  Grid3x3,
-  Triangle,
+  Droplets,
+  Table2,
   Box,
-  Target,
-  Cloud,
+  Filter,
+  TrendingUp,
   AlertCircle,
   Trash2,
 } from 'lucide-react';
@@ -26,9 +24,15 @@ import { useToast } from '@/hooks/use-toast';
 import { useCanvasStore } from '@/store/canvasStore';
 import DeleteSubplotDialog from './DeleteSubplotDialog';
 
+// 包装组件：为 barh 图标添加旋转样式
+const BarhIcon = (props: any) => {
+  return <BarChart2 {...props} className={`${props.className || ''} rotate-90`} />;
+};
+
 // 图表类型的中文名称
 const chartTypeNames: Record<string, string> = {
   bar: '柱状图',
+  barh: '条形图',
   line: '折线图',
   pie: '饼图',
   area: '面积图',
@@ -38,6 +42,7 @@ const chartTypeNames: Record<string, string> = {
   treemap: '树状图',
   waffle: '华夫饼图',
   funnel: '漏斗图',
+  waterfall: '瀑布图',
   venn2: '韦恩图(2)',
   venn3: '韦恩图(3)',
   boxdot: '箱型图',
@@ -46,23 +51,27 @@ const chartTypeNames: Record<string, string> = {
   table: '高级表格',
 };
 
-// 图表类型对应的 Lucide 图标
+// 图表类型对应的 Lucide 图标（与 GridPreview 保持一致）
 const chartTypeIcons: Record<string, React.ComponentType<any>> = {
   bar: BarChart3,
+  barh: BarhIcon, // 使用包装组件以支持旋转
   line: LineChart,
   pie: PieChart,
   area: AreaChart,
-  bubble: Circle,
+  bubble: Droplets,
   hist: BarChart3,
-  heatmap: Flame,
-  treemap: TreePine,
-  waffle: Grid3x3,
-  funnel: Triangle,
-  venn2: Circle,
-  venn3: Circle,
   boxdot: Box,
-  stripdot: Target,
-  word_cloud: Cloud,
+  funnel: Filter,
+  waterfall: TrendingUp,
+  table: Table2,
+  // 以下类型在 GridPreview 中未定义，保留原有图标
+  heatmap: BarChart3, // 使用默认图标
+  treemap: BarChart3,
+  waffle: BarChart3,
+  venn2: BarChart3,
+  venn3: BarChart3,
+  stripdot: BarChart3,
+  word_cloud: BarChart3,
 };
 
 interface CanvasTreeViewProps {

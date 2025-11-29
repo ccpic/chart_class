@@ -7,7 +7,7 @@ import platform
 from typing import Any, Dict, List, Tuple, Optional, Literal, Union
 import matplotlib as mpl
 from chart.color.color import is_color_dark
-from chart.plots.bar import PlotBar, PlotBarh  # noqa: F401
+from chart.plots.bar import PlotBar, PlotBarh, PlotWaterfall  # noqa: F401
 from chart.plots.line import PlotLine, PlotArea  # noqa: F401
 from chart.plots.scatter import PlotBubble, PlotStripdot  # noqa: F401
 from chart.plots.statistical import PlotHist, PlotBoxdot  # noqa: F401
@@ -337,6 +337,7 @@ class GridFigure(Figure):
             "pie",
             "waffle",
             "funnel",
+            "waterfall",
             "table",
             "venn2",
             "venn3",
