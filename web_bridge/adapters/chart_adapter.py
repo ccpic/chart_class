@@ -715,7 +715,19 @@ class WebChartAdapter:
 
     def get_supported_chart_types(self) -> List[str]:
         """返回支持的图表类型列表"""
-        return ["bar", "barh", "line", "pie", "area", "bubble", "table", "hist", "boxdot", "funnel", "waterfall"]
+        return [
+            "bar",
+            "barh",
+            "line",
+            "pie",
+            "area",
+            "bubble",
+            "table",
+            "hist",
+            "boxdot",
+            "funnel",
+            "waterfall",
+        ]
 
     def get_default_params(self, chart_type: str) -> Dict[str, Any]:
         """
@@ -832,6 +844,7 @@ class WebChartAdapter:
                 "positive_color": "green",
                 "negative_color": "red",
                 "bar_width": 0.8,
+                "fmt_abs": "{:,.0f}",
             },
         }
         return defaults.get(chart_type, {})

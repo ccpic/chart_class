@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Literal, Optional, Dict
 from matplotlib.ticker import FuncFormatter
 import numpy as np
+import pandas as pd
 from chart.plots.base import Plot
 
 
@@ -48,8 +49,13 @@ class PlotBar(Plot):
         df = self.data
         df_share = self._calculate_share(df, axis=1)
         df_gr = self.data.pct_change(axis=0, periods=period_change)
+        avg = None
         if df.shape[1] == 1:
-            avg = df.mean().values[0]
+            mean_result = df.mean()
+            if isinstance(mean_result, pd.Series):
+                avg = float(mean_result.iloc[0])
+            else:
+                avg = float(mean_result)
 
         # 使用基类方法合并样式参数
         d_style = self._merge_style_kwargs(
@@ -95,7 +101,7 @@ class PlotBar(Plot):
                     "gr": "{:+.1%}".format(gr),
                     "index": str(index),
                     "col": str(col),
-                    "total_gr": d_style.get("fmt_gr").format(total_gr),
+                    "total_gr": (d_style.get("fmt_gr") or "{:+.1%}").format(total_gr),
                 }
 
                 # 使用基类方法获取颜色
@@ -122,7 +128,7 @@ class PlotBar(Plot):
                 if stacked:
                     pos_x = k
                 else:
-                    pos_x = k + bar_width * i
+                    pos_x = k + (bar_width or 0.8) * i
 
                 # 绘制bar图
                 self.ax.bar(
@@ -266,8 +272,9 @@ class PlotBar(Plot):
         # 如果是非堆叠图要手动指定x轴ticks
         # 解析日期字符串并将其转换为 Matplotlib 内部日期格式
         if stacked is False:
+            bar_width_val = bar_width or 0.8
             self.ax.set_xticks(
-                np.arange(df.shape[0]) + bar_width / df.shape[1], df.index
+                np.arange(df.shape[0]) + bar_width_val / df.shape[1], df.index
             )
         else:
             self.ax.set_xticks(np.arange(df.shape[0]), df.index)
@@ -316,14 +323,14 @@ class PlotBar(Plot):
 
             # 次坐标轴标签格式
             ax2.yaxis.set_major_formatter(
-                FuncFormatter(lambda y, _: self.fmt_line.format(y))
+                FuncFormatter(lambda y, _: self.fmt.format(y))
             )
             ax2.get_yaxis().set_ticks([])
 
             # # x轴标签
             # ax2.get_xaxis().set_ticks(range(0, len(df.index)), labels=df.index)
 
-        if show_avg_line and df.shape[1] == 1:
+        if show_avg_line and df.shape[1] == 1 and avg is not None:
             self.ax.axhline(
                 avg,
                 linestyle="dashed",
@@ -416,7 +423,9 @@ class PlotBarh(Plot):
                     "share": "{:.1%}".format(share),
                     "index": str(index),
                     "col": str(col),
-                    "share_total": d_style.get("fmt_share").format(share_total),
+                    "share_total": (d_style.get("fmt_share") or "{:.1%}").format(
+                        share_total
+                    ),
                 }
 
                 # 使用基类方法获取颜色
@@ -442,13 +451,15 @@ class PlotBarh(Plot):
                 if stacked:
                     pos_y = k
                 else:
-                    pos_y = k + bar_height * i
+                    bar_height_val = bar_height or 0.8
+                    pos_y = k + bar_height_val * i
 
                 # 绘制bar图
+                bar_height_val = bar_height or 0.8
                 self.ax.barh(
                     pos_y,
                     v,
-                    height=bar_height,
+                    height=bar_height_val,
                     color=color,
                     left=left,
                     label=col,
@@ -519,8 +530,9 @@ class PlotBarh(Plot):
         # 如果是非堆叠图要手动指定x轴ticks
         # 解析日期字符串并将其转换为 Matplotlib 内部日期格式
         if stacked is False:
+            bar_height_val = d_style.get("bar_height") or 0.8
             self.ax.set_yticks(
-                np.arange(df.shape[0]) + bar_height / df.shape[1], df.index
+                np.arange(df.shape[0]) + bar_height_val / df.shape[1], df.index
             )
         else:
             self.ax.set_yticks(np.arange(df.shape[0]), df.index)
@@ -555,6 +567,8 @@ class PlotWaterfall(Plot):
         label_pos: Literal["top", "center", "bottom"] = "top",
         positive_color: str = "green",
         negative_color: str = "red",
+        start_color: Optional[str] = None,
+        end_color: Optional[str] = None,
         bar_width: float = 0.8,
         **kwargs: Any,
     ) -> PlotWaterfall:
@@ -569,6 +583,8 @@ class PlotWaterfall(Plot):
             label_pos (Literal["top", "center", "bottom"], optional): 标签位置. Defaults to "top".
             positive_color (str, optional): 正值颜色. Defaults to "green".
             negative_color (str, optional): 负值颜色. Defaults to "red".
+            start_color (Optional[str], optional): 起始柱子颜色，如不指定则使用调色板第一个颜色. Defaults to None.
+            end_color (Optional[str], optional): 结束柱子颜色，如不指定则使用调色板第一个颜色. Defaults to None.
             bar_width (float, optional): 柱宽. Defaults to 0.8.
 
         Returns:
@@ -582,22 +598,21 @@ class PlotWaterfall(Plot):
         labels = df.index.tolist()
 
         # 计算瀑布图数据
-        # 第一个值：从0到第一个值
+        # 第一个值：从0到第一个值（起始值）
         # 中间值：使用原始数值，从前面所有值的累积和开始，高度为原始值
-        # 最后一个值：从0开始，高度为前面所有值的总和
+        # 最后一个值：从0起始，高度为最后一个值本身
         waterfall_values = []
         waterfall_bottom = []
 
         for i in range(len(values)):
             if i == 0:
-                # 第一个值：从0到第一个值
+                # 第一个值：从0到第一个值（起始值）
                 waterfall_values.append(values[i])
                 waterfall_bottom.append(0.0)
             elif i == len(values) - 1:
-                # 最后一个值：从0开始，高度为前面所有值的总和
-                total_sum = sum(values[:-1])  # 前面所有值的总和（不包括最后一个值本身）
-                waterfall_values.append(total_sum)
-                waterfall_bottom.append(0.0)
+                # 最后一个值：从0起始，高度为最后一个值本身
+                waterfall_values.append(values[i])  # 使用最后一个值本身作为高度
+                waterfall_bottom.append(0.0)  # 从0起始
             else:
                 # 中间值：使用原始数值，从前面所有值的累积和开始，高度为原始值
                 # 第N个柱子的起点是前N个值的累积和
@@ -611,6 +626,7 @@ class PlotWaterfall(Plot):
                 "bar_width": bar_width,
                 "label_fontsize": self.fontsize,
                 "fmt_abs": self.fmt,
+                "label_color": None,  # 标签颜色，如果指定则使用，否则自动计算
             },
             **kwargs,
         )
@@ -618,11 +634,21 @@ class PlotWaterfall(Plot):
         # 从 kwargs 或默认值获取颜色参数（避免被覆盖）
         final_positive_color = kwargs.get("positive_color", positive_color)
         final_negative_color = kwargs.get("negative_color", negative_color)
+        final_start_color = kwargs.get("start_color", start_color)
+        final_end_color = kwargs.get("end_color", end_color)
 
-        # 获取调色板第一个颜色（用于第一个和最后一个柱子）
+        # 获取调色板第一个颜色（用于第一个和最后一个柱子，如果未指定颜色）
         # 重置颜色迭代器并获取第一个颜色
         self._reset_color_cycle()
-        first_color = next(self._colors.iter_colors)
+        default_color = next(self._colors.iter_colors)
+
+        # 确定起始和结束柱子的颜色
+        start_bar_color = (
+            final_start_color if final_start_color is not None else default_color
+        )
+        end_bar_color = (
+            final_end_color if final_end_color is not None else default_color
+        )
 
         # 绘制柱子
         for i in range(len(waterfall_values)):
@@ -630,9 +656,12 @@ class PlotWaterfall(Plot):
             bottom = waterfall_bottom[i]
 
             # 确定颜色
-            if i == 0 or i == len(waterfall_values) - 1:
-                # 第一个和最后一个使用调色板第一个颜色
-                color = first_color
+            if i == 0:
+                # 第一个柱子使用起始颜色
+                color = start_bar_color
+            elif i == len(waterfall_values) - 1:
+                # 最后一个柱子使用结束颜色
+                color = end_bar_color
             else:
                 # 中间柱子：根据数值正负使用不同颜色
                 # 直接根据 values[i] 的正负来判断颜色
@@ -651,18 +680,11 @@ class PlotWaterfall(Plot):
                 zorder=3,
             )
 
-            # 绘制标签
+            # 绘制标签（包括第一个和最后一个柱子）
             if show_label:
                 # 创建标签字典
-                if i == 0:
-                    # 第一个柱子：显示原始值
-                    abs_value = values[i]
-                elif i == len(values) - 1:
-                    # 最后一个柱子：显示前面所有值的总和
-                    abs_value = sum(values[:-1])
-                else:
-                    # 中间柱子：显示原始值
-                    abs_value = values[i]
+                # 所有柱子都显示对应的原始值
+                abs_value = values[i]
 
                 d_label = {
                     "abs": d_style.get("fmt_abs").format(abs_value),
@@ -687,8 +709,33 @@ class PlotWaterfall(Plot):
                     va = "center"
 
                 # 确定标签颜色
-                label_color = "white" if abs(value) > abs(bottom) * 0.3 else "black"
+                # 如果标签位置是"top"，强制使用黑色（除非用户明确指定了其他颜色）
+                user_label_color = d_style.get("label_color")
+                if label_pos == "top":
+                    # 标签在顶部时，使用黑色以确保可见性（除非用户明确指定了其他颜色）
+                    label_color = (
+                        user_label_color if user_label_color is not None else "black"
+                    )
+                elif user_label_color is not None:
+                    # 如果用户指定了标签颜色，使用用户指定的颜色
+                    label_color = user_label_color
+                else:
+                    # 否则自动计算标签颜色
+                    # 对于第一个和最后一个柱子（bottom == 0），根据柱子高度判断
+                    # 对于中间柱子，根据柱子高度和底部位置的关系判断
+                    if i == 0 or i == len(waterfall_values) - 1:
+                        # 第一个和最后一个柱子：如果柱子高度足够大，使用白色；否则使用黑色以确保可见性
+                        if abs(value) > 0.1:
+                            label_color = "white"
+                        else:
+                            label_color = "black"
+                    else:
+                        # 中间柱子：根据柱子高度和底部位置的关系决定颜色
+                        label_color = (
+                            "white" if abs(value) > abs(bottom) * 0.3 else "black"
+                        )
 
+                # 确保标签一定显示，使用更高的zorder
                 self.ax.text(
                     i,
                     label_y,
@@ -697,7 +744,7 @@ class PlotWaterfall(Plot):
                     va=va,
                     fontsize=d_style.get("label_fontsize"),
                     color=label_color,
-                    zorder=5,
+                    zorder=10,  # 提高zorder确保标签在最上层
                 )
 
             # 绘制连接线
@@ -705,11 +752,13 @@ class PlotWaterfall(Plot):
                 # 连接当前柱子顶部到下一个柱子
                 current_top = bottom + waterfall_values[i]
 
-                # 如果下一个柱子是最后一个（从0开始），则连接到它的顶部（前面所有值的总和）
+                # 连接到下一个柱子的位置
                 if i + 1 == len(waterfall_values) - 1:
-                    next_y = sum(values[:-1])  # 连接到最后一个柱子的顶部
+                    # 如果下一个柱子是最后一个柱子，连接到最后一个柱子的顶部
+                    next_y = waterfall_bottom[i + 1] + waterfall_values[i + 1]
                 else:
-                    next_y = waterfall_bottom[i + 1]  # 连接到下一个柱子的底部
+                    # 否则连接到下一个柱子的底部
+                    next_y = waterfall_bottom[i + 1]
 
                 # 默认连接线样式
                 default_connector_style = {

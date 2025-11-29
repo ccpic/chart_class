@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import ColorPicker from '@/components/color/ColorPicker';
+import NumberFormatEditor from '@/components/ui/number-format-editor';
 
 interface Props {
   subplot: SubplotConfig;
@@ -36,8 +37,13 @@ export default function WaterfallParamsEditor({ subplot }: Props) {
   const showLabel = params.show_label ?? true;
   const labelFormatter = params.label_formatter ?? '{abs}';
   const labelPos = params.label_pos ?? 'top';
+  const fmtAbs = params.fmt_abs ?? '{:,.0f}';
+  const labelFontsize = params.label_fontsize ?? 12;
+  const labelColor = params.label_color ?? null;
   const positiveColor = params.positive_color ?? 'green';
   const negativeColor = params.negative_color ?? 'red';
+  const startColor = params.start_color ?? null;
+  const endColor = params.end_color ?? null;
   const barWidth = params.bar_width ?? 0.8;
 
   // 连接线样式
@@ -152,9 +158,32 @@ export default function WaterfallParamsEditor({ subplot }: Props) {
                 中间柱子负值时的颜色（默认红色）
               </p>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              注意：第一个和最后一个柱子使用调色板的第一个颜色
-            </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="start_color" className="text-sm">
+                起始柱子颜色 (start_color)
+              </Label>
+              <ColorPicker
+                value={startColor || '#1f77b4'}
+                onChange={(newColor) => updateParam('start_color', newColor)}
+              />
+              <p className="text-xs text-gray-500">
+                第一个柱子的颜色，如不指定则使用调色板第一个颜色
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="end_color" className="text-sm">
+                结束柱子颜色 (end_color)
+              </Label>
+              <ColorPicker
+                value={endColor || '#1f77b4'}
+                onChange={(newColor) => updateParam('end_color', newColor)}
+              />
+              <p className="text-xs text-gray-500">
+                最后一个柱子的颜色，如不指定则使用调色板第一个颜色
+              </p>
+            </div>
           </div>
         </TabsContent>
 
@@ -198,25 +227,75 @@ export default function WaterfallParamsEditor({ subplot }: Props) {
               </div>
 
               <div className="space-y-2 pl-6">
-                <Label htmlFor="label_pos_waterfall" className="text-sm font-medium">
-                  标签位置 (label_pos)
-                </Label>
-                <Select
-                  value={labelPos}
-                  onValueChange={(value: 'top' | 'center' | 'bottom') => updateParam('label_pos', value)}
-                >
-                  <SelectTrigger id="label_pos_waterfall">
-                    <SelectValue placeholder="选择标签位置" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="top">顶部 (top)</SelectItem>
-                    <SelectItem value="center">居中 (center)</SelectItem>
-                    <SelectItem value="bottom">底部 (bottom)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-gray-500">
-                  标签相对于柱子的位置
+                <p className="text-xs text-gray-500 mb-2">
+                  用于格式化 {'{abs}'} 占位符的数值格式
                 </p>
+                <NumberFormatEditor
+                  value={fmtAbs}
+                  onChange={(format) => updateParam('fmt_abs', format)}
+                  label="数值格式 (fmt_abs)"
+                />
+              </div>
+
+              {/* 标签位置、字体大小、字体颜色在同一行 */}
+              <div className="grid grid-cols-3 gap-4 pl-6">
+                <div className="space-y-2">
+                  <Label htmlFor="label_pos_waterfall" className="text-sm font-medium">
+                    标签位置 (label_pos)
+                  </Label>
+                  <Select
+                    value={labelPos}
+                    onValueChange={(value: 'top' | 'center' | 'bottom') => updateParam('label_pos', value)}
+                  >
+                    <SelectTrigger id="label_pos_waterfall">
+                      <SelectValue placeholder="选择标签位置" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="top">顶部 (top)</SelectItem>
+                      <SelectItem value="center">居中 (center)</SelectItem>
+                      <SelectItem value="bottom">底部 (bottom)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
+                    标签相对于柱子的位置
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="label_fontsize_waterfall" className="text-sm font-medium">
+                    字体大小 (label_fontsize)
+                  </Label>
+                  <Input
+                    id="label_fontsize_waterfall"
+                    type="number"
+                    min={8}
+                    max={24}
+                    value={labelFontsize}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val) && val >= 8 && val <= 24) {
+                        updateParam('label_fontsize', val);
+                      }
+                    }}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-500">
+                    标签字体大小（8-24）
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="label_color_waterfall" className="text-sm font-medium">
+                    字体颜色 (label_color)
+                  </Label>
+                  <ColorPicker
+                    value={labelColor || '#000000'}
+                    onChange={(newColor) => updateParam('label_color', newColor)}
+                  />
+                  <p className="text-xs text-gray-500">
+                    标签字体颜色，如不指定则自动计算
+                  </p>
+                </div>
               </div>
             </>
           )}
