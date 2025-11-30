@@ -11,11 +11,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, register, isLoading, isAuthenticated } = useAuthStore();
-  const [isLoginMode, setIsLoginMode] = useState(true);
+  const { login, isLoading, isAuthenticated } = useAuthStore();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   // 如果已登录，重定向到画布页面
@@ -30,15 +28,11 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      if (isLoginMode) {
-        await login(username, password);
-      } else {
-        await register(username, password, email || undefined);
-      }
-      // 登录/注册成功后，authStore 会自动更新状态
+      await login(username, password);
+      // 登录成功后，authStore 会自动更新状态
       router.push("/canvas");
     } catch (err: any) {
-      setError(err.message || "操作失败，请重试");
+      setError(err.message || "登录失败，请重试");
     }
   };
 
@@ -46,11 +40,9 @@ export default function LoginPage() {
     <div className="h-screen w-screen flex items-center justify-center bg-gray-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>{isLoginMode ? "登录" : "注册"}</CardTitle>
+          <CardTitle>登录</CardTitle>
           <CardDescription>
-            {isLoginMode
-              ? "请输入您的用户名和密码"
-              : "创建新账户"}
+            请输入您的用户名和密码
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -67,20 +59,6 @@ export default function LoginPage() {
                 placeholder="请输入用户名"
               />
             </div>
-
-            {!isLoginMode && (
-              <div className="space-y-2">
-                <Label htmlFor="email">邮箱（可选）</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                  placeholder="请输入邮箱"
-                />
-              </div>
-            )}
 
             <div className="space-y-2">
               <Label htmlFor="password">密码</Label>
@@ -106,45 +84,9 @@ export default function LoginPage() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading
-                ? "处理中..."
-                : isLoginMode
-                ? "登录"
-                : "注册"}
+              {isLoading ? "登录中..." : "登录"}
             </Button>
           </form>
-
-          <div className="mt-4 text-center text-sm">
-            {isLoginMode ? (
-              <span>
-                还没有账户？{" "}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsLoginMode(false);
-                    setError(null);
-                  }}
-                  className="text-blue-600 hover:underline"
-                >
-                  立即注册
-                </button>
-              </span>
-            ) : (
-              <span>
-                已有账户？{" "}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsLoginMode(true);
-                    setError(null);
-                  }}
-                  className="text-blue-600 hover:underline"
-                >
-                  立即登录
-                </button>
-              </span>
-            )}
-          </div>
         </CardContent>
       </Card>
     </div>
