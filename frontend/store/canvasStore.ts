@@ -1,9 +1,11 @@
 /**
  * Canvas 画布状态管理
  * 使用 Zustand 实现简洁的全局状态管理
+ * 使用 persist 中间件自动持久化到 localStorage
  */
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { CanvasConfig, SubplotConfig, ChartType } from "@/types/canvas";
 
 interface CanvasStore {
@@ -77,14 +79,16 @@ const defaultCanvas: CanvasConfig = {
   transparent: true,
 };
 
-export const useCanvasStore = create<CanvasStore>((set, get) => ({
-  canvas: { ...defaultCanvas },
-  subplots: [],
-  selectedSubplotId: null,
-  currentSubplotId: null,
-  renderedImage: null,
-  renderError: null,
-  selectedPaletteName: null, // 默认使用默认调色板
+export const useCanvasStore = create<CanvasStore>()(
+  persist(
+    (set, get) => ({
+      canvas: { ...defaultCanvas },
+      subplots: [],
+      selectedSubplotId: null,
+      currentSubplotId: null,
+      renderedImage: null,
+      renderError: null,
+      selectedPaletteName: null, // 默认使用默认调色板
 
   updateCanvas: (config) =>
     set((state) => ({
@@ -318,11 +322,19 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       currentSubplotId: null,
       selectedPaletteName: null,
     });
-    // 同时清除本地存储
-    try {
-      localStorage.removeItem("chart-class-canvas");
-    } catch (error) {
-      console.error("Failed to clear localStorage:", error);
-    }
   },
-}));
+    }),
+    {
+      name: "chart-class-canvas", // localStorage key
+      // 只持久化需要的数据，不持久化渲染结果等临时状态
+      partialize: (state) => ({
+        canvas: state.canvas,
+        subplots: state.subplots,
+        selectedSubplotId: state.selectedSubplotId,
+        currentSubplotId: state.currentSubplotId,
+        selectedPaletteName: state.selectedPaletteName,
+        // 不持久化 renderedImage, renderError 等临时状态
+      }),
+    }
+  )
+);
