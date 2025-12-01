@@ -1191,6 +1191,10 @@ class PlotMap(Plot):
 
         # 添加标签
         if label_column:
+            # 如果未指定 label_format，默认使用 '{index}'（与前端一致）
+            if label_format is None:
+                label_format = '{index}'
+            
             self._add_labels(
                 label_column,
                 level,
@@ -1529,7 +1533,7 @@ class PlotMap(Plot):
         self,
         label_column: str,
         level: str,
-        label_format: Optional[str] = None,
+        label_format: str = '{index}',
         label_value_format: str = "{:,.0f}",
         label_fontsize: Optional[float] = None,
         use_abbr: bool = False,
@@ -1539,7 +1543,7 @@ class PlotMap(Plot):
         Args:
             label_column: 标签列名
             level: 地图层级
-            label_format: 标签格式化字符串，支持 {index} 和 {value} 占位符
+            label_format: 标签格式化字符串，支持 {index} 和 {value} 占位符（默认 '{index}'）
             label_value_format: 数值格式化字符串
             label_fontsize: 自定义字体大小
             use_abbr: 是否使用简称
@@ -1591,14 +1595,10 @@ class PlotMap(Plot):
                 else:
                     formatted_value = str(value)
 
-                # 如果有格式化字符串，使用占位符替换
-                if label_format:
-                    label = label_format.format(
-                        index=region_name, value=formatted_value
-                    )
-                else:
-                    # 否则直接显示格式化后的值
-                    label = formatted_value
+                # 使用格式化字符串替换占位符
+                label = label_format.format(
+                    index=region_name, value=formatted_value
+                )
 
                 # 跳过空标签
                 if not label or label.strip() == "":
