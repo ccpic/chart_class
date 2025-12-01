@@ -62,6 +62,20 @@ const EXAMPLE_DATA: Record<string, ChartData> = {
       ['C', 22],
     ],
   },
+  map: {
+    columns: ['value'],
+    index: ['北京', '上海', '广东', '浙江', '江苏', '山东', '四川', '河南'],
+    data: [
+      [36000],
+      [43000],
+      [129000],
+      [77000],
+      [122000],
+      [87000],
+      [56000],
+      [61000],
+    ],
+  },
 };
 
 export default function DataEditor({ subplot }: Props) {

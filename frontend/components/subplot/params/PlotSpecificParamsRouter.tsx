@@ -11,6 +11,7 @@ import PieParamsEditor from './PieParamsEditor';
 import BoxdotParamsEditor from './BoxdotParamsEditor';
 import FunnelParamsEditor from './FunnelParamsEditor';
 import WaterfallParamsEditor from './WaterfallParamsEditor';
+import MapParamsEditor from './MapParamsEditor';
 import type { SubplotConfig } from '@/types/canvas';
 
 interface PlotSpecificParamsRouterProps {
@@ -32,6 +33,7 @@ function getChartTypeName(kind: string): string {
     boxdot: '箱型图',
     funnel: '漏斗图',
     waterfall: '瀑布图',
+    map: '热力地图',
     heatmap: '热力图',
     treemap: '矩形树图',
     waffle: '华夫饼图',
@@ -100,6 +102,11 @@ export function PlotSpecificParamsRouter({ subplot }: PlotSpecificParamsRouterPr
   // 瀑布图
   if (subplot.chartType === 'waterfall') {
     return <WaterfallParamsEditor subplot={subplot} />;
+  }
+
+  // 热力地图
+  if (subplot.chartType === 'map') {
+    return <MapParamsEditor subplot={subplot} />;
   }
 
   // 其他图表类型显示开发中提示
