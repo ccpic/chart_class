@@ -16,6 +16,7 @@ import {
   TrendingUp,
   AlertCircle,
   Trash2,
+  Map,
 } from 'lucide-react';
 
 import { TreeView } from '@/components/tree-view';
@@ -49,6 +50,7 @@ const chartTypeNames: Record<string, string> = {
   stripdot: '算珠图',
   word_cloud: '词云',
   table: '高级表格',
+  map: '热力地图',
 };
 
 // 图表类型对应的 Lucide 图标（与 GridPreview 保持一致）
@@ -64,6 +66,7 @@ const chartTypeIcons: Record<string, React.ComponentType<any>> = {
   funnel: Filter,
   waterfall: TrendingUp,
   table: Table2,
+  map: Map,
   // 以下类型在 GridPreview 中未定义，保留原有图标
   heatmap: BarChart3, // 使用默认图标
   treemap: BarChart3,

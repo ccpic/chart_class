@@ -17,6 +17,7 @@ import { SubplotConfig } from '@/types/canvas';
 // 图表类型的中文名称（与 CanvasTreeView 保持一致）
 const chartTypeNames: Record<string, string> = {
   bar: '柱状图',
+  barh: '条形图',
   line: '折线图',
   pie: '饼图',
   area: '面积图',
@@ -26,12 +27,14 @@ const chartTypeNames: Record<string, string> = {
   treemap: '树状图',
   waffle: '华夫饼图',
   funnel: '漏斗图',
+  waterfall: '瀑布图',
   venn2: '韦恩图(2)',
   venn3: '韦恩图(3)',
   boxdot: '箱型图',
   stripdot: '算珠图',
   word_cloud: '词云',
   table: '高级表格',
+  map: '热力地图',
 };
 
 interface DeleteSubplotDialogProps {

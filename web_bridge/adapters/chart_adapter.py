@@ -766,6 +766,7 @@ class WebChartAdapter:
             "boxdot",
             "funnel",
             "waterfall",
+            "map",
         ]
 
     def get_default_params(self, chart_type: str) -> Dict[str, Any]:
@@ -884,6 +885,29 @@ class WebChartAdapter:
                 "negative_color": "red",
                 "bar_width": 0.8,
                 "fmt_abs": "{:,.0f}",
+            },
+            "map": {
+                "level": "province",
+                "scope": "national",
+                "regions": [],
+                "exclude_regions": ["三沙市"],
+                "value_column": None,
+                "region_column": None,
+                "label_column": "",  # 默认不显示标签，由用户选择数据列
+                "label_format": "{index}",  # 默认格式为显示区域名称
+                "label_value_format": "{:,.0f}",  # 默认数值格式：千分位整数
+                "label_fontsize": 8,
+                "use_abbr": False,
+                "cmap": "PiYG",
+                "vmin": None,
+                "vmax": None,
+                "edgecolor": "black",
+                "linewidth": 0.5,
+                "national_border_width": None,
+                "province_border_width": None,
+                "city_border_width": None,
+                "show_colorbar": True,
+                "dissolve_urban": False,
             },
         }
         return defaults.get(chart_type, {})

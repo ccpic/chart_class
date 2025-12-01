@@ -888,15 +888,22 @@ export default function TableParamsEditor({ subplot }: Props) {
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="PiYG">PiYG (粉绿)</SelectItem>
-                                      <SelectItem value="RdYlGn">RdYlGn (红黄绿)</SelectItem>
-                                      <SelectItem value="RdBu">RdBu (红蓝)</SelectItem>
-                                      <SelectItem value="viridis">Viridis (紫黄)</SelectItem>
-                                      <SelectItem value="viridis_r">Viridis_r (黄紫)</SelectItem>
-                                      <SelectItem value="plasma">Plasma (紫橙)</SelectItem>
-                                      <SelectItem value="inferno">Inferno (黑红黄)</SelectItem>
-                                      <SelectItem value="coolwarm">Coolwarm (蓝红)</SelectItem>
-                                      <SelectItem value="Spectral">Spectral (光谱)</SelectItem>
+                                      <SelectItem value="YlOrRd">黄橙红</SelectItem>
+                                      <SelectItem value="RdYlGn">红黄绿</SelectItem>
+                                      <SelectItem value="Blues">蓝色系</SelectItem>
+                                      <SelectItem value="Greens">绿色系</SelectItem>
+                                      <SelectItem value="Reds">红色系</SelectItem>
+                                      <SelectItem value="Oranges">橙色系</SelectItem>
+                                      <SelectItem value="Purples">紫色系</SelectItem>
+                                      <SelectItem value="RdPu">红紫色</SelectItem>
+                                      <SelectItem value="YlGn">黄绿色</SelectItem>
+                                      <SelectItem value="YlGnBu">黄绿蓝</SelectItem>
+                                      <SelectItem value="PiYG">粉绿色</SelectItem>
+                                      <SelectItem value="RdBu">红蓝色</SelectItem>
+                                      <SelectItem value="Spectral">光谱色</SelectItem>
+                                      <SelectItem value="coolwarm">冷暖色</SelectItem>
+                                      <SelectItem value="viridis">Viridis</SelectItem>
+                                      <SelectItem value="plasma">Plasma</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
@@ -1082,22 +1089,29 @@ export default function TableParamsEditor({ subplot }: Props) {
                                     Colormap
                                   </Label>
                                   <Select
-                                    value={getCmapNumericConfig(colDef.text_cmap_config)?.cmap || 'RdYlGn'}
+                                    value={getCmapNumericConfig(colDef.text_cmap_config)?.cmap || 'PiYG'}
                                     onValueChange={(value) => updateTextCmapConfig(index, 'numeric', { cmap: value })}
                                   >
                                     <SelectTrigger id={`text-cmap-${index}`} className="h-8 text-sm">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="PiYG">PiYG (粉绿)</SelectItem>
-                                      <SelectItem value="RdYlGn">RdYlGn (红黄绿)</SelectItem>
-                                      <SelectItem value="RdBu">RdBu (红蓝)</SelectItem>
-                                      <SelectItem value="viridis">Viridis (紫黄)</SelectItem>
-                                      <SelectItem value="viridis_r">Viridis_r (黄紫)</SelectItem>
-                                      <SelectItem value="plasma">Plasma (紫橙)</SelectItem>
-                                      <SelectItem value="inferno">Inferno (黑红黄)</SelectItem>
-                                      <SelectItem value="coolwarm">Coolwarm (蓝红)</SelectItem>
-                                      <SelectItem value="Spectral">Spectral (光谱)</SelectItem>
+                                      <SelectItem value="PiYG">粉绿色</SelectItem>
+                                      <SelectItem value="YlOrRd">黄橙红</SelectItem>
+                                      <SelectItem value="RdYlGn">红黄绿</SelectItem>
+                                      <SelectItem value="Blues">蓝色系</SelectItem>
+                                      <SelectItem value="Greens">绿色系</SelectItem>
+                                      <SelectItem value="Reds">红色系</SelectItem>
+                                      <SelectItem value="Oranges">橙色系</SelectItem>
+                                      <SelectItem value="Purples">紫色系</SelectItem>
+                                      <SelectItem value="RdPu">红紫色</SelectItem>
+                                      <SelectItem value="YlGn">黄绿色</SelectItem>
+                                      <SelectItem value="YlGnBu">黄绿蓝</SelectItem>
+                                      <SelectItem value="RdBu">红蓝色</SelectItem>
+                                      <SelectItem value="Spectral">光谱色</SelectItem>
+                                      <SelectItem value="coolwarm">冷暖色</SelectItem>
+                                      <SelectItem value="viridis">Viridis</SelectItem>
+                                      <SelectItem value="plasma">Plasma</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>

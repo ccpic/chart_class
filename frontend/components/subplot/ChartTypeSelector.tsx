@@ -14,6 +14,7 @@ import {
   BarChart2,
   Filter,
   TrendingUp,
+  Map,
 } from 'lucide-react';
 
 const CHART_TYPES: { value: ChartType; label: string; icon: React.ReactNode }[] = [
@@ -26,6 +27,7 @@ const CHART_TYPES: { value: ChartType; label: string; icon: React.ReactNode }[] 
   { value: 'boxdot', label: '箱型图', icon: <Box className="h-5 w-5" /> },
   { value: 'funnel', label: '漏斗图', icon: <Filter className="h-5 w-5" /> },
   { value: 'waterfall', label: '瀑布图', icon: <TrendingUp className="h-5 w-5" /> },
+  { value: 'map', label: '热力地图', icon: <Map className="h-5 w-5" /> },
   { value: 'table', label: '高级表格', icon: <Table2 className="h-5 w-5" /> },
 ];
 

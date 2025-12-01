@@ -23,6 +23,7 @@ import {
   Box,
   Filter,
   TrendingUp,
+  Map,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DeleteSubplotDialog from './DeleteSubplotDialog';
@@ -40,6 +41,7 @@ const CHART_TYPE_LABELS: Record<ChartType, string> = {
   funnel: '漏斗图',
   waterfall: '瀑布图',
   table: '高级表格',
+  map: '热力地图',
 };
 
 // 图表类型图标映射
@@ -55,6 +57,7 @@ const CHART_TYPE_ICONS: Record<ChartType, React.ReactNode> = {
   funnel: <Filter className="h-4 w-4" />,
   waterfall: <TrendingUp className="h-4 w-4" />,
   table: <Table2 className="h-4 w-4" />,
+  map: <Map className="h-4 w-4" />,
 };
 
 export default function GridPreview() {

@@ -10,6 +10,7 @@ import {
   Circle,
   CheckCircle2,
   AlertCircle,
+  Map,
 } from 'lucide-react';
 
 import {
@@ -41,6 +42,8 @@ function getChartIcon(type: string) {
       return <AreaChart className={iconClass} />;
     case 'bubble':
       return <Droplets className={iconClass} />;
+    case 'map':
+      return <Map className={iconClass} />;
     default:
       return <Circle className={iconClass} />;
   }

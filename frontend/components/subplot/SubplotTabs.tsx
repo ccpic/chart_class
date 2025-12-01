@@ -28,6 +28,22 @@ interface Props {
   subplot: SubplotConfig;
 }
 
+// 图表类型映射
+const CHART_TYPE_LABELS: Record<string, string> = {
+  bar: '柱状图',
+  barh: '条形图',
+  line: '折线图',
+  pie: '饼图',
+  area: '面积图',
+  bubble: '气泡图',
+  hist: '直方图',
+  boxdot: '箱型图',
+  funnel: '漏斗图',
+  waterfall: '瀑布图',
+  table: '高级表格',
+  map: '热力地图',
+};
+
 /**
  * 子图编辑 Tabs - 重构版
  * 三个并列 tabs：渲染预览、表格编辑、JSON 编辑
@@ -241,7 +257,7 @@ export default function SubplotTabs({ subplot }: Props) {
                     {hasData ? '点击上方"渲染预览"按钮查看图表' : '请先配置数据'}
                   </p>
                   <p className="text-sm text-gray-500">
-                    图表类型：{subplot.chartType}
+                    图表类型：{CHART_TYPE_LABELS[subplot.chartType] || subplot.chartType}
                   </p>
                 </div>
               </div>
