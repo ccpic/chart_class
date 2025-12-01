@@ -52,7 +52,7 @@ export class ChartDatabase {
    */
   async getChart(id: string): Promise<SavedChart | null> {
     try {
-      const response = await apiGet<SavedChart>(`/api/charts/${id}`);
+      const response = await apiGet<any>(`/api/charts/${id}`);
       // 转换后端格式到前端格式
       return {
         id: response.id,

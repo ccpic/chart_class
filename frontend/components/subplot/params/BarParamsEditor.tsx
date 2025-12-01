@@ -317,6 +317,8 @@ export default function BarParamsEditor({ subplot }: Props) {
                       x1: 0,
                       x2: 1,
                       text: '',
+                      text_type: 'growth_rate',
+                      text_format: '{:+.1%}',
                       offset: undefined,
                       color: 'black',
                       linewidth: 1,
@@ -375,10 +377,55 @@ export default function BarParamsEditor({ subplot }: Props) {
                           value={String(conn.x1 ?? 0)}
                           onValueChange={(value) => {
                             const newConnections = [...connections];
-                            newConnections[index] = {
-                              ...newConnections[index],
-                              x1: parseInt(value),
-                            };
+                            const x1 = parseInt(value);
+                            const x2 = conn.x2 ?? 1;
+                            const textType = conn.text_type || 'growth_rate';
+                            const textFormat = conn.text_format || '{:+.1%}';
+                            
+                            // 如果设置了自动计算，重新计算文本
+                            if (textType) {
+                              const data = subplot.data?.data || [];
+                              let calculatedText = '';
+                              
+                              if (data.length > Math.max(x1, x2)) {
+                                const getBarValue = (idx: number) => {
+                                  if (stacked && data[idx]) {
+                                    return data[idx].reduce((sum: number, val: any) => {
+                                      const num = typeof val === 'number' ? val : parseFloat(val) || 0;
+                                      return sum + num;
+                                    }, 0);
+                                  } else if (data[idx] && data[idx].length > 0) {
+                                    return typeof data[idx][0] === 'number' ? data[idx][0] : parseFloat(data[idx][0]) || 0;
+                                  }
+                                  return 0;
+                                };
+                                
+                                const val1 = getBarValue(x1);
+                                const val2 = getBarValue(x2);
+                                
+                                if (textType === 'growth_rate') {
+                                  if (val1 !== 0) {
+                                    const growthRate = (val2 - val1) / val1;
+                                    calculatedText = growthRate.toString();
+                                  } else {
+                                    calculatedText = '0';
+                                  }
+                                } else if (textType === 'net_change') {
+                                  calculatedText = (val2 - val1).toString();
+                                }
+                              }
+                              
+                              newConnections[index] = {
+                                ...newConnections[index],
+                                x1: x1,
+                                text: calculatedText,
+                              };
+                            } else {
+                              newConnections[index] = {
+                                ...newConnections[index],
+                                x1: x1,
+                              };
+                            }
                             updateParam('connections', newConnections);
                           }}
                         >
@@ -403,10 +450,55 @@ export default function BarParamsEditor({ subplot }: Props) {
                           value={String(conn.x2 ?? 1)}
                           onValueChange={(value) => {
                             const newConnections = [...connections];
-                            newConnections[index] = {
-                              ...newConnections[index],
-                              x2: parseInt(value),
-                            };
+                            const x1 = conn.x1 ?? 0;
+                            const x2 = parseInt(value);
+                            const textType = conn.text_type || 'growth_rate';
+                            const textFormat = conn.text_format || '{:+.1%}';
+                            
+                            // 如果设置了自动计算，重新计算文本
+                            if (textType) {
+                              const data = subplot.data?.data || [];
+                              let calculatedText = '';
+                              
+                              if (data.length > Math.max(x1, x2)) {
+                                const getBarValue = (idx: number) => {
+                                  if (stacked && data[idx]) {
+                                    return data[idx].reduce((sum: number, val: any) => {
+                                      const num = typeof val === 'number' ? val : parseFloat(val) || 0;
+                                      return sum + num;
+                                    }, 0);
+                                  } else if (data[idx] && data[idx].length > 0) {
+                                    return typeof data[idx][0] === 'number' ? data[idx][0] : parseFloat(data[idx][0]) || 0;
+                                  }
+                                  return 0;
+                                };
+                                
+                                const val1 = getBarValue(x1);
+                                const val2 = getBarValue(x2);
+                                
+                                if (textType === 'growth_rate') {
+                                  if (val1 !== 0) {
+                                    const growthRate = (val2 - val1) / val1;
+                                    calculatedText = growthRate.toString();
+                                  } else {
+                                    calculatedText = '0';
+                                  }
+                                } else if (textType === 'net_change') {
+                                  calculatedText = (val2 - val1).toString();
+                                }
+                              }
+                              
+                              newConnections[index] = {
+                                ...newConnections[index],
+                                x2: x2,
+                                text: calculatedText,
+                              };
+                            } else {
+                              newConnections[index] = {
+                                ...newConnections[index],
+                                x2: x2,
+                              };
+                            }
                             updateParam('connections', newConnections);
                           }}
                         >
@@ -580,32 +672,219 @@ export default function BarParamsEditor({ subplot }: Props) {
                     <div className="space-y-3 pt-3 border-t">
                       <h6 className="text-xs font-semibold text-gray-700">注释文本与样式</h6>
 
-                      <div className="grid grid-cols-[1fr_120px] gap-3">
+                      <div className="space-y-3">
                         <div className="space-y-2">
-                          <Label htmlFor={`conn-text-${index}`} className="text-xs">
-                            注释文本
+                          <Label htmlFor={`conn-text-type-${index}`} className="text-xs">
+                            注释类型
                           </Label>
-                          <Textarea
-                            id={`conn-text-${index}`}
-                            value={conn.text || ''}
-                            onChange={(e) => {
+                          <Select
+                            value={conn.text_type || 'growth_rate'}
+                            onValueChange={(value) => {
                               const newConnections = [...connections];
+                              const x1 = conn.x1 ?? 0;
+                              const x2 = conn.x2 ?? 1;
+                              
+                              // 获取数据值
+                              const data = subplot.data?.data || [];
+                              let calculatedText = '';
+                              
+                              if (data.length > Math.max(x1, x2)) {
+                                // 计算总和（如果是堆积图）或第一列的值
+                                const getBarValue = (idx: number) => {
+                                  if (stacked && data[idx]) {
+                                    return data[idx].reduce((sum: number, val: any) => {
+                                      const num = typeof val === 'number' ? val : parseFloat(val) || 0;
+                                      return sum + num;
+                                    }, 0);
+                                  } else if (data[idx] && data[idx].length > 0) {
+                                    return typeof data[idx][0] === 'number' ? data[idx][0] : parseFloat(data[idx][0]) || 0;
+                                  }
+                                  return 0;
+                                };
+                                
+                                const val1 = getBarValue(x1);
+                                const val2 = getBarValue(x2);
+                                
+                                if (value === 'growth_rate') {
+                                  // 增长率：(val2 - val1) / val1
+                                  if (val1 !== 0) {
+                                    const growthRate = (val2 - val1) / val1;
+                                    calculatedText = growthRate.toFixed(4); // 临时值，会被格式化
+                                  } else {
+                                    calculatedText = '0';
+                                  }
+                                } else if (value === 'net_change') {
+                                  // 净增长：val2 - val1
+                                  calculatedText = (val2 - val1).toFixed(4); // 临时值，会被格式化
+                                }
+                              }
+                              
                               newConnections[index] = {
                                 ...newConnections[index],
-                                text: e.target.value,
+                                text_type: value,
+                                text: calculatedText,
                               };
                               updateParam('connections', newConnections);
                             }}
-                            onKeyDown={(e) => {
-                              // Shift+Enter 换行，Enter 不换行（阻止默认行为）
-                              if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                              }
+                          >
+                            <SelectTrigger id={`conn-text-type-${index}`}>
+                              <SelectValue placeholder="选择注释类型" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="growth_rate">增长率</SelectItem>
+                              <SelectItem value="net_change">净增长</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-gray-500">
+                            根据两个柱子的值自动计算
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor={`conn-text-format-${index}`} className="text-xs">
+                            数值格式
+                          </Label>
+                          <NumberFormatEditor
+                            value={conn.text_format || '{:+.1%}'}
+                            onChange={(format) => {
+                              const newConnections = [...connections];
+                              newConnections[index] = {
+                                ...newConnections[index],
+                                text_format: format,
+                              };
+                              updateParam('connections', newConnections);
                             }}
-                            placeholder="输入注释文本（Shift+Enter 换行）"
-                            className="text-sm min-h-[60px] resize-none"
-                            rows={2}
+                            label=""
+                            showHelp={false}
                           />
+                          <p className="text-xs text-gray-500">
+                            用于格式化计算结果的显示格式
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-[1fr_120px] gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor={`conn-text-preview-${index}`} className="text-xs">
+                            预览值
+                          </Label>
+                          <div className="text-sm p-2 bg-gray-50 border rounded font-mono">
+                            {(() => {
+                              const textType = conn.text_type || 'growth_rate';
+                              const textFormat = conn.text_format || '{:+.1%}';
+                              const x1 = conn.x1 ?? 0;
+                              const x2 = conn.x2 ?? 1;
+                              
+                              // 获取数据值
+                              const data = subplot.data?.data || [];
+                              let previewValue = '';
+                              
+                              if (data.length > Math.max(x1, x2)) {
+                                // 计算总和（如果是堆积图）或第一列的值
+                                const getBarValue = (idx: number) => {
+                                  if (stacked && data[idx]) {
+                                    return data[idx].reduce((sum: number, val: any) => {
+                                      const num = typeof val === 'number' ? val : parseFloat(val) || 0;
+                                      return sum + num;
+                                    }, 0);
+                                  } else if (data[idx] && data[idx].length > 0) {
+                                    return typeof data[idx][0] === 'number' ? data[idx][0] : parseFloat(data[idx][0]) || 0;
+                                  }
+                                  return 0;
+                                };
+                                
+                                const val1 = getBarValue(x1);
+                                const val2 = getBarValue(x2);
+                                
+                                // 解析格式化字符串
+                                const parseFormat = (fmt: string) => {
+                                  const match = fmt.match(/\{:([+])?(,)?\.(\d+)([f%])\}/);
+                                  if (match) {
+                                    return {
+                                      showPlus: !!match[1],
+                                      showThousands: !!match[2],
+                                      decimals: parseInt(match[3] || '2', 10),
+                                      isPercent: match[4] === '%',
+                                    };
+                                  }
+                                  return {
+                                    showPlus: false,
+                                    showThousands: false,
+                                    decimals: 2,
+                                    isPercent: fmt.includes('%'),
+                                  };
+                                };
+                                
+                                const formatOptions = parseFormat(textFormat);
+                                
+                                if (textType === 'growth_rate') {
+                                  // 增长率：(val2 - val1) / val1
+                                  if (val1 !== 0) {
+                                    const growthRate = (val2 - val1) / val1;
+                                    let num = formatOptions.isPercent ? growthRate : growthRate;
+                                    
+                                    // 格式化数字
+                                    if (formatOptions.isPercent) {
+                                      num = growthRate * 100; // 百分比需要乘以100
+                                    }
+                                    
+                                    let formatted = num.toFixed(formatOptions.decimals);
+                                    
+                                    // 添加千位符
+                                    if (formatOptions.showThousands) {
+                                      const parts = formatted.split('.');
+                                      parts[0] = parseInt(parts[0]).toLocaleString('en-US');
+                                      formatted = parts.join('.');
+                                    }
+                                    
+                                    // 添加加号
+                                    if (formatOptions.showPlus && num > 0) {
+                                      formatted = '+' + formatted;
+                                    }
+                                    
+                                    // 添加百分号
+                                    if (formatOptions.isPercent) {
+                                      formatted = formatted + '%';
+                                    }
+                                    
+                                    previewValue = formatted;
+                                  } else {
+                                    previewValue = 'N/A';
+                                  }
+                                } else if (textType === 'net_change') {
+                                  // 净增长：val2 - val1
+                                  const netChange = val2 - val1;
+                                  let num = netChange;
+                                  
+                                  // 格式化数字
+                                  let formatted = num.toFixed(formatOptions.decimals);
+                                  
+                                  // 添加千位符
+                                  if (formatOptions.showThousands) {
+                                    const parts = formatted.split('.');
+                                    parts[0] = parseInt(parts[0]).toLocaleString('en-US');
+                                    formatted = parts.join('.');
+                                  }
+                                  
+                                  // 添加加号
+                                  if (formatOptions.showPlus && num > 0) {
+                                    formatted = '+' + formatted;
+                                  }
+                                  
+                                  // 添加百分号（净增长通常不使用百分比，但尊重用户设置）
+                                  if (formatOptions.isPercent) {
+                                    formatted = formatted + '%';
+                                  }
+                                  
+                                  previewValue = formatted;
+                                }
+                              } else {
+                                previewValue = '请先选择 x1 和 x2';
+                              }
+                              
+                              return previewValue;
+                            })()}
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor={`conn-text-size-${index}`} className="text-xs">

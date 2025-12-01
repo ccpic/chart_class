@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { chartDB } from "@/lib/db/chartDB";
 import { useCanvasStore } from "./canvasStore";
 import { SavedChart } from "@/lib/db/types";
+import { generateId } from "@/lib/utils";
 
 interface ChartStore {
   charts: SavedChart[];
@@ -41,7 +42,7 @@ export const useChartStore = create<ChartStore>((set, get) => ({
     const canvasState = useCanvasStore.getState();
     const now = Date.now();
     const chart: SavedChart = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       name,
       tags: tags || [],
       createdAt: now,
@@ -83,7 +84,7 @@ export const useChartStore = create<ChartStore>((set, get) => ({
     const canvasState = useCanvasStore.getState();
     const now = Date.now();
     const chart: SavedChart = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       name,
       tags: tags || [],
       createdAt: now,
