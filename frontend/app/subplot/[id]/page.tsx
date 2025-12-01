@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useCanvasStore } from '@/store/canvasStore';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,18 @@ export default function SubplotPage() {
   const { toast } = useToast();
   
   const { subplots, deleteSubplot } = useCanvasStore();
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // persist 中间件会自动从 localStorage 恢复状态
+  // 这里只需要等待 store 初始化完成
+  useEffect(() => {
+    // 给一点时间让 persist 中间件完成状态恢复
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+  
   const subplot = subplots.find((s) => s.subplotId === subplotId);
 
   const handleDelete = (subplotId: string, axIndex: number) => {
@@ -29,6 +42,22 @@ export default function SubplotPage() {
     });
   };
 
+  // 加载中状态
+  if (isLoading) {
+    return (
+      <div className="flex h-full w-full">
+        <MainContent>
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <p className="text-gray-600">正在加载...</p>
+            </div>
+          </div>
+        </MainContent>
+      </div>
+    );
+  }
+
+  // 如果找不到子图，显示错误并提供返回按钮
   if (!subplot) {
     return (
       <div className="flex h-full w-full">
@@ -36,7 +65,13 @@ export default function SubplotPage() {
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <p className="text-lg text-gray-600 mb-4">❌ 子图不存在</p>
-              <p className="text-sm text-gray-500">ID: {subplotId}</p>
+              <p className="text-sm text-gray-500 mb-4">ID: {subplotId}</p>
+              <Button
+                onClick={() => router.push('/canvas')}
+                variant="outline"
+              >
+                返回画布
+              </Button>
             </div>
           </div>
         </MainContent>
