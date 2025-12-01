@@ -720,32 +720,60 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
                   <ArrowDownLeft className="h-4 w-4 text-gray-400" />
                 </div>
               </th>
-              {columns.map((col, colIndex) => (
-                <th key={colIndex} className="border-b border-r bg-gray-50 p-0">
-                  <ContextMenu>
-                    <ContextMenuTrigger asChild>
-                      <div className="flex items-center gap-1">
-                        <Input
-                          value={col}
-                          onChange={(e) => updateColumnName(colIndex, e.target.value)}
-                          onFocus={() => setSelectedCell({ row: 0, col: colIndex, type: 'colName' })}
-                          onPaste={(e) => handlePaste(e, 0, colIndex, 'colName')}
-                          className={`border-0 h-8 text-xs font-semibold text-center focus-visible:ring-1 bg-transparent ${
-                            selectedCell?.type === 'colName' && selectedCell?.col === colIndex 
-                              ? 'bg-blue-100 ring-2 ring-blue-500' 
-                              : ''
-                          }`}
-                          placeholder={`列${colIndex + 1}`}
-                        />
-                        <button
-                          onClick={() => deleteColumn(colIndex)}
-                          className="p-1 hover:bg-red-100 rounded text-red-600"
-                          title="删除列"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </ContextMenuTrigger>
+              {columns.map((col, colIndex) => {
+                const colValue = col || '';
+                const lineCount = colValue.split('\n').length;
+                const estimatedRows = Math.max(1, Math.min(lineCount, 4)); // 最多显示 4 行
+                return (
+                  <th key={colIndex} className="border-b border-r bg-gray-50 p-0">
+                    <ContextMenu>
+                      <ContextMenuTrigger asChild>
+                        <div className="flex items-center gap-1">
+                          <Textarea
+                            value={colValue}
+                            onChange={(e) => {
+                              const textarea = e.target;
+                              // 重置高度以获取正确的 scrollHeight
+                              textarea.style.height = 'auto';
+                              // 设置新高度，但不超过最大高度
+                              const newHeight = Math.min(textarea.scrollHeight, 100);
+                              textarea.style.height = `${newHeight}px`;
+                              // 更新列名
+                              updateColumnName(colIndex, textarea.value);
+                            }}
+                            onFocus={(e) => {
+                              setSelectedCell({ row: 0, col: colIndex, type: 'colName' });
+                              // 聚焦时自动调整高度
+                              const textarea = e.target;
+                              textarea.style.height = 'auto';
+                              const newHeight = Math.min(textarea.scrollHeight, 100);
+                              textarea.style.height = `${newHeight}px`;
+                            }}
+                            onPaste={(e) => handlePaste(e, 0, colIndex, 'colName')}
+                            className={`border-0 text-xs font-semibold text-center focus-visible:ring-1 bg-transparent resize-none rounded-none ${
+                              selectedCell?.type === 'colName' && selectedCell?.col === colIndex 
+                                ? 'bg-blue-100 ring-2 ring-blue-500' 
+                                : ''
+                            }`}
+                            placeholder={`列${colIndex + 1}`}
+                            rows={estimatedRows}
+                            style={{
+                              minHeight: '32px',
+                              maxHeight: '100px',
+                              overflowY: 'auto',
+                              lineHeight: '1.4',
+                              padding: '4px 8px',
+                            }}
+                          />
+                          <button
+                            onClick={() => deleteColumn(colIndex)}
+                            className="p-1 hover:bg-red-100 rounded text-red-600"
+                            title="删除列"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </ContextMenuTrigger>
                     <ContextMenuContent className="w-48">
                       <ContextMenuItem
                         onClick={() => insertColumnBefore(colIndex)}
@@ -771,7 +799,8 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
                     </ContextMenuContent>
                   </ContextMenu>
                 </th>
-              ))}
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -779,17 +808,41 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
               <tr key={rowIndex} className="hover:bg-blue-50/50">
                 <td className="border-r border-b bg-gray-50 p-0">
                   <div className="flex items-center gap-1">
-                    <Input
+                    <Textarea
                       value={index[rowIndex] || `行${rowIndex + 1}`}
-                      onChange={(e) => updateRowIndex(rowIndex, e.target.value)}
-                      onFocus={() => setSelectedCell({ row: rowIndex, col: 0, type: 'rowIndex' })}
+                      onChange={(e) => {
+                        const textarea = e.target;
+                        // 重置高度以获取正确的 scrollHeight
+                        textarea.style.height = 'auto';
+                        // 设置新高度，但不超过最大高度
+                        const newHeight = Math.min(textarea.scrollHeight, 100);
+                        textarea.style.height = `${newHeight}px`;
+                        // 更新行索引
+                        updateRowIndex(rowIndex, textarea.value);
+                      }}
+                      onFocus={(e) => {
+                        setSelectedCell({ row: rowIndex, col: 0, type: 'rowIndex' });
+                        // 聚焦时自动调整高度
+                        const textarea = e.target;
+                        textarea.style.height = 'auto';
+                        const newHeight = Math.min(textarea.scrollHeight, 100);
+                        textarea.style.height = `${newHeight}px`;
+                      }}
                       onPaste={(e) => handlePaste(e, rowIndex, 0, 'rowIndex')}
-                      className={`border-0 h-9 text-xs font-medium focus-visible:ring-1 bg-transparent ${
+                      className={`border-0 text-xs font-medium focus-visible:ring-1 bg-transparent resize-none rounded-none ${
                         selectedCell?.type === 'rowIndex' && selectedCell?.row === rowIndex 
                           ? 'bg-blue-100 ring-2 ring-blue-500' 
                           : ''
                       }`}
                       placeholder={`行${rowIndex + 1}`}
+                      rows={1}
+                      style={{
+                        minHeight: '36px',
+                        maxHeight: '100px',
+                        overflowY: 'auto',
+                        lineHeight: '1.4',
+                        padding: '4px 8px',
+                      }}
                     />
                     <button
                       onClick={() => deleteRow(rowIndex)}
