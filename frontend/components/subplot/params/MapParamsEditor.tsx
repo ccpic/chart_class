@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2, Map as MapIcon } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import ColorPicker from '@/components/color/ColorPicker';
+import NumberFormatEditor from '@/components/ui/number-format-editor';
 
 interface Props {
   subplot: SubplotConfig;
@@ -484,26 +485,15 @@ export default function MapParamsEditor({ subplot }: Props) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="label_value_format" className="text-sm font-medium">
-                    数值格式化 (label_value_format)
-                  </Label>
-                  <Input
-                    id="label_value_format"
+                  <NumberFormatEditor
                     value={labelValueFormat}
-                    onChange={(e) => updateParam('label_value_format', e.target.value)}
-                    placeholder="{:,.0f}"
-                    className="text-sm font-mono"
+                    onChange={(format) => updateParam('label_value_format', format)}
+                    label="数值格式化 (label_value_format)"
+                    showHelp={true}
                   />
-                  <div className="text-xs text-gray-600 space-y-1 bg-amber-50 p-2 rounded border border-amber-200">
-                    <p className="font-medium text-amber-800">🔢 格式化说明：</p>
-                    <ul className="space-y-0.5 ml-2">
-                      <li><code className="bg-white px-1 rounded">{'{:,.0f}'}</code> - 千分位整数（默认）：36,000</li>
-                      <li><code className="bg-white px-1 rounded">{'{:.1f}'}</code> - 一位小数：36000.0</li>
-                      <li><code className="bg-white px-1 rounded">{'{:,.2f}'}</code> - 千分位+两位小数：36,000.00</li>
-                      <li><code className="bg-white px-1 rounded">{'{:.0f}'}</code> - 无千分位整数：36000</li>
-                    </ul>
-                    <p className="mt-1 text-amber-700">此格式仅影响 {'{value}'} 占位符的显示</p>
-                  </div>
+                  <p className="text-xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
+                    💡 此格式仅影响标签中 {'{value}'} 占位符的显示
+                  </p>
                 </div>
 
             <div className="space-y-2 p-3 bg-gray-50 rounded border">

@@ -1174,6 +1174,10 @@ class PlotMap(Plot):
             vmax=vmax,
         )
 
+        # 格式化 colorbar 刻度标签（使用与数据标签相同的格式）
+        if show_colorbar:
+            self._format_colorbar(label_value_format)
+
         # 绘制不同层级的边界
         self._draw_hierarchical_borders(
             level=level,
@@ -1191,6 +1195,10 @@ class PlotMap(Plot):
 
         # 添加标签
         if label_column:
+            # 如果未指定 label_format，默认使用 '{index}'（与前端一致）
+            if label_format is None:
+                label_format = "{index}"
+
             self._add_labels(
                 label_column,
                 level,
@@ -1525,11 +1533,48 @@ class PlotMap(Plot):
                     alpha=0.3,
                 )
 
+    def _format_colorbar(self, label_value_format: str = "{:,.0f}") -> None:
+        """格式化 colorbar 的刻度标签
+
+        Args:
+            label_value_format: 数值格式化字符串（如 '{:,.0f}', '{:.1f}', '{:.2%}' 等）
+        """
+        # 获取当前 figure 中的所有 axes，找到 colorbar
+        for ax in self.ax.figure.get_axes():
+            # colorbar 通常是一个独立的 axes
+            if ax != self.ax and hasattr(ax, "yaxis"):
+                # 获取当前刻度值
+                ticklabels = ax.get_yticklabels()
+                if ticklabels:
+                    # 获取刻度位置（数值）
+                    ticks = ax.get_yticks()
+
+                    # 格式化刻度标签
+                    formatted_labels = []
+                    for tick in ticks:
+                        try:
+                            # 去掉格式字符串的外层花括号，提取内部格式
+                            # '{:,.0f}' -> ':,.0f'
+                            format_spec = label_value_format.strip("{}")
+                            if format_spec.startswith(":"):
+                                format_spec = format_spec[1:]
+
+                            # 使用 Python 格式化
+                            formatted = f"{tick:{format_spec}}"
+                            formatted_labels.append(formatted)
+                        except (ValueError, KeyError):
+                            # 格式化失败时保持原样
+                            formatted_labels.append(str(tick))
+
+                    # 设置格式化后的标签
+                    ax.set_yticklabels(formatted_labels)
+                    break
+
     def _add_labels(
         self,
         label_column: str,
         level: str,
-        label_format: Optional[str] = None,
+        label_format: str = "{index}",
         label_value_format: str = "{:,.0f}",
         label_fontsize: Optional[float] = None,
         use_abbr: bool = False,
@@ -1539,7 +1584,7 @@ class PlotMap(Plot):
         Args:
             label_column: 标签列名
             level: 地图层级
-            label_format: 标签格式化字符串，支持 {index} 和 {value} 占位符
+            label_format: 标签格式化字符串，支持 {index} 和 {value} 占位符（默认 '{index}'）
             label_value_format: 数值格式化字符串
             label_fontsize: 自定义字体大小
             use_abbr: 是否使用简称
@@ -1591,14 +1636,8 @@ class PlotMap(Plot):
                 else:
                     formatted_value = str(value)
 
-                # 如果有格式化字符串，使用占位符替换
-                if label_format:
-                    label = label_format.format(
-                        index=region_name, value=formatted_value
-                    )
-                else:
-                    # 否则直接显示格式化后的值
-                    label = formatted_value
+                # 使用格式化字符串替换占位符
+                label = label_format.format(index=region_name, value=formatted_value)
 
                 # 跳过空标签
                 if not label or label.strip() == "":
