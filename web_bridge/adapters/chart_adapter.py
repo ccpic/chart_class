@@ -497,10 +497,16 @@ class WebChartAdapter:
                                 x1_idx = conn.get("x1")
                                 x2_idx = conn.get("x2")
                                 text = conn.get("text", "")
+                                text_type = conn.get(
+                                    "text_type"
+                                )  # "growth_rate" 或 "net_change"
+                                text_format = conn.get(
+                                    "text_format", "{:+.1%}"
+                                )  # 格式化字符串
 
                                 # 调试信息
                                 print(
-                                    f"连接线 {idx + 1}: x1={x1_idx}, x2={x2_idx}, text='{text}'"
+                                    f"连接线 {idx + 1}: x1={x1_idx}, x2={x2_idx}, text='{text}', text_type={text_type}"
                                 )
 
                                 # 验证必需参数（允许空文本，使用默认值）
@@ -509,10 +515,6 @@ class WebChartAdapter:
                                         f"连接线 {idx + 1} 缺少必需参数: x1={x1_idx}, x2={x2_idx}"
                                     )
                                     continue
-
-                                # 如果文本为空，使用默认文本
-                                if not text:
-                                    text = ""
 
                                 # 转换为整数索引
                                 x1_idx = int(x1_idx)
@@ -535,6 +537,43 @@ class WebChartAdapter:
                                 x2 = float(bar_x_positions[x2_idx])
                                 y1 = float(bar_heights[x1_idx])
                                 y2 = float(bar_heights[x2_idx])
+
+                                # 如果设置了 text_type，自动计算文本
+                                if text_type in ["growth_rate", "net_change"]:
+                                    if text_type == "growth_rate":
+                                        # 增长率：(y2 - y1) / y1
+                                        if y1 != 0:
+                                            growth_rate = (y2 - y1) / y1
+                                            # 使用格式化字符串格式化
+                                            try:
+                                                # 解析格式化字符串，例如 "{:+.1%}" -> "+12.3%"
+                                                if "%" in text_format:
+                                                    # 百分比格式
+                                                    text = text_format.format(
+                                                        growth_rate
+                                                    )
+                                                else:
+                                                    # 普通数字格式
+                                                    text = text_format.format(
+                                                        growth_rate
+                                                    )
+                                            except:
+                                                # 格式化失败，使用默认格式
+                                                text = f"{growth_rate:+.1%}"
+                                        else:
+                                            text = "N/A"
+                                    elif text_type == "net_change":
+                                        # 净增长：y2 - y1
+                                        net_change = y2 - y1
+                                        # 使用格式化字符串格式化
+                                        try:
+                                            text = text_format.format(net_change)
+                                        except:
+                                            # 格式化失败，使用默认格式
+                                            text = f"{net_change:+.2f}"
+                                elif not text:
+                                    # 如果文本为空且没有设置 text_type，使用空文本
+                                    text = ""
 
                                 # 创建 Connection 对象
                                 offset = conn.get("offset")
