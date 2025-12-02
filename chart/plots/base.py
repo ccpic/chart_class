@@ -93,7 +93,11 @@ class Plot:
                 "title_y": 1.0,  # 标题垂直位置 (0.0-1.2, 默认1.0)
                 "major_grid": None,  # 主网格线
                 "minor_grid": None,  # 次网格线
-                "hide_top_right_spines": False,  # 是否隐藏上/右边框
+                "hide_top_right_spines": False,  # 是否隐藏上/右边框（向后兼容，已废弃）
+                "show_top_spine": True,  # 上边框，默认显示
+                "show_right_spine": True,  # 右边框，默认显示
+                "show_bottom_spine": True,  # 下边框，默认显示
+                "show_left_spine": True,  # 左边框，默认显示
                 # 坐标轴相关的风格
                 "xlabel": None,  # x轴标题
                 "xlabel_fontsize": plot.fontsize,  # x轴标题字体大小
@@ -114,6 +118,8 @@ class Plot:
                 "yticks_interval": None,  # y轴刻度间隔
                 "xticks_length": 0,  # x轴刻度长度
                 "yticks_length": 0,  # y轴刻度长度
+                "x_fmt": None,  # X轴刻度数值格式
+                "y_fmt": None,  # Y轴刻度数值格式
                 # 图例
                 "show_legend": True,  # 是否展示ax图例
                 "legend_loc": "center left",  # 图例位置
@@ -149,7 +155,43 @@ class Plot:
                 self.remove_xticks()
             if self._remove_yticks:
                 self.remove_yticks()
-            if self._hide_top_right_spines:
+            # 边框控制：优先使用新的四个独立字段
+            # 由于 Style 类会为所有键创建属性，直接使用这些属性
+            # 如果属性存在且不是默认值（即被显式设置），则使用新字段
+            # 否则，向后兼容使用 hide_top_right_spines
+            if (
+                hasattr(self, "_show_top_spine")
+                or hasattr(self, "_show_right_spine")
+                or hasattr(self, "_show_bottom_spine")
+                or hasattr(self, "_show_left_spine")
+            ):
+                # 使用新的四个独立字段控制边框
+                show_top = getattr(self, "_show_top_spine", True)
+                show_right = getattr(self, "_show_right_spine", True)
+                show_bottom = getattr(self, "_show_bottom_spine", True)
+                show_left = getattr(self, "_show_left_spine", True)
+
+                self._plot.ax.spines["top"].set_visible(show_top)
+                self._plot.ax.spines["right"].set_visible(show_right)
+                self._plot.ax.spines["bottom"].set_visible(show_bottom)
+                self._plot.ax.spines["left"].set_visible(show_left)
+
+                # 设置刻度位置（优先显示在可见的边框上）
+                if show_left:
+                    self._plot.ax.yaxis.set_ticks_position("left")
+                elif show_right:
+                    self._plot.ax.yaxis.set_ticks_position("right")
+                else:
+                    self._plot.ax.yaxis.set_ticks_position("none")
+
+                if show_bottom:
+                    self._plot.ax.xaxis.set_ticks_position("bottom")
+                elif show_top:
+                    self._plot.ax.xaxis.set_ticks_position("top")
+                else:
+                    self._plot.ax.xaxis.set_ticks_position("none")
+            elif self._hide_top_right_spines:
+                # 向后兼容：如果设置了 hide_top_right_spines，则隐藏上/右边框
                 self.hide_top_right_spines()
             if self._xlim is not None:
                 self.xlim(self._xlim)
@@ -165,6 +207,11 @@ class Plot:
                 self.legend(
                     self._legend_loc, self._legend_ncol, self._legend_bbox_to_anchor
                 )
+            # 格式化坐标轴刻度标签
+            if self._x_fmt is not None:
+                self._plot._format_axis("x", self._x_fmt)
+            if self._y_fmt is not None:
+                self._plot._format_axis("y", self._y_fmt)
 
         def title(
             self,

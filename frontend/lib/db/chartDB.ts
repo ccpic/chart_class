@@ -41,8 +41,9 @@ export class ChartDatabase {
 
     // 更新 chart 对象
     chart.id = response.id;
-    chart.createdAt = new Date(response.created_at).getTime();
-    chart.updatedAt = new Date(response.updated_at).getTime();
+    // 后端时间为 UTC，这里按 UTC 解析再转换为本地时间戳
+    chart.createdAt = new Date(response.created_at + "Z").getTime();
+    chart.updatedAt = new Date(response.updated_at + "Z").getTime();
 
     return chart;
   }
@@ -52,8 +53,9 @@ export class ChartDatabase {
    */
   async getChart(id: string): Promise<SavedChart | null> {
     try {
+      // 后端返回的是 SavedChartResponse（created_at / updated_at 为 UTC 时间字符串）
       const response = await apiGet<any>(`/api/charts/${id}`);
-      // 转换后端格式到前端格式
+      // 转换后端格式到前端 SavedChart 格式
       return {
         id: response.id,
         name: response.name,
@@ -61,8 +63,9 @@ export class ChartDatabase {
         canvas: response.canvas,
         subplots: response.subplots,
         version: response.version,
-        createdAt: new Date(response.created_at).getTime(),
-        updatedAt: new Date(response.updated_at).getTime(),
+        // 按 UTC 解析，避免时区偏移导致的“早/晚 8 小时”问题
+        createdAt: new Date(response.created_at + "Z").getTime(),
+        updatedAt: new Date(response.updated_at + "Z").getTime(),
       };
     } catch (error: any) {
       if (error.status === 404) {
@@ -84,6 +87,7 @@ export class ChartDatabase {
           tags?: string[];
           created_at: string;
           updated_at: string;
+          subplot_count: number;
         }>
       >("/api/charts");
 
@@ -96,8 +100,9 @@ export class ChartDatabase {
         canvas: {} as any, // 占位符，实际使用时需要调用 getChart
         subplots: [], // 占位符
         version: "1.0",
-        createdAt: new Date(chart.created_at).getTime(),
-        updatedAt: new Date(chart.updated_at).getTime(),
+        createdAt: new Date(chart.created_at + "Z").getTime(),
+        updatedAt: new Date(chart.updated_at + "Z").getTime(),
+        subplotCount: chart.subplot_count,
       }));
     } catch (error) {
       console.error("获取图表列表失败:", error);
@@ -155,6 +160,7 @@ export class ChartDatabase {
           tags?: string[];
           created_at: string;
           updated_at: string;
+          subplot_count: number;
         }>
       >(`/api/charts?${queryParams}`);
 
@@ -165,8 +171,9 @@ export class ChartDatabase {
         canvas: {} as any,
         subplots: [],
         version: "1.0",
-        createdAt: new Date(chart.created_at).getTime(),
-        updatedAt: new Date(chart.updated_at).getTime(),
+        createdAt: new Date(chart.created_at + "Z").getTime(),
+        updatedAt: new Date(chart.updated_at + "Z").getTime(),
+        subplotCount: chart.subplot_count,
       }));
     } catch (error) {
       console.error("按tag筛选图表失败:", error);

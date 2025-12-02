@@ -63,23 +63,10 @@ class WebChartAdapter:
             # 移除 None 值和空字符串，避免传递无效参数
             style = {k: v for k, v in style.items() if v is not None and v != ""}
 
-            # 2. 从 ColorManager 加载最新的颜色字典（如果未指定）
+            # 2. 颜色字典应从数据库获取并传入，如果未指定则使用空字典
+            # 所有颜色映射应存储在用户数据库中，不再使用硬编码
             if color_dict is None:
-                if _USE_COLOR_MANAGER and _color_manager:
-                    # 获取所有颜色映射，优先使用 named_color（如果存在），否则使用 color（HEX）
-                    color_dict = {}
-                    for name, mapping in _color_manager._colors.items():
-                        # 优先使用 named_color（matplotlib 命名颜色），否则使用 color（HEX）
-                        color_dict[name] = (
-                            mapping.named_color
-                            if mapping.named_color
-                            else mapping.color
-                        )
-                else:
-                    # 如果 ColorManager 不可用，使用默认颜色字典
-                    from chart.color.color import COLOR_DICT
-
-                    color_dict = COLOR_DICT
+                color_dict = {}
 
             cmap_qual = ListedColormap(palette) if palette else None
 
@@ -467,21 +454,28 @@ class WebChartAdapter:
                         # 计算每个柱子的高度和 x 位置
                         stacked = params.get("stacked", True)
                         bar_width = params.get("bar_width", 0.8)
+                        
+                        # 如果指定了次坐标轴列，创建排除该列的 DataFrame 用于计算连接线位置
+                        secondary_line_column = params.get("secondary_line_column")
+                        df_bar = df.copy()
+                        if secondary_line_column is not None and secondary_line_column in df.columns:
+                            df_bar = df.drop(columns=[secondary_line_column])
 
                         if stacked:
-                            # 堆积柱状图：每个柱子的高度是所有系列的总和
-                            bar_heights = df.sum(axis=1).values
+                            # 堆积柱状图：每个柱子的高度是所有系列的总和（排除次坐标轴列）
+                            bar_heights = df_bar.sum(axis=1).values if df_bar.shape[1] > 0 else df.sum(axis=1).values
                             # x 位置就是索引位置（每个索引对应一个柱子）
                             bar_x_positions = list(range(len(df.index)))
                         else:
                             # 非堆积柱状图：每个索引对应多个柱子（每个系列一个）
-                            # 连接线应该连接"柱子组"的中心，高度取所有系列的最大值
+                            # 连接线应该连接"柱子组"的中心，高度取所有系列的最大值（排除次坐标轴列）
                             bar_heights = (
-                                df.max(axis=1).values if df.shape[1] > 0 else []
+                                df_bar.max(axis=1).values if df_bar.shape[1] > 0 else []
                             )
                             # x 位置是柱子组的中心位置
                             # 第 k 个柱子组的中心位置：k + bar_width * (n_series - 1) / 2
-                            n_series = df.shape[1]
+                            # 使用 df_bar 的列数，因为排除了次坐标轴列
+                            n_series = df_bar.shape[1] if df_bar.shape[1] > 0 else df.shape[1]
                             bar_x_positions = [
                                 k + bar_width * (n_series - 1) / 2
                                 for k in range(len(df.index))

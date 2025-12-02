@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Info, ArrowDownLeft } from 'lucide-react';
+import { Plus, Trash2, Info, ArrowDownLeft, Undo2, Redo2 } from 'lucide-react';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -20,6 +20,13 @@ interface DataGridEditorProps {
   };
   onChange: (data: { columns: string[]; index: string[]; data: any[][] }) => void;
 }
+
+// 状态快照类型
+type StateSnapshot = {
+  columns: string[];
+  index: string[];
+  rows: any[][];
+};
 
 /**
  * Excel 风格的数据网格编辑器
@@ -99,6 +106,130 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState<{ row: number; col: number } | null>(null);
+  
+  // 存储每个单元格的 Textarea ref，用于程序化聚焦
+  const cellRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
+  
+  // 撤销/重做系统
+  const undoStack = useRef<StateSnapshot[]>([]);
+  const redoStack = useRef<StateSnapshot[]>([]);
+  const isUndoRedo = useRef(false); // 标记是否正在执行撤销/重做，避免循环记录
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const editingCellRef = useRef<{ row: number; col: number } | null>(null); // 跟踪当前正在编辑的单元格
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  
+  // 创建状态快照
+  const createSnapshot = (): StateSnapshot => ({
+    columns: JSON.parse(JSON.stringify(columns)),
+    index: JSON.parse(JSON.stringify(index)),
+    rows: JSON.parse(JSON.stringify(rows)),
+  });
+  
+  // 更新撤销/重做按钮状态
+  const updateUndoRedoState = () => {
+    setCanUndo(undoStack.current.length > 1); // 至少需要2个状态才能撤销（当前状态+上一个状态）
+    setCanRedo(redoStack.current.length > 0);
+  };
+
+  // 保存状态到历史记录（带防抖，用于连续编辑）
+  const saveToHistory = (immediate = false) => {
+    // 如果正在执行撤销/重做，不记录
+    if (isUndoRedo.current) return;
+    
+    if (immediate) {
+      // 立即保存（用于粘贴、删除、添加行列等关键操作）
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+        debounceTimer.current = null;
+      }
+      const snapshot = createSnapshot();
+      undoStack.current.push(snapshot);
+      // 限制历史记录数量，避免内存溢出（保留最近 100 步）
+      if (undoStack.current.length > 100) {
+        undoStack.current.shift();
+      }
+      // 执行新操作时清空重做栈
+      redoStack.current = [];
+      updateUndoRedoState();
+    } else {
+      // 防抖保存（用于单元格编辑）
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+      debounceTimer.current = setTimeout(() => {
+        const snapshot = createSnapshot();
+        undoStack.current.push(snapshot);
+        if (undoStack.current.length > 100) {
+          undoStack.current.shift();
+        }
+        redoStack.current = [];
+        updateUndoRedoState();
+        debounceTimer.current = null;
+      }, 500); // 500ms 防抖
+    }
+  };
+  
+  // 恢复状态
+  const restoreState = (snapshot: StateSnapshot) => {
+    isUndoRedo.current = true;
+    setColumns(snapshot.columns);
+    setIndex(snapshot.index);
+    setRows(snapshot.rows);
+    syncToParent(snapshot.columns, snapshot.index, snapshot.rows);
+    // 使用 setTimeout 确保状态更新完成后再重置标记
+    setTimeout(() => {
+      isUndoRedo.current = false;
+    }, 0);
+  };
+  
+  // 撤销
+  const handleUndo = () => {
+    if (undoStack.current.length <= 1) return; // 至少需要2个状态才能撤销
+    
+    // 如果当前有未保存的编辑，先保存
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
+      const snapshot = createSnapshot();
+      undoStack.current.push(snapshot);
+    }
+    
+    // 将当前状态保存到重做栈
+    const currentSnapshot = createSnapshot();
+    redoStack.current.push(currentSnapshot);
+    
+    // 从撤销栈恢复上一个状态
+    const previousSnapshot = undoStack.current.pop();
+    if (previousSnapshot) {
+      restoreState(previousSnapshot);
+      updateUndoRedoState();
+    }
+  };
+  
+  // 重做
+  const handleRedo = () => {
+    if (redoStack.current.length === 0) return;
+    
+    // 将当前状态保存到撤销栈
+    const currentSnapshot = createSnapshot();
+    undoStack.current.push(currentSnapshot);
+    
+    // 从重做栈恢复下一个状态
+    const nextSnapshot = redoStack.current.pop();
+    if (nextSnapshot) {
+      restoreState(nextSnapshot);
+      updateUndoRedoState();
+    }
+  };
+  
+  // 初始化时保存初始状态
+  useEffect(() => {
+    const initialSnapshot = createSnapshot();
+    undoStack.current = [initialSnapshot];
+    redoStack.current = [];
+    updateUndoRedoState();
+  }, []); // 只在组件挂载时执行一次
 
   // 当外部数据变化时同步到本地状态
   useEffect(() => {
@@ -115,6 +246,22 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
     }
   }, [data]);
 
+  // 当 selectedCell 变化时，自动聚焦到对应的单元格
+  useEffect(() => {
+    if (selectedCell && selectedCell.type === 'data') {
+      const cellKey = getCellKey(selectedCell.row, selectedCell.col);
+      const textarea = cellRefs.current.get(cellKey);
+      if (textarea) {
+        // 使用 setTimeout 确保 DOM 更新完成后再聚焦
+        setTimeout(() => {
+          textarea.focus();
+          // 将光标移动到文本末尾，方便继续编辑
+          textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }, 0);
+      }
+    }
+  }, [selectedCell]);
+
   // 同步到父组件
   const syncToParent = (newColumns: string[], newIndex: string[], newRows: any[][]) => {
     onChange({ columns: newColumns, index: newIndex, data: newRows });
@@ -122,6 +269,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
 
   // 添加列
   const addColumn = () => {
+    saveToHistory(true); // 立即保存
     const newColumns = [...columns, `列${columns.length + 1}`];
     const newRows = rows.map(row => [...row, '']);
     setColumns(newColumns);
@@ -132,6 +280,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
   // 删除列
   const deleteColumn = (colIndex: number) => {
     if (columns.length <= 1) return; // 至少保留一列
+    saveToHistory(true); // 立即保存
     const newColumns = columns.filter((_, i) => i !== colIndex);
     const newRows = rows.map(row => row.filter((_, i) => i !== colIndex));
     setColumns(newColumns);
@@ -141,6 +290,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
 
   // 在指定列右侧插入空列
   const insertColumnAfter = (colIndex: number) => {
+    saveToHistory(true); // 立即保存
     const newColumns = [
       ...columns.slice(0, colIndex + 1),
       `列${columns.length + 1}`,
@@ -158,6 +308,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
 
   // 在指定列左侧插入空列
   const insertColumnBefore = (colIndex: number) => {
+    saveToHistory(true); // 立即保存
     const newColumns = [
       ...columns.slice(0, colIndex),
       `列${columns.length + 1}`,
@@ -175,6 +326,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
 
   // 添加行
   const addRow = () => {
+    saveToHistory(true); // 立即保存
     const newRow = new Array(columns.length).fill('');
     const newRows = [...rows, newRow];
     const newIndex = [...index, `行${index.length + 1}`];
@@ -186,6 +338,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
   // 删除行
   const deleteRow = (rowIndex: number) => {
     if (rows.length <= 1) return; // 至少保留一行
+    saveToHistory(true); // 立即保存
     const newRows = rows.filter((_, i) => i !== rowIndex);
     const newIndex = index.filter((_, i) => i !== rowIndex);
     setRows(newRows);
@@ -195,6 +348,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
 
   // 更新列名
   const updateColumnName = (colIndex: number, value: string) => {
+    saveToHistory(); // 防抖保存
     const newColumns = [...columns];
     newColumns[colIndex] = value;
     setColumns(newColumns);
@@ -203,6 +357,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
 
   // 更新行索引
   const updateRowIndex = (rowIndex: number, value: string) => {
+    saveToHistory(); // 防抖保存
     const newIndex = [...index];
     newIndex[rowIndex] = value;
     setIndex(newIndex);
@@ -211,6 +366,10 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
 
   // 更新单元格值
   const updateCell = (rowIndex: number, colIndex: number, value: string) => {
+    // 不在 updateCell 中保存历史记录，因为：
+    // 1. onFocus 时已经保存了编辑前的状态
+    // 2. onBlur 时会保存编辑后的状态
+    // 这样可以确保撤销时能正确恢复到编辑前的状态
     const newRows = [...rows];
     if (!newRows[rowIndex]) newRows[rowIndex] = [];
     
@@ -252,13 +411,48 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
     setSelectedCells(newSelection);
   };
 
+  // 根据起点和终点选中一个矩形区域（用于键盘 Shift+方向键）
+  const selectRange = (
+    startRow: number,
+    startCol: number,
+    endRow: number,
+    endCol: number
+  ) => {
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+    const minCol = Math.min(startCol, endCol);
+    const maxCol = Math.max(startCol, endCol);
+
+    const newSelection = new Set<string>();
+    for (let r = minRow; r <= maxRow; r++) {
+      for (let c = minCol; c <= maxCol; c++) {
+        newSelection.add(getCellKey(r, c));
+      }
+    }
+    setSelectedCells(newSelection);
+  };
+
   const handleCellMouseUp = () => {
     setIsSelecting(false);
   };
 
   // 删除选中的单元格内容
   const deleteSelectedCells = () => {
-    if (selectedCells.size === 0) return;
+    saveToHistory(true); // 立即保存
+    // 如果有批量选择，按选区删除
+    if (selectedCells.size === 0) {
+      // 没有批量选区时，删除当前聚焦单元格
+      if (!selectedCell || selectedCell.type !== 'data') return;
+
+      const { row, col } = selectedCell;
+      const newRows = [...rows];
+      if (newRows[row] && col < newRows[row].length) {
+        newRows[row][col] = '';
+      }
+      setRows(newRows);
+      syncToParent(columns, index, newRows);
+      return;
+    }
     
     const newRows = [...rows];
     selectedCells.forEach(key => {
@@ -341,7 +535,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
     }
   };
 
-  // 监听键盘事件（Delete/Backspace 删除，Ctrl+C 复制）
+  // 监听键盘事件（Delete/Backspace 删除，Ctrl+C 复制，Ctrl+Z 撤销，Ctrl+Y 重做）
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // 检查当前焦点是否在输入框内（Textarea 或 Input）
@@ -350,6 +544,21 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
         activeElement.tagName === 'TEXTAREA' ||
         activeElement.tagName === 'INPUT'
       );
+
+      // Ctrl+Z 或 Cmd+Z：撤销
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+
+      // Ctrl+Y 或 Cmd+Y：重做（Windows/Linux）
+      // Ctrl+Shift+Z 或 Cmd+Shift+Z：重做（Mac，但我们也支持 Ctrl+Y）
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
 
       // 只有当焦点不在输入框内，且有选中单元格时，才执行批量删除
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedCells.size > 0 && !isInputFocused) {
@@ -457,6 +666,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
 
   // 左上角粘贴处理
   const handleCornerPaste = (pastedRows: string[][]) => {
+    saveToHistory(true); // 立即保存
     console.log('🔷 左上角粘贴 - 原始数据:', pastedRows);
     
     if (pastedRows.length === 0) {
@@ -518,6 +728,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
 
   // 列名粘贴处理
   const handleColumnNamePaste = (pastedRows: string[][], startCol: number) => {
+    saveToHistory(true); // 立即保存
     // 如果粘贴的是多行数据，转为数据区域粘贴（从第一行数据开始）
     if (pastedRows.length > 1) {
       console.log('检测到多行粘贴，转为数据区域粘贴');
@@ -556,6 +767,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
 
   // 行索引粘贴处理
   const handleRowIndexPaste = (pastedRows: string[][], startRow: number) => {
+    saveToHistory(true); // 立即保存
     // 如果粘贴的是多列数据（不只是一列索引），转为数据区域粘贴
     const maxCols = Math.max(...pastedRows.map(row => row.length));
     if (maxCols > 1) {
@@ -588,6 +800,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
 
   // 数据区域粘贴处理
   const handleDataPaste = (pastedRows: string[][], startRow: number, startCol: number) => {
+    saveToHistory(true); // 立即保存
     const newRows = [...rows];
     const pasteHeight = pastedRows.length;
     const pasteWidth = Math.max(...pastedRows.map(row => row.length));
@@ -658,6 +871,27 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
     <div className="space-y-4">
       {/* 工具栏 */}
       <div className="flex items-center gap-2 pb-2 border-b">
+        <Button 
+          onClick={handleUndo} 
+          size="sm" 
+          variant="outline" 
+          className="gap-0"
+          disabled={!canUndo}
+          title="撤销 (Ctrl+Z)"
+        >
+          <Undo2 className="h-4 w-4" />
+        </Button>
+        <Button 
+          onClick={handleRedo} 
+          size="sm" 
+          variant="outline" 
+          className="gap-0"
+          disabled={!canRedo}
+          title="重做 (Ctrl+Y)"
+        >
+          <Redo2 className="h-4 w-4" />
+        </Button>
+        <div className="w-px h-6 bg-gray-300 mx-1" />
         <Button onClick={addColumn} size="sm" variant="outline" className="gap-2">
           <Plus className="h-3 w-3" />
           添加列
@@ -721,7 +955,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
                 </div>
               </th>
               {columns.map((col, colIndex) => {
-                const colValue = col || '';
+                const colValue = col ?? '';
                 const lineCount = colValue.split('\n').length;
                 const estimatedRows = Math.max(1, Math.min(lineCount, 4)); // 最多显示 4 行
                 return (
@@ -738,7 +972,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
                               // 设置新高度，但不超过最大高度
                               const newHeight = Math.min(textarea.scrollHeight, 100);
                               textarea.style.height = `${newHeight}px`;
-                              // 更新列名
+                              // 更新列名（允许暂时为空）
                               updateColumnName(colIndex, textarea.value);
                             }}
                             onFocus={(e) => {
@@ -748,6 +982,13 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
                               textarea.style.height = 'auto';
                               const newHeight = Math.min(textarea.scrollHeight, 100);
                               textarea.style.height = `${newHeight}px`;
+                            }}
+                            onBlur={() => {
+                              // 失去焦点时，如果列名为空，则自动填充默认值 "列x"
+                              const current = columns[colIndex];
+                              if (!current || current.trim() === '') {
+                                updateColumnName(colIndex, `列${colIndex + 1}`);
+                              }
                             }}
                             onPaste={(e) => handlePaste(e, 0, colIndex, 'colName')}
                             className={`border-0 text-xs font-semibold text-center focus-visible:ring-1 bg-transparent resize-none rounded-none ${
@@ -809,7 +1050,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
                 <td className="border-r border-b bg-gray-50 p-0">
                   <div className="flex items-center gap-1">
                     <Textarea
-                      value={index[rowIndex] || `行${rowIndex + 1}`}
+                      value={index[rowIndex] ?? ''}
                       onChange={(e) => {
                         const textarea = e.target;
                         // 重置高度以获取正确的 scrollHeight
@@ -817,7 +1058,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
                         // 设置新高度，但不超过最大高度
                         const newHeight = Math.min(textarea.scrollHeight, 100);
                         textarea.style.height = `${newHeight}px`;
-                        // 更新行索引
+                        // 更新行索引（允许暂时为空）
                         updateRowIndex(rowIndex, textarea.value);
                       }}
                       onFocus={(e) => {
@@ -827,6 +1068,13 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
                         textarea.style.height = 'auto';
                         const newHeight = Math.min(textarea.scrollHeight, 100);
                         textarea.style.height = `${newHeight}px`;
+                      }}
+                      onBlur={() => {
+                        // 失去焦点时，如果行索引为空，则自动填充默认值 "行x"
+                        const current = index[rowIndex];
+                        if (!current || current.trim() === '') {
+                          updateRowIndex(rowIndex, `行${rowIndex + 1}`);
+                        }
                       }}
                       onPaste={(e) => handlePaste(e, rowIndex, 0, 'rowIndex')}
                       className={`border-0 text-xs font-medium focus-visible:ring-1 bg-transparent resize-none rounded-none ${
@@ -862,20 +1110,80 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
                   return (
                     <td key={colIndex} className="border-r border-b p-0 align-top">
                       <Textarea
+                        ref={(el) => {
+                          if (el) {
+                            cellRefs.current.set(getCellKey(rowIndex, colIndex), el);
+                          } else {
+                            cellRefs.current.delete(getCellKey(rowIndex, colIndex));
+                          }
+                        }}
                         value={displayValue}
                         onChange={(e) => handleTextareaChange(e, rowIndex, colIndex)}
                         onFocus={(e) => {
                           setSelectedCell({ row: rowIndex, col: colIndex, type: 'data' });
+                          
+                          // 如果是第一次聚焦到这个单元格，保存编辑前的状态
+                          const cellKey = `${rowIndex}-${colIndex}`;
+                          const currentEditingKey = editingCellRef.current 
+                            ? `${editingCellRef.current.row}-${editingCellRef.current.col}` 
+                            : null;
+                          
+                          if (cellKey !== currentEditingKey) {
+                            // 新单元格开始编辑，保存编辑前的状态
+                            // 先清除之前的防抖定时器（如果有）
+                            if (debounceTimer.current) {
+                              clearTimeout(debounceTimer.current);
+                              debounceTimer.current = null;
+                            }
+                            // 保存当前状态（编辑前）
+                            const snapshot = createSnapshot();
+                            undoStack.current.push(snapshot);
+                            if (undoStack.current.length > 100) {
+                              undoStack.current.shift();
+                            }
+                            redoStack.current = [];
+                            updateUndoRedoState();
+                            
+                            // 标记当前正在编辑的单元格
+                            editingCellRef.current = { row: rowIndex, col: colIndex };
+                          }
+                          
                           // 聚焦时自动调整高度
                           const textarea = e.target;
                           textarea.style.height = 'auto';
                           const newHeight = Math.min(textarea.scrollHeight, 200);
                           textarea.style.height = `${newHeight}px`;
                         }}
+                        onBlur={() => {
+                          // 失去焦点时，如果有未保存的编辑，立即保存历史记录
+                          if (debounceTimer.current) {
+                            clearTimeout(debounceTimer.current);
+                            debounceTimer.current = null;
+                            const snapshot = createSnapshot();
+                            undoStack.current.push(snapshot);
+                            if (undoStack.current.length > 100) {
+                              undoStack.current.shift();
+                            }
+                            redoStack.current = [];
+                            updateUndoRedoState();
+                          }
+                          
+                          // 清除正在编辑的单元格标记
+                          if (editingCellRef.current?.row === rowIndex && editingCellRef.current?.col === colIndex) {
+                            editingCellRef.current = null;
+                          }
+                        }}
                         onMouseDown={() => handleCellMouseDown(rowIndex, colIndex)}
                         onMouseEnter={() => handleCellMouseEnter(rowIndex, colIndex)}
                         onMouseUp={handleCellMouseUp}
                         onKeyDown={(e) => {
+                          // Delete 删除当前选区（支持批量）
+                          if (e.key === 'Delete') {
+                            e.preventDefault();
+                            deleteSelectedCells();
+                            return;
+                          }
+
                           // 在 Textarea 中，Enter 键用于换行
                           // Tab 键用于移动到下一个单元格
                           if (e.key === 'Tab') {
@@ -895,32 +1203,76 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
                                 setSelectedCell({ row: rowIndex + 1, col: 0, type: 'data' });
                               }
                             }
-                          } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-                            // 方向键用于导航（当光标在文本开头或结尾时）
+                            return;
+                          }
+
+                          // Shift + 方向键：像 Excel 一样扩展选择区域
+                          if (
+                            e.shiftKey &&
+                            (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')
+                          ) {
+                            e.preventDefault();
+                            // 锚点：已有 selectionStart，否则当前单元格
+                            const anchor = selectionStart || { row: rowIndex, col: colIndex };
+                            let newRow = rowIndex;
+                            let newCol = colIndex;
+
+                            if (e.key === 'ArrowUp' && rowIndex > 0) newRow = rowIndex - 1;
+                            if (e.key === 'ArrowDown' && rowIndex < rows.length - 1) newRow = rowIndex + 1;
+                            if (e.key === 'ArrowLeft' && colIndex > 0) newCol = colIndex - 1;
+                            if (e.key === 'ArrowRight' && colIndex < columns.length - 1) newCol = colIndex + 1;
+
+                            setSelectedCell({ row: newRow, col: newCol, type: 'data' });
+                            // 如果还没有键盘选择锚点，设置一次
+                            if (!selectionStart) {
+                              setSelectionStart({ row: rowIndex, col: colIndex });
+                              selectRange(rowIndex, colIndex, newRow, newCol);
+                            } else {
+                              selectRange(anchor.row, anchor.col, newRow, newCol);
+                            }
+                            return;
+                          }
+
+                          // 单纯方向键：移动单元格（像 Excel 一样）
+                          // 检查光标位置，如果在文本边界则移动单元格，否则允许在文本内移动光标
+                          if (
+                            e.key === 'ArrowUp' ||
+                            e.key === 'ArrowDown' ||
+                            e.key === 'ArrowLeft' ||
+                            e.key === 'ArrowRight'
+                          ) {
                             const textarea = e.target as HTMLTextAreaElement;
                             const cursorPos = textarea.selectionStart;
                             const textLength = textarea.value.length;
                             
-                            if (e.key === 'ArrowUp' && cursorPos === 0) {
+                            // 判断光标是否在文本边界
+                            const isAtStart = cursorPos === 0;
+                            const isAtEnd = cursorPos === textLength;
+                            
+                            let shouldMoveCell = false;
+                            let newRow = rowIndex;
+                            let newCol = colIndex;
+                            
+                            if (e.key === 'ArrowUp' && isAtStart && rowIndex > 0) {
+                              shouldMoveCell = true;
+                              newRow = rowIndex - 1;
+                            } else if (e.key === 'ArrowDown' && isAtEnd && rowIndex < rows.length - 1) {
+                              shouldMoveCell = true;
+                              newRow = rowIndex + 1;
+                            } else if (e.key === 'ArrowLeft' && isAtStart && colIndex > 0) {
+                              shouldMoveCell = true;
+                              newCol = colIndex - 1;
+                            } else if (e.key === 'ArrowRight' && isAtEnd && colIndex < columns.length - 1) {
+                              shouldMoveCell = true;
+                              newCol = colIndex + 1;
+                            }
+                            
+                            // 如果需要移动单元格，阻止默认行为并移动
+                            if (shouldMoveCell) {
                               e.preventDefault();
-                              if (rowIndex > 0) {
-                                setSelectedCell({ row: rowIndex - 1, col: colIndex, type: 'data' });
-                              }
-                            } else if (e.key === 'ArrowDown' && cursorPos === textLength) {
-                              e.preventDefault();
-                              if (rowIndex < rows.length - 1) {
-                                setSelectedCell({ row: rowIndex + 1, col: colIndex, type: 'data' });
-                              }
-                            } else if (e.key === 'ArrowLeft' && cursorPos === 0) {
-                              e.preventDefault();
-                              if (colIndex > 0) {
-                                setSelectedCell({ row: rowIndex, col: colIndex - 1, type: 'data' });
-                              }
-                            } else if (e.key === 'ArrowRight' && cursorPos === textLength) {
-                              e.preventDefault();
-                              if (colIndex < columns.length - 1) {
-                                setSelectedCell({ row: rowIndex, col: colIndex + 1, type: 'data' });
-                              }
+                              setSelectedCell({ row: newRow, col: newCol, type: 'data' });
+                              setSelectedCells(new Set([getCellKey(newRow, newCol)]));
+                              setSelectionStart({ row: newRow, col: newCol });
                             }
                           }
                         }}
@@ -959,6 +1311,7 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
           提示：
         </p>
         <ul className="list-disc list-inside space-y-0.5 ml-2">
+          <li><strong>撤销/重做</strong>：按 Ctrl+Z 撤销上一步操作，按 Ctrl+Y 重做，支持多步撤销和重做</li>
           <li><strong>左上角单元格</strong>：点击选中，粘贴包含行列索引的完整 Excel 表格（第一行→列名，第一列→行索引）</li>
           <li><strong>列名区域</strong>：点击任意列名粘贴一行列名，右键菜单可插入/删除列</li>
           <li><strong>行索引区域</strong>：点击任意行索引粘贴一列行索引</li>

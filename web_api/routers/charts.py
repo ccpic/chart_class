@@ -58,10 +58,12 @@ class ChartListResponse(BaseModel):
     tags: Optional[List[str]]
     created_at: datetime
     updated_at: datetime
+    subplot_count: int
 
 
 # ============ 数据库存储 ============
 # 使用数据库持久化图表数据，支持用户隔离
+
 
 def get_user_chart_manager(db: Session, user_id: int) -> ChartDBManager:
     """获取用户的图表管理器（数据库版本）"""
@@ -76,7 +78,7 @@ async def save_chart(
 ):
     """保存图表"""
     chart_manager = get_user_chart_manager(db, current_user.id)
-    
+
     saved_chart = chart_manager.create(
         name=chart_data.name,
         canvas=chart_data.canvas,
@@ -97,7 +99,7 @@ async def update_chart(
 ):
     """更新图表"""
     chart_manager = get_user_chart_manager(db, current_user.id)
-    
+
     updated_chart = chart_manager.update(
         chart_id=chart_id,
         name=chart_data.name,
@@ -106,7 +108,7 @@ async def update_chart(
         tags=chart_data.tags,
         version=chart_data.version,
     )
-    
+
     if not updated_chart:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -126,9 +128,9 @@ async def list_charts(
 ):
     """获取图表列表"""
     chart_manager = get_user_chart_manager(db, current_user.id)
-    
+
     charts_data = chart_manager.list_all(tags=tags)
-    
+
     charts = [
         ChartListResponse(
             id=chart["id"],
@@ -136,6 +138,7 @@ async def list_charts(
             tags=chart["tags"],
             created_at=chart["created_at"],
             updated_at=chart["updated_at"],
+            subplot_count=len(chart.get("subplots", [])),
         )
         for chart in charts_data
     ]
@@ -161,9 +164,9 @@ async def get_chart(
 ):
     """获取图表详情"""
     chart_manager = get_user_chart_manager(db, current_user.id)
-    
+
     chart = chart_manager.get(chart_id)
-    
+
     if not chart:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -181,9 +184,9 @@ async def delete_chart(
 ):
     """删除图表"""
     chart_manager = get_user_chart_manager(db, current_user.id)
-    
+
     success = chart_manager.delete(chart_id)
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

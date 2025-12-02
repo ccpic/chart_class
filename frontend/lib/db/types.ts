@@ -10,4 +10,6 @@ export interface SavedChart {
   canvas: CanvasConfig;
   subplots: SubplotConfig[];
   version: string;
+  /** 列表接口返回的子图数量（不包含完整 subplots 数据时使用） */
+  subplotCount?: number;
 }

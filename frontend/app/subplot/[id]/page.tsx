@@ -11,6 +11,7 @@ import RightPanel from '@/components/layout/RightPanel';
 import SubplotTabs from '@/components/subplot/SubplotTabs';
 import SubplotParams from '@/components/subplot/SubplotParams';
 import DeleteSubplotDialog from '@/components/canvas/DeleteSubplotDialog';
+import { getChartTypeName } from '@/constants/chartTypes';
 
 export default function SubplotPage() {
   const params = useParams();
@@ -92,7 +93,7 @@ export default function SubplotPage() {
                   子图 {subplot.axIndex + 1}
                 </h1>
                 <p className="text-sm text-gray-600 mt-1">
-                  图表类型：{subplot.chartType} | 位置：第 {subplot.axIndex + 1} 个网格
+                  图表类型：{getChartTypeName(subplot.chartType)} | 位置：第 {subplot.axIndex + 1} 个网格
                 </p>
               </div>
               

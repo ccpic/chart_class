@@ -5,6 +5,7 @@ import { useCanvasStore } from '@/store/canvasStore';
 import { SubplotConfig } from '@/types/canvas';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -382,14 +383,15 @@ export default function BubbleParamsEditor({ subplot }: Props) {
 
           <div className="space-y-2">
             <Label htmlFor="label-formatter" className="text-sm font-medium">
-              标签格式化
+              标签格式化 <span className="text-gray-400">(Shift+Enter换行)</span>
             </Label>
-            <Input
+            <Textarea
               id="label-formatter"
-              type="text"
               value={subplot.params.label_formatter || '{index}'}
               onChange={(e) => updateParam('label_formatter', e.target.value)}
               placeholder="{index}, {x}, {y}, {z}"
+              className="min-h-[32px] text-sm resize-y"
+              rows={1}
             />
             <p className="text-xs text-gray-500">
               支持: {'{index}'} (行索引), {'{x}'}, {'{y}'}, {'{z}'}

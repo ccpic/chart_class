@@ -3,28 +3,10 @@
 import { PlotSpecificParamsRouter } from './PlotSpecificParamsRouter';
 import type { SubplotConfig } from '@/types/canvas';
 import { BarChart3 } from 'lucide-react';
+import { getChartTypeName } from '@/constants/chartTypes';
 
 interface PlotSpecificParamsTabProps {
   subplot: SubplotConfig | null;
-}
-
-/**
- * 图表类型到中文名称的映射
- */
-function getChartTypeName(kind: string): string {
-  const nameMap: Record<string, string> = {
-    bubble: '气泡图',
-    bar: '柱状图',
-    line: '折线图',
-    pie: '饼图',
-    heatmap: '热力图',
-    treemap: '矩形树图',
-    waffle: '华夫饼图',
-    funnel: '漏斗图',
-    venn: '韦恩图',
-    wordcloud: '词云',
-  };
-  return nameMap[kind] || kind;
 }
 
 /**

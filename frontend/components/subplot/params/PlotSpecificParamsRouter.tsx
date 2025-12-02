@@ -13,34 +13,10 @@ import FunnelParamsEditor from './FunnelParamsEditor';
 import WaterfallParamsEditor from './WaterfallParamsEditor';
 import MapParamsEditor from './MapParamsEditor';
 import type { SubplotConfig } from '@/types/canvas';
+import { getChartTypeName } from '@/constants/chartTypes';
 
 interface PlotSpecificParamsRouterProps {
   subplot: SubplotConfig;
-}
-
-/**
- * 图表类型到中文名称的映射
- */
-function getChartTypeName(kind: string): string {
-  const nameMap: Record<string, string> = {
-    bubble: '气泡图',
-    table: '高级表格',
-    hist: '直方图',
-    bar: '柱状图',
-    barh: '条形图',
-    line: '折线图',
-    pie: '饼图',
-    boxdot: '箱型图',
-    funnel: '漏斗图',
-    waterfall: '瀑布图',
-    map: '热力地图',
-    heatmap: '热力图',
-    treemap: '矩形树图',
-    waffle: '华夫饼图',
-    venn: '韦恩图',
-    wordcloud: '词云',
-  };
-  return nameMap[kind] || kind;
 }
 
 /**

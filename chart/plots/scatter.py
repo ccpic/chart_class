@@ -83,10 +83,13 @@ class PlotBubble(Plot):
         z = (z / z.max() * 100) ** 1.8 * bubble_scale
 
         # 使用基类方法合并样式参数
+        # 优先从 style 中获取 x_fmt 和 y_fmt，如果没有则从 kwargs 中获取，最后使用默认值
+        style_x_fmt = self._style.get("x_fmt") if self._style else None
+        style_y_fmt = self._style.get("y_fmt") if self._style else None
         d_style = self._merge_style_kwargs(
             {
-                "x_fmt": "{:,.0f}",
-                "y_fmt": "{:,.0f}",
+                "x_fmt": kwargs.get("x_fmt") or style_x_fmt or "{:,.0f}",
+                "y_fmt": kwargs.get("y_fmt") or style_y_fmt or "{:,.0f}",
                 "alpha": 0.6,
                 "random_color": True,
                 "edgecolor": "black",
@@ -249,9 +252,14 @@ class PlotBubble(Plot):
         if self.style._ylabel is None:
             self.style._ylabel = y.name
 
-        # 使用基类方法格式化坐标轴
-        self._format_axis("x", d_style.get("x_fmt"))
-        self._format_axis("y", d_style.get("y_fmt"))
+        # 注意：坐标轴格式化现在由 apply_style() 方法统一处理
+        # 如果 style 中有 x_fmt 和 y_fmt，它们会在 apply_style() 中被应用
+        # 这里保留对 kwargs 中 x_fmt 和 y_fmt 的支持（向后兼容）
+        # 如果 kwargs 中有 x_fmt 或 y_fmt，直接应用（用于气泡图特有参数）
+        if "x_fmt" in kwargs:
+            self._format_axis("x", d_style.get("x_fmt"))
+        if "y_fmt" in kwargs:
+            self._format_axis("y", d_style.get("y_fmt"))
 
         # 绘制平均线
         if x_avg is not None:

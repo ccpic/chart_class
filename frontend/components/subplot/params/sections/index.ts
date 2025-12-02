@@ -4,3 +4,4 @@ export { GridSection } from "./GridSection";
 export { AxisSection } from "./AxisSection";
 export { TicksSection } from "./TicksSection";
 export { LegendSection } from "./LegendSection";
+export { BorderSection } from "./BorderSection";

@@ -145,28 +145,6 @@ export function AxisSection({ style, onChange }: AxisSectionProps) {
           <p className="text-xs text-gray-500">留空为自动</p>
         </div>
       </div>
-
-      {/* 边框设置 */}
-      <div className="pt-3 border-t">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="hide-spines"
-            checked={style.hide_top_right_spines || false}
-            onCheckedChange={(checked) =>
-              onChange({ hide_top_right_spines: checked as boolean })
-            }
-          />
-          <Label
-            htmlFor="hide-spines"
-            className="text-sm font-medium text-gray-700 cursor-pointer"
-          >
-            隐藏上边框和右边框
-          </Label>
-        </div>
-        <p className="text-xs text-gray-500 ml-6 mt-1">
-          常用于学术图表，保持左下双轴
-        </p>
-      </div>
     </div>
   );
 }

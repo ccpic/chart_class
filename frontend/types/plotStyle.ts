@@ -33,7 +33,12 @@ export interface PlotStyle {
   ylabel_fontsize?: number | null;
   xlim?: [number | null, number | null] | null;
   ylim?: [number | null, number | null] | null;
-  hide_top_right_spines?: boolean;
+  
+  // ===== 边框 =====
+  show_top_spine?: boolean;    // 上边框，默认 true
+  show_right_spine?: boolean;  // 右边框，默认 true
+  show_bottom_spine?: boolean; // 下边框，默认 true
+  show_left_spine?: boolean;   // 左边框，默认 true
 
   // ===== 刻度 =====
   all_xticks?: boolean;
@@ -45,6 +50,8 @@ export interface PlotStyle {
   remove_yticks?: boolean;
   xticks_interval?: number | null;
   yticks_interval?: number | null;
+  x_fmt?: string; // X 轴刻度数值格式
+  y_fmt?: string; // Y 轴刻度数值格式
 
   // ===== 图例 =====
   show_legend?: boolean;
