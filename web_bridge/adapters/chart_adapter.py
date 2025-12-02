@@ -63,23 +63,10 @@ class WebChartAdapter:
             # 移除 None 值和空字符串，避免传递无效参数
             style = {k: v for k, v in style.items() if v is not None and v != ""}
 
-            # 2. 从 ColorManager 加载最新的颜色字典（如果未指定）
+            # 2. 颜色字典应从数据库获取并传入，如果未指定则使用空字典
+            # 所有颜色映射应存储在用户数据库中，不再使用硬编码
             if color_dict is None:
-                if _USE_COLOR_MANAGER and _color_manager:
-                    # 获取所有颜色映射，优先使用 named_color（如果存在），否则使用 color（HEX）
-                    color_dict = {}
-                    for name, mapping in _color_manager._colors.items():
-                        # 优先使用 named_color（matplotlib 命名颜色），否则使用 color（HEX）
-                        color_dict[name] = (
-                            mapping.named_color
-                            if mapping.named_color
-                            else mapping.color
-                        )
-                else:
-                    # 如果 ColorManager 不可用，使用默认颜色字典
-                    from chart.color.color import COLOR_DICT
-
-                    color_dict = COLOR_DICT
+                color_dict = {}
 
             cmap_qual = ListedColormap(palette) if palette else None
 

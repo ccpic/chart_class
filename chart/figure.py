@@ -23,7 +23,7 @@ from chart.plots.table import PlotTable  # noqa: F401
 from chart.plots.venn import PlotVenn2, PlotVenn3  # noqa: F401
 from chart.plots.map import PlotMap  # noqa: F401
 import pandas as pd
-from chart.color.color import CMAP_QUAL, CMAP_NORM, COLOR_DICT
+from chart.color.color import CMAP_QUAL, CMAP_NORM
 from chart.components.annotation import Connection
 import inspect
 import re
@@ -98,7 +98,7 @@ class GridFigure(Figure):
         width: int = 15,
         height: int = 6,
         fontsize: int = 14,
-        color_dict: Dict[str, str] = COLOR_DICT,
+        color_dict: Optional[Dict[str, str]] = None,
         cmap_qual: mpl.colors.Colormap = CMAP_QUAL,
         cmap_norm: mpl.colors.Colormap = CMAP_NORM,
         style: Dict[str, Any] = {},
@@ -120,7 +120,7 @@ class GridFigure(Figure):
             width (int, optional): 总宽度. Defaults to 15.
             height (int, optional): 总高度. Defaults to 6.
             fontsize (int, optional): 全局字体大小. Defaults to 14.
-            color_dict (Dict[str, str], optional): 颜色字典. Defaults to COLOR_DICT in color.py.
+            color_dict (Dict[str, str], optional): 颜色字典. 如果为 None，则使用空字典（颜色映射应从数据库获取）.
             cmap_qual (mpl.colors.Colormap, optional): 离散的colormap，用于分类变量着色. Defaults to cmap_qual.
             cmap_norm (mpl.colors.Colormap, optional): 连续的colormap，用于连续变量区分表现好坏. Defaults to plt.get_cmap("PiYG").
             style (Dict[str, Any], optional): 风格字典. Defaults to {}.
@@ -195,7 +195,7 @@ class GridFigure(Figure):
         self.width = width
         self.height = height
         self.fontsize = fontsize
-        self._color_dict = color_dict
+        self._color_dict = color_dict if color_dict is not None else {}
         self._cmap_qual = cmap_qual
         self._cmap_norm = cmap_norm
         self._style = style
