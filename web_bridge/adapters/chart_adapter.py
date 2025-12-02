@@ -454,21 +454,28 @@ class WebChartAdapter:
                         # 计算每个柱子的高度和 x 位置
                         stacked = params.get("stacked", True)
                         bar_width = params.get("bar_width", 0.8)
+                        
+                        # 如果指定了次坐标轴列，创建排除该列的 DataFrame 用于计算连接线位置
+                        secondary_line_column = params.get("secondary_line_column")
+                        df_bar = df.copy()
+                        if secondary_line_column is not None and secondary_line_column in df.columns:
+                            df_bar = df.drop(columns=[secondary_line_column])
 
                         if stacked:
-                            # 堆积柱状图：每个柱子的高度是所有系列的总和
-                            bar_heights = df.sum(axis=1).values
+                            # 堆积柱状图：每个柱子的高度是所有系列的总和（排除次坐标轴列）
+                            bar_heights = df_bar.sum(axis=1).values if df_bar.shape[1] > 0 else df.sum(axis=1).values
                             # x 位置就是索引位置（每个索引对应一个柱子）
                             bar_x_positions = list(range(len(df.index)))
                         else:
                             # 非堆积柱状图：每个索引对应多个柱子（每个系列一个）
-                            # 连接线应该连接"柱子组"的中心，高度取所有系列的最大值
+                            # 连接线应该连接"柱子组"的中心，高度取所有系列的最大值（排除次坐标轴列）
                             bar_heights = (
-                                df.max(axis=1).values if df.shape[1] > 0 else []
+                                df_bar.max(axis=1).values if df_bar.shape[1] > 0 else []
                             )
                             # x 位置是柱子组的中心位置
                             # 第 k 个柱子组的中心位置：k + bar_width * (n_series - 1) / 2
-                            n_series = df.shape[1]
+                            # 使用 df_bar 的列数，因为排除了次坐标轴列
+                            n_series = df_bar.shape[1] if df_bar.shape[1] > 0 else df.shape[1]
                             bar_x_positions = [
                                 k + bar_width * (n_series - 1) / 2
                                 for k in range(len(df.index))

@@ -24,10 +24,9 @@ class PlotBar(Plot):
         show_total_bar: bool = False,
         show_total_label: bool = False,
         show_gr_text: bool = False,
-        show_gr_line: bool = False,
+        secondary_line_column: Optional[str] = None,
         show_avg_line: bool = False,
         label_threshold: float = 0.02,
-        period_change: int = 1,
         **kwargs: Any,
     ) -> PlotBar:
         """继承基本Plot类，绘制柱状图
@@ -39,19 +38,25 @@ class PlotBar(Plot):
             show_total_bar (bool, optional): 是否显示一个总体表现外框. Defaults to False.
             show_total_label (bool, optional): 是否在最上方显示堆积之和数字标签. Defaults to False.
             show_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
-            show_gr_line (bool, optional): 是否显示增长率线形图. Defaults to False.
+            secondary_line_column (Optional[str], optional): 次坐标轴折线图要绘制的列名.
+                                                             如果指定，则在次坐标轴上绘制该列的原始值折线图；如果为None，则不显示折线图. Defaults to None.
             label_threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
-            period_change (float, optional): 计算增长率同比的期数. Defaults to 1.
 
         Returns:
             self: 返回自身plot实例
         """
         df = self.data
-        df_share = self._calculate_share(df, axis=1)
-        df_gr = self.data.pct_change(axis=0, periods=period_change)
+
+        # 如果指定了次坐标轴列，创建排除该列的 DataFrame 用于柱状图绘制
+        df_bar = df.copy()
+        if secondary_line_column is not None and secondary_line_column in df.columns:
+            df_bar = df.drop(columns=[secondary_line_column])
+
+        df_share = self._calculate_share(df_bar, axis=1)
+        df_gr = self.data.pct_change(axis=0, periods=1)
         avg = None
-        if df.shape[1] == 1:
-            mean_result = df.mean()
+        if df_bar.shape[1] == 1:
+            mean_result = df_bar.mean()
             if isinstance(mean_result, pd.Series):
                 avg = float(mean_result.iloc[0])
             else:
@@ -67,6 +72,12 @@ class PlotBar(Plot):
                 "fmt_abs": self.fmt,  # 绝对值标签格式
                 "fmt_share": "{:.1%}",  # 占比标签格式
                 "fmt_gr": "{:+.1%}",  # 增长率标签格式
+                "secondary_line_color": "darkorange",  # 次坐标轴折线颜色
+                "secondary_line_linestyle": "dashed",  # 次坐标轴折线样式
+                "secondary_line_linewidth": 1,  # 次坐标轴折线宽度
+                "secondary_line_marker": "o",  # 次坐标轴折线标记
+                "secondary_line_markersize": 3,  # 次坐标轴折线标记大小
+                "secondary_line_label_fmt": None,  # 次坐标轴折线标签格式，None则使用fmt_abs
             },
             **kwargs,
         )
@@ -80,19 +91,28 @@ class PlotBar(Plot):
             bottom_neg = 0
             bottom_gr = 0
 
-            max_v = np.nanmax(df.values)
-            min_v = np.nanmin(df.values)
+            max_v = np.nanmax(df_bar.values) if df_bar.shape[1] > 0 else 0
+            min_v = np.nanmin(df_bar.values) if df_bar.shape[1] > 0 else 0
             range_v = max_v - min_v
 
             # 重置颜色迭代器
             self._reset_color_cycle()
 
+            # 用于非堆叠模式下的列索引（排除次坐标轴列）
+            bar_col_index = 0
             for i, col in enumerate(df):
+                # 如果该列被选为次坐标轴折线图，跳过绘制
+                if secondary_line_column is not None and col == secondary_line_column:
+                    continue
                 # 计算出的指标
-                v = df.loc[index, col]
+                v = df_bar.loc[index, col]
                 share = df_share.loc[index, col]
-                gr = df_gr.loc[index, col]
-                total_gr = df.iloc[k, :].sum() / df.iloc[k - 1, :].sum() - 1
+                gr = df_gr.loc[index, col] if col in df_gr.columns else 0
+                # 计算总体增长率时，使用 df_bar（排除次坐标轴列）
+                if k > 0 and df_bar.shape[1] > 0:
+                    total_gr = df_bar.iloc[k, :].sum() / df_bar.iloc[k - 1, :].sum() - 1
+                else:
+                    total_gr = 0
 
                 # 直接创建标签字典，和气泡图一样的实现方式
                 d_label = {
@@ -128,7 +148,9 @@ class PlotBar(Plot):
                 if stacked:
                     pos_x = k
                 else:
-                    pos_x = k + (bar_width or 0.8) * i
+                    # 非堆叠模式下，使用 bar_col_index 而不是 i，因为跳过了次坐标轴列
+                    pos_x = k + (bar_width or 0.8) * bar_col_index
+                    bar_col_index += 1
 
                 # 绘制bar图
                 self.ax.bar(
@@ -140,11 +162,11 @@ class PlotBar(Plot):
                     label=col,
                     zorder=3,
                 )
-                # 绘制总体表现外框
-                if show_total_bar:
+                # 绘制总体表现外框（只绘制一次，在第一个被绘制的列时）
+                if show_total_bar and bar_col_index == 0:
                     self.ax.bar(
-                        df.index,
-                        df.sum(axis=1) * 1.03,
+                        df_bar.index,
+                        df_bar.sum(axis=1) * 1.03,
                         width=0.6,
                         linewidth=1,
                         linestyle="--",
@@ -218,14 +240,20 @@ class PlotBar(Plot):
                     if k > 0:
                         # 各系列增长率标注
                         if not np.isinf(gr) and not np.isnan(gr):
+                            # 使用 df_bar 中的值计算位置
+                            prev_val = (
+                                df_bar.iloc[k - 1, df_bar.columns.get_loc(col)]
+                                if col in df_bar.columns
+                                else 0
+                            )
+                            curr_val = (
+                                df_bar.iloc[k, df_bar.columns.get_loc(col)]
+                                if col in df_bar.columns
+                                else 0
+                            )
                             self.ax.text(
                                 x=k - 0.5,
-                                y=(
-                                    bottom_gr
-                                    + df.iloc[k - 1, i] / 2
-                                    + df.iloc[k, i] / 2
-                                )
-                                / 2,
+                                y=(bottom_gr + prev_val / 2 + curr_val / 2) / 2,
                                 s=d_label["gr"],
                                 ha="center",
                                 va="center",
@@ -233,7 +261,11 @@ class PlotBar(Plot):
                                 fontsize=d_style.get("label_fontsize"),
                                 zorder=5,
                             )
-                        bottom_gr += df.iloc[k - 1, i] + df.iloc[k, i]
+                        # 累积 bottom_gr，使用 df_bar 中的值
+                        if col in df_bar.columns:
+                            prev_val = df_bar.iloc[k - 1, df_bar.columns.get_loc(col)]
+                            curr_val = df_bar.iloc[k, df_bar.columns.get_loc(col)]
+                            bottom_gr += prev_val + curr_val
 
                         # 绘制总体增长率
                         if show_total_label:
@@ -243,7 +275,10 @@ class PlotBar(Plot):
                             ):
                                 self.ax.text(
                                     x=k - 0.5,
-                                    y=(df.iloc[k, :].sum() + df.iloc[k - 1, :].sum())
+                                    y=(
+                                        df_bar.iloc[k, :].sum()
+                                        + df_bar.iloc[k - 1, :].sum()
+                                    )
                                     / 2
                                     * 1.05,
                                     s=d_label["total_gr"],
@@ -280,46 +315,72 @@ class PlotBar(Plot):
             self.ax.set_xticks(np.arange(df.shape[0]), df.index)
 
         # x轴标签
-        self.ax.get_xaxis().set_ticks(range(0, len(df.index)), labels=df.index)
+        self.ax.get_xaxis().set_ticks(range(0, len(df_bar.index)), labels=df_bar.index)
 
         # 使用基类方法格式化y轴
         self._format_axis("y")
 
         self.ax.axhline(0, color="black", linewidth=0.5)  # y轴为0的横线
 
-        if show_gr_line:
+        if secondary_line_column is not None:
             # 增加次坐标轴
             ax2 = self.ax.twinx()
 
-            color_line = "darkorange"
+            # 如果指定了列，绘制该列的原始值
+            if secondary_line_column not in df.columns:
+                raise ValueError(
+                    f"指定的列 '{secondary_line_column}' 不存在于数据中。可用列: {list(df.columns)}"
+                )
+            line_data = df[secondary_line_column]
+            line_label = secondary_line_column
+            # 使用指定的标签格式，如果没有则使用 fmt_abs
+            label_fmt = (
+                d_style.get("secondary_line_label_fmt")
+                or d_style.get("fmt_abs")
+                or self.fmt
+            )
+
+            color_line = d_style.get("secondary_line_color") or "darkorange"
+            linestyle = d_style.get("secondary_line_linestyle") or "dashed"
+            linewidth = d_style.get("secondary_line_linewidth") or 1
+            marker = d_style.get("secondary_line_marker") or "o"
+            markersize = d_style.get("secondary_line_markersize") or 3
+
             ax2.plot(
-                df_gr.index,
-                df_gr.values,
-                label="GR(y-1)",
+                line_data.index,
+                line_data.values,
+                label=line_label,
                 color=color_line,
-                linewidth=1,
-                linestyle="dashed",
-                marker="o",
-                markersize=3,
+                linewidth=linewidth,
+                linestyle=linestyle,
+                marker=marker,
+                markersize=markersize,
                 markerfacecolor="white",
             )
-            # if "y2lim" in kwargs:
-            #     ax2.set_ylim(kwargs["y2lim"][0], kwargs["y2lim"][1])
 
-            for i in range(len(df_gr)):
-                if float(df_gr.values[i]) <= ax2.get_ylim()[1]:
-                    t = ax2.text(
-                        x=df_gr.index[i],
-                        y=df_gr.values[i],
-                        s="{:+.0%}".format(float(df_gr.values[i])),
-                        ha="center",
-                        va="bottom",
-                        fontsize=self.fontsize,
-                        color="white",
-                    )
-                    t.set_bbox(
-                        dict(facecolor=color_line, alpha=0.7, edgecolor=color_line)
-                    )
+            # 绘制标签
+            for i in range(len(line_data)):
+                value = float(line_data.values[i])
+                if not np.isnan(value) and not np.isinf(value):
+                    if value <= ax2.get_ylim()[1]:
+                        try:
+                            formatted_value = label_fmt.format(value)
+                        except (ValueError, KeyError):
+                            # 如果格式化失败，使用默认格式
+                            formatted_value = self.fmt.format(value)
+
+                        t = ax2.text(
+                            x=line_data.index[i],
+                            y=value,
+                            s=formatted_value,
+                            ha="center",
+                            va="bottom",
+                            fontsize=self.fontsize,
+                            color="white",
+                        )
+                        t.set_bbox(
+                            dict(facecolor=color_line, alpha=0.7, edgecolor=color_line)
+                        )
 
             # 次坐标轴标签格式
             ax2.yaxis.set_major_formatter(
@@ -376,7 +437,6 @@ class PlotBarh(Plot):
             show_total_bar (bool, optional): 是否显示一个总体表现外框. Defaults to False.
             show_total_label (bool, optional): 是否在最上方显示堆积之和数字标签. Defaults to False.
             show_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
-            show_gr_line (bool, optional): 是否显示增长率线形图. Defaults to False.
             label_threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
             label_pos (Literal["smart", "center", "outer"], optional): 标签位置，smart为自动判断，center为居中，outer为外侧. Defaults to "smart".
 

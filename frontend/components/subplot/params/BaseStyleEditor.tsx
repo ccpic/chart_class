@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { TitleSection, GridSection, AxisSection, TicksSection, LegendSection } from './sections';
+import { TitleSection, GridSection, AxisSection, TicksSection, LegendSection, BorderSection } from './sections';
 import type { PlotStyle } from '@/types/plotStyle';
-import { Type, Grid3X3, Ruler, Hash, Tag } from 'lucide-react';
+import { Type, Grid3X3, Ruler, Hash, Tag, Square } from 'lucide-react';
 
 interface BaseStyleEditorProps {
   style: PlotStyle;
@@ -76,6 +76,19 @@ export function BaseStyleEditor({ style, onChange }: BaseStyleEditorProps) {
           </AccordionTrigger>
           <AccordionContent className="px-3 py-3 bg-white border-t">
             <TicksSection style={style} onChange={onChange} />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 边框 */}
+        <AccordionItem value="border" className="border rounded-md overflow-hidden">
+          <AccordionTrigger className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-sm font-medium">
+            <div className="flex items-center gap-2">
+              <Square className="h-4 w-4" />
+              <span>边框</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-3 py-3 bg-white border-t">
+            <BorderSection style={style} onChange={onChange} />
           </AccordionContent>
         </AccordionItem>
 

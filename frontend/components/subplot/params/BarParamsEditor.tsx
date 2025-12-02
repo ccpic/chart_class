@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useCanvasStore } from '@/store/canvasStore';
 import { SubplotConfig } from '@/types/canvas';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -40,32 +40,28 @@ export default function BarParamsEditor({ subplot }: Props) {
   const showTotalBar = params.show_total_bar ?? false;
   const showTotalLabel = params.show_total_label ?? false;
   const showGrText = params.show_gr_text ?? false;
-  const showGrLine = params.show_gr_line ?? false;
+  const secondaryLineColumn = params.secondary_line_column ?? null;
   const showAvgLine = params.show_avg_line ?? false;
   const labelThreshold = params.label_threshold ?? 0.02;
-  const periodChange = params.period_change ?? 1;
   const barWidth = params.bar_width ?? 0.8;
   const fmtAbs = params.fmt_abs ?? '{:,.0f}';
   const fmtShare = params.fmt_share ?? '{:.1%}';
   const fmtGr = params.fmt_gr ?? '{:+.1%}';
   const connections = params.connections ?? [];
-
-  // 获取数据行数，用于设置 period_change 的最大值
-  const dataRowCount = subplot.data?.data?.length || 1;
-  const maxPeriodChange = Math.max(1, dataRowCount - 1);
   
+  // 次坐标轴折线样式参数
+  const secondaryLineColor = params.secondary_line_color ?? 'darkorange';
+  const secondaryLineLinestyle = params.secondary_line_linestyle ?? 'dashed';
+  const secondaryLineLinewidth = params.secondary_line_linewidth ?? 1;
+  const secondaryLineMarker = params.secondary_line_marker ?? 'o';
+  const secondaryLineMarkersize = params.secondary_line_markersize ?? 3;
+  const secondaryLineLabelFmt = params.secondary_line_label_fmt ?? null;
+
   // 获取数据索引，用于连接线的 x1, x2 选择
   const dataIndex = subplot.data?.index || [];
   
-  // 确保 periodChange 不超过最大值（用于显示）
-  const validPeriodChange = Math.min(periodChange, maxPeriodChange);
-  
-  // 如果当前值超过最大值，自动调整
-  useEffect(() => {
-    if (periodChange > maxPeriodChange && maxPeriodChange > 0) {
-      updateParam('period_change', maxPeriodChange);
-    }
-  }, [dataRowCount, maxPeriodChange]);
+  // 获取数据列名，用于次坐标轴折线图列选择
+  const dataColumns = subplot.data?.columns || [];
 
   return (
     <div className="space-y-4">
@@ -73,7 +69,7 @@ export default function BarParamsEditor({ subplot }: Props) {
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="basic" className="text-xs">基础设置</TabsTrigger>
           <TabsTrigger value="label" className="text-xs">标签选项</TabsTrigger>
-          <TabsTrigger value="growth" className="text-xs">增长率</TabsTrigger>
+          <TabsTrigger value="secondary" className="text-xs">次坐标轴</TabsTrigger>
           <TabsTrigger value="connection" className="text-xs">连接线</TabsTrigger>
           <TabsTrigger value="advanced" className="text-xs">高级功能</TabsTrigger>
         </TabsList>
@@ -240,11 +236,8 @@ export default function BarParamsEditor({ subplot }: Props) {
               在柱状图顶端显示堆积之和
             </p>
           </div>
-        </TabsContent>
 
-        {/* Tab 3: 增长率 */}
-        <TabsContent value="growth" className="space-y-4 mt-4">
-          <div className="space-y-3">
+          <div className="space-y-3 pt-3 border-t">
             <h4 className="text-sm font-semibold text-gray-800">增长率显示</h4>
             
             <div className="flex items-center space-x-2">
@@ -260,46 +253,172 @@ export default function BarParamsEditor({ subplot }: Props) {
             <p className="text-xs text-gray-500">
               在柱间显示各系列的增长率数字
             </p>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="show_gr_line"
-                checked={showGrLine}
-                onCheckedChange={(checked) => updateParam('show_gr_line', checked)}
-              />
-              <Label htmlFor="show_gr_line" className="text-sm cursor-pointer">
-                显示增长率折线图
-              </Label>
-            </div>
-            <p className="text-xs text-gray-500">
-              使用次坐标轴绘制增长率折线图
-            </p>
           </div>
 
-          <div className="space-y-3 pt-3 border-t">
-            <h4 className="text-sm font-semibold text-gray-800">增长率设置</h4>
+        </TabsContent>
+
+        {/* Tab 3: 次坐标轴折线图 */}
+        <TabsContent value="secondary" className="space-y-4 mt-4">
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-gray-800">次坐标轴折线图</h4>
             
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="period_change" className="text-sm">
-                  同比期数 (period_change)
-                </Label>
-                <span className="text-xs text-gray-500">{validPeriodChange}</span>
-              </div>
-              <Slider
-                id="period_change"
-                min={1}
-                max={maxPeriodChange}
-                step={1}
-                value={[validPeriodChange]}
-                onValueChange={(value) => updateParam('period_change', value[0])}
-                className="w-full"
-              />
+              <Label htmlFor="secondary_line_column" className="text-sm font-medium">
+                选择要绘制的列
+              </Label>
+              <Select
+                value={secondaryLineColumn || '__none__'}
+                onValueChange={(value) => {
+                  if (value === '__none__') {
+                    updateParam('secondary_line_column', null);
+                  } else {
+                    updateParam('secondary_line_column', value);
+                  }
+                }}
+              >
+                <SelectTrigger id="secondary_line_column">
+                  <SelectValue placeholder="选择列以显示次坐标轴折线图" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">不显示折线图</SelectItem>
+                  {dataColumns.map((col: string, index: number) => (
+                    <SelectItem key={index} value={col}>
+                      {col}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <p className="text-xs text-gray-500">
-                计算增长率时对比的期数（1=同比上期，4=同比去年同期，最大{maxPeriodChange}）
+                {secondaryLineColumn 
+                  ? `将在次坐标轴上绘制列 "${secondaryLineColumn}" 的原始值折线图`
+                  : '不显示次坐标轴折线图'}
               </p>
             </div>
           </div>
+
+          {secondaryLineColumn && (
+            <>
+              {/* 折线样式 */}
+              <div className="space-y-3 pt-3 border-t">
+                <h4 className="text-sm font-semibold text-gray-800">折线样式</h4>
+                
+                <div className="space-y-4">
+                  <ColorPicker
+                    label="折线颜色"
+                    value={secondaryLineColor}
+                    onChange={(color) => updateParam('secondary_line_color', color)}
+                  />
+
+                  <div className="space-y-2">
+                    <Label htmlFor="secondary_line_linestyle" className="text-sm font-medium">
+                      折线样式
+                    </Label>
+                    <Select
+                      value={secondaryLineLinestyle}
+                      onValueChange={(value) => updateParam('secondary_line_linestyle', value)}
+                    >
+                      <SelectTrigger id="secondary_line_linestyle">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="solid">实线 (solid)</SelectItem>
+                        <SelectItem value="dashed">虚线 (dashed)</SelectItem>
+                        <SelectItem value="dotted">点线 (dotted)</SelectItem>
+                        <SelectItem value="dashdot">点划线 (dashdot)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="secondary_line_linewidth" className="text-sm">
+                        折线宽度
+                      </Label>
+                      <span className="text-xs text-gray-500">{secondaryLineLinewidth}</span>
+                    </div>
+                    <Slider
+                      id="secondary_line_linewidth"
+                      min={0.5}
+                      max={5}
+                      step={0.5}
+                      value={[secondaryLineLinewidth]}
+                      onValueChange={(value) => updateParam('secondary_line_linewidth', value[0])}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 标记样式 */}
+              <div className="space-y-3 pt-3 border-t">
+                <h4 className="text-sm font-semibold text-gray-800">标记样式</h4>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="secondary_line_marker" className="text-sm font-medium">
+                      标记形状
+                    </Label>
+                    <Select
+                      value={secondaryLineMarker}
+                      onValueChange={(value) => updateParam('secondary_line_marker', value)}
+                    >
+                      <SelectTrigger id="secondary_line_marker">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="o">圆形 (o)</SelectItem>
+                        <SelectItem value="s">方形 (s)</SelectItem>
+                        <SelectItem value="^">上三角 (^)</SelectItem>
+                        <SelectItem value="v">下三角 (v)</SelectItem>
+                        <SelectItem value="D">菱形 (D)</SelectItem>
+                        <SelectItem value="x">叉号 (x)</SelectItem>
+                        <SelectItem value="+">加号 (+)</SelectItem>
+                        <SelectItem value="*">星号 (*)</SelectItem>
+                        <SelectItem value="|">竖线 (|)</SelectItem>
+                        <SelectItem value="_">横线 (_)</SelectItem>
+                        <SelectItem value="none">无标记</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="secondary_line_markersize" className="text-sm">
+                        标记大小
+                      </Label>
+                      <span className="text-xs text-gray-500">{secondaryLineMarkersize}</span>
+                    </div>
+                    <Slider
+                      id="secondary_line_markersize"
+                      min={1}
+                      max={20}
+                      step={1}
+                      value={[secondaryLineMarkersize]}
+                      onValueChange={(value) => updateParam('secondary_line_markersize', value[0])}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 标签样式 */}
+              <div className="space-y-3 pt-3 border-t">
+                <h4 className="text-sm font-semibold text-gray-800">标签样式</h4>
+                
+                <div className="space-y-4">
+                  <NumberFormatEditor
+                    label="标签数值格式"
+                    value={secondaryLineLabelFmt || fmtAbs}
+                    onChange={(fmt) => updateParam('secondary_line_label_fmt', fmt)}
+                    showHelp={true}
+                  />
+                  <p className="text-xs text-gray-500">
+                    用于格式化折线图上数据点的标签。如果留空，将使用绝对值格式 (fmt_abs)
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </TabsContent>
 
         {/* Tab 4: 连接线 */}

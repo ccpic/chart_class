@@ -2,6 +2,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
+import NumberFormatEditor from '@/components/ui/number-format-editor';
 import type { PlotStyle } from '@/types/plotStyle';
 
 interface TicksSectionProps {
@@ -73,6 +74,15 @@ export function TicksSection({ style, onChange }: TicksSectionProps) {
             }
             placeholder="自动"
             className="h-8 text-sm"
+          />
+        </div>
+
+        {/* X 轴刻度数值格式 */}
+        <div className="space-y-1.5">
+          <NumberFormatEditor
+            label="X 轴数值格式"
+            value={style.x_fmt || '{:,.0f}'}
+            onChange={(fmt) => onChange({ x_fmt: fmt })}
           />
         </div>
 
@@ -155,6 +165,15 @@ export function TicksSection({ style, onChange }: TicksSectionProps) {
             }
             placeholder="自动"
             className="h-8 text-sm"
+          />
+        </div>
+
+        {/* Y 轴刻度数值格式 */}
+        <div className="space-y-1.5">
+          <NumberFormatEditor
+            label="Y 轴数值格式"
+            value={style.y_fmt || '{:,.0f}'}
+            onChange={(fmt) => onChange({ y_fmt: fmt })}
           />
         </div>
 

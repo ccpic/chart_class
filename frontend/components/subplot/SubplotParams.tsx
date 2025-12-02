@@ -6,19 +6,7 @@ import ParamsEditor from './ParamsEditor';
 import { BaseStyleEditor } from './params/BaseStyleEditor';
 import type { PlotStyle } from '@/types/plotStyle';
 import { useCanvasStore } from '@/store/canvasStore';
-
-// 图表类型映射
-const CHART_TYPE_LABELS: Record<string, string> = {
-  bar: '柱状图',
-  line: '折线图',
-  pie: '饼图',
-  area: '面积图',
-  scatter: '散点图',
-  bubble: '气泡图',
-  hist: '直方图',
-  table: '高级表格',
-  map: '热力地图',
-};
+import { getChartTypeName } from '@/constants/chartTypes';
 
 interface Props {
   subplot: SubplotConfig;

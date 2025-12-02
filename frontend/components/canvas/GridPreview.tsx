@@ -27,22 +27,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DeleteSubplotDialog from './DeleteSubplotDialog';
-
-// 图表类型映射
-const CHART_TYPE_LABELS: Record<ChartType, string> = {
-  bar: '柱状图',
-  barh: '条形图',
-  line: '折线图',
-  pie: '饼图',
-  area: '面积图',
-  bubble: '气泡图',
-  hist: '直方图',
-  boxdot: '箱型图',
-  funnel: '漏斗图',
-  waterfall: '瀑布图',
-  table: '高级表格',
-  map: '热力地图',
-};
+import { CHART_TYPE_LABELS } from '@/constants/chartTypes';
 
 // 图表类型图标映射
 const CHART_TYPE_ICONS: Record<ChartType, React.ReactNode> = {

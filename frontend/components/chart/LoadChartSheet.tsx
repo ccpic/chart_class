@@ -277,7 +277,7 @@ export default function LoadChartDialog({ trigger }: LoadChartDialogProps) {
                           </div>
                         )}
                         <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                          <span>{chart.subplots?.length || 0} 个子图</span>
+                          <span>{chart.subplotCount ?? chart.subplots?.length ?? 0} 个子图</span>
                           <span>{formatTime(chart.updatedAt)}</span>
                         </div>
                       </div>
