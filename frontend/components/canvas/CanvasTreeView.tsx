@@ -23,34 +23,12 @@ import { TreeView } from '@/components/tree-view';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useCanvasStore } from '@/store/canvasStore';
+import { getChartTypeName } from '@/constants/chartTypes';
 import DeleteSubplotDialog from './DeleteSubplotDialog';
 
 // 包装组件：为 barh 图标添加旋转样式
 const BarhIcon = (props: any) => {
   return <BarChart2 {...props} className={`${props.className || ''} rotate-90`} />;
-};
-
-// 图表类型的中文名称
-const chartTypeNames: Record<string, string> = {
-  bar: '柱状图',
-  barh: '条形图',
-  line: '折线图',
-  pie: '饼图',
-  area: '面积图',
-  bubble: '气泡图',
-  hist: '直方图',
-  heatmap: '热力图',
-  treemap: '树状图',
-  waffle: '华夫饼图',
-  funnel: '漏斗图',
-  waterfall: '瀑布图',
-  venn2: '韦恩图(2)',
-  venn3: '韦恩图(3)',
-  boxdot: '箱型图',
-  stripdot: '算珠图',
-  word_cloud: '词云',
-  table: '高级表格',
-  map: '热力地图',
 };
 
 // 图表类型对应的 Lucide 图标（与 GridPreview 保持一致）
@@ -67,14 +45,6 @@ const chartTypeIcons: Record<string, React.ComponentType<any>> = {
   waterfall: TrendingUp,
   table: Table2,
   map: Map,
-  // 以下类型在 GridPreview 中未定义，保留原有图标
-  heatmap: BarChart3, // 使用默认图标
-  treemap: BarChart3,
-  waffle: BarChart3,
-  venn2: BarChart3,
-  venn3: BarChart3,
-  stripdot: BarChart3,
-  word_cloud: BarChart3,
 };
 
 interface CanvasTreeViewProps {
@@ -147,7 +117,7 @@ export default function CanvasTreeView({
               
               return {
                 id: subplot.subplotId,
-                name: `${chartTypeNames[subplot.chartType] || subplot.chartType} [${subplot.axIndex}]`,
+                name: `${getChartTypeName(subplot.chartType)} [${subplot.axIndex}]`,
                 icon: IconComponent,
                 onClick: () => router.push(`/subplot/${subplot.subplotId}`),
                 // 添加删除按钮

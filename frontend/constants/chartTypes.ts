@@ -4,7 +4,6 @@ export type ChartTypeKey =
   | 'line'
   | 'pie'
   | 'area'
-  | 'scatter'
   | 'bubble'
   | 'hist'
   | 'boxdot'
@@ -12,10 +11,6 @@ export type ChartTypeKey =
   | 'waterfall'
   | 'table'
   | 'map'
-  | 'heatmap'
-  | 'treemap'
-  | 'waffle'
-  | 'wordcloud'
   | string;
 
 /**
@@ -27,7 +22,6 @@ export const CHART_TYPE_LABELS: Record<ChartTypeKey, string> = {
   line: '折线图',
   pie: '饼图',
   area: '面积图',
-  scatter: '散点图',
   bubble: '气泡图',
   hist: '直方图',
   boxdot: '箱型图',
@@ -35,10 +29,6 @@ export const CHART_TYPE_LABELS: Record<ChartTypeKey, string> = {
   waterfall: '瀑布图',
   table: '高级表格',
   map: '热力地图',
-  heatmap: '热力图',
-  treemap: '矩形树图',
-  waffle: '华夫饼图',
-  wordcloud: '词云',
 };
 
 /**

@@ -13,29 +13,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { SubplotConfig } from '@/types/canvas';
-
-// 图表类型的中文名称（与 CanvasTreeView 保持一致）
-const chartTypeNames: Record<string, string> = {
-  bar: '柱状图',
-  barh: '条形图',
-  line: '折线图',
-  pie: '饼图',
-  area: '面积图',
-  bubble: '气泡图',
-  hist: '直方图',
-  heatmap: '热力图',
-  treemap: '树状图',
-  waffle: '华夫饼图',
-  funnel: '漏斗图',
-  waterfall: '瀑布图',
-  venn2: '韦恩图(2)',
-  venn3: '韦恩图(3)',
-  boxdot: '箱型图',
-  stripdot: '算珠图',
-  word_cloud: '词云',
-  table: '高级表格',
-  map: '热力地图',
-};
+import { getChartTypeName } from '@/constants/chartTypes';
 
 interface DeleteSubplotDialogProps {
   /** 子图配置 */
@@ -72,7 +50,7 @@ export default function DeleteSubplotDialog({
     onConfirm(subplot.subplotId, subplot.axIndex);
   };
 
-  const chartTypeName = chartTypeNames[subplot.chartType] || subplot.chartType;
+  const chartTypeName = getChartTypeName(subplot.chartType);
   const description = showChartType
     ? `此操作将删除子图 ${subplot.axIndex + 1} (${chartTypeName}) 及其所有数据和配置，无法撤销。确定要继续吗？`
     : `此操作将删除子图 ${subplot.axIndex + 1} 及其所有数据和配置，无法撤销。确定要继续吗？`;
