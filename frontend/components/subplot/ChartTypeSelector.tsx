@@ -3,6 +3,7 @@
 import React from 'react';
 import { useCanvasStore } from '@/store/canvasStore';
 import { SubplotConfig, ChartType } from '@/types/canvas';
+import { getChartTypeName } from '@/constants/chartTypes';
 import {
   BarChart3,
   LineChart,
@@ -17,18 +18,18 @@ import {
   Map,
 } from 'lucide-react';
 
-const CHART_TYPES: { value: ChartType; label: string; icon: React.ReactNode }[] = [
-  { value: 'bar', label: '柱状图', icon: <BarChart3 className="h-5 w-5" /> },
-  { value: 'barh', label: '条形图', icon: <BarChart2 className="h-5 w-5 rotate-90" /> },
-  { value: 'line', label: '折线图', icon: <LineChart className="h-5 w-5" /> },
-  { value: 'pie', label: '饼图', icon: <PieChart className="h-5 w-5" /> },
-  { value: 'area', label: '面积图', icon: <AreaChart className="h-5 w-5" /> },
-  { value: 'hist', label: '直方图', icon: <BarChart4 className="h-5 w-5" /> },
-  { value: 'boxdot', label: '箱型图', icon: <Box className="h-5 w-5" /> },
-  { value: 'funnel', label: '漏斗图', icon: <Filter className="h-5 w-5" /> },
-  { value: 'waterfall', label: '瀑布图', icon: <TrendingUp className="h-5 w-5" /> },
-  { value: 'map', label: '热力地图', icon: <Map className="h-5 w-5" /> },
-  { value: 'table', label: '高级表格', icon: <Table2 className="h-5 w-5" /> },
+const CHART_TYPES: { value: ChartType; icon: React.ReactNode }[] = [
+  { value: 'bar', icon: <BarChart3 className="h-5 w-5" /> },
+  { value: 'barh', icon: <BarChart2 className="h-5 w-5 rotate-90" /> },
+  { value: 'line', icon: <LineChart className="h-5 w-5" /> },
+  { value: 'pie', icon: <PieChart className="h-5 w-5" /> },
+  { value: 'area', icon: <AreaChart className="h-5 w-5" /> },
+  { value: 'hist', icon: <BarChart4 className="h-5 w-5" /> },
+  { value: 'boxdot', icon: <Box className="h-5 w-5" /> },
+  { value: 'funnel', icon: <Filter className="h-5 w-5" /> },
+  { value: 'waterfall', icon: <TrendingUp className="h-5 w-5" /> },
+  { value: 'map', icon: <Map className="h-5 w-5" /> },
+  { value: 'table', icon: <Table2 className="h-5 w-5" /> },
 ];
 
 interface Props {
@@ -59,7 +60,7 @@ export default function ChartTypeSelector({ subplot }: Props) {
             `}
           >
             <div className="mb-1 flex justify-center">{type.icon}</div>
-            <div className="text-xs">{type.label}</div>
+            <div className="text-xs">{getChartTypeName(type.value)}</div>
           </button>
         ))}
       </div>
