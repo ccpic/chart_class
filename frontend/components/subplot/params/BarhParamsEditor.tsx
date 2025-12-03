@@ -41,7 +41,7 @@ export default function BarhParamsEditor({ subplot }: Props) {
   const fmtAbs = params.fmt_abs ?? '{:,.0f}';
   const fmtShare = params.fmt_share ?? '{:.1%}';
   const fmtGr = params.fmt_gr ?? '{:+.1%}';
-  const labelFontsize = params.label_fontsize ?? subplot.fontsize ?? 11;
+  const labelFontsize = params.label_fontsize ?? 11;
   const labelColor = params.label_color ?? null;
 
   return (
