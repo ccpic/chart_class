@@ -11,6 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import NumberFormatEditor from '@/components/ui/number-format-editor';
+import ColorPicker from '@/components/color/ColorPicker';
 
 interface Props {
   subplot: SubplotConfig;
@@ -40,6 +41,8 @@ export default function BarhParamsEditor({ subplot }: Props) {
   const fmtAbs = params.fmt_abs ?? '{:,.0f}';
   const fmtShare = params.fmt_share ?? '{:.1%}';
   const fmtGr = params.fmt_gr ?? '{:+.1%}';
+  const labelFontsize = params.label_fontsize ?? subplot.fontsize ?? 11;
+  const labelColor = params.label_color ?? null;
 
   return (
     <div className="space-y-4">
@@ -175,6 +178,45 @@ export default function BarhParamsEditor({ subplot }: Props) {
                 </div>
               </>
             )}
+          </div>
+
+          <div className="space-y-3 pt-3 border-t">
+            <h4 className="text-sm font-semibold text-gray-800">标签样式</h4>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="label_fontsize" className="text-sm font-medium">
+                  标签字体大小
+                </Label>
+                <div className="mt-1.5">
+                  <Input
+                    id="label_fontsize"
+                    type="number"
+                    min="4"
+                    max="24"
+                    step="1"
+                    value={labelFontsize}
+                    onChange={(e) => updateParam('label_fontsize', parseInt(e.target.value) || 11)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  控制标签文字的字体大小（4-24）
+                </p>
+              </div>
+
+              <div>
+                <ColorPicker
+                  label="标签字体颜色"
+                  value={labelColor || ''}
+                  onChange={(color) => updateParam('label_color', color || null)}
+                  showColorValue={true}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  如果留空，将根据背景自动选择颜色（白色或黑色）以确保可见性
+                </p>
+              </div>
+            </div>
           </div>
         </TabsContent>
 

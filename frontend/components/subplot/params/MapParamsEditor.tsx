@@ -229,7 +229,7 @@ export default function MapParamsEditor({ subplot }: Props) {
                 {scope === 'provinces' && (
                   <div className="space-y-2">
                     <Label className="text-xs font-medium">快速添加省份</Label>
-                    <div className="grid grid-cols-4 gap-1 max-h-40 overflow-y-auto p-2 bg-gray-50 rounded border">
+                    <div className="grid grid-cols-6 gap-1 p-2 bg-gray-50 rounded border">
                       {commonProvinces.map((province) => (
                         <Button
                           key={province}
@@ -242,7 +242,7 @@ export default function MapParamsEditor({ subplot }: Props) {
                               updateParam('regions', [...regions, province]);
                             }
                           }}
-                          className="text-xs h-7"
+                          className="text-xs h-7 px-1"
                         >
                           {province}
                         </Button>
@@ -254,7 +254,7 @@ export default function MapParamsEditor({ subplot }: Props) {
                 {scope === 'cities' && (
                   <div className="space-y-2">
                     <Label className="text-xs font-medium">快速添加城市</Label>
-                    <div className="grid grid-cols-4 gap-1 max-h-40 overflow-y-auto p-2 bg-gray-50 rounded border">
+                    <div className="grid grid-cols-6 gap-1 p-2 bg-gray-50 rounded border">
                       {commonCities.map((city) => (
                         <Button
                           key={city}
@@ -267,7 +267,7 @@ export default function MapParamsEditor({ subplot }: Props) {
                               updateParam('regions', [...regions, city]);
                             }
                           }}
-                          className="text-xs h-7"
+                          className="text-xs h-7 px-1"
                         >
                           {city}
                         </Button>
