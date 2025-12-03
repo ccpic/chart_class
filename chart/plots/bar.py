@@ -453,6 +453,7 @@ class PlotBarh(Plot):
                 "bar_height": 0.8,  # bar高度
                 "bar_color": None,  # 柱指定颜色
                 "label_fontsize": self.fontsize,  # 标签字体大小
+                "label_color": None,  # 标签颜色，如果指定则使用，否则自动计算
                 "bbox": None,  # 标签背景
                 "fmt_abs": self.fmt,  # 绝对值标签格式
                 "fmt_share": "{:.1%}",  # 占比标签格式
@@ -477,15 +478,15 @@ class PlotBarh(Plot):
                 share = df_share.loc[index, col]
                 share_total = df_share_total.loc[index, col]
 
-                # 直接创建标签字典，和气泡图一样的实现方式
+                # 直接创建标签字典，使用 d_style 中的格式参数
+                fmt_abs = d_style.get("fmt_abs") or self.fmt
+                fmt_share = d_style.get("fmt_share") or "{:.1%}"
                 d_label = {
-                    "abs": self.fmt.format(v),
-                    "share": "{:.1%}".format(share),
+                    "abs": fmt_abs.format(v),
+                    "share": fmt_share.format(share),
                     "index": str(index),
                     "col": str(col),
-                    "share_total": (d_style.get("fmt_share") or "{:.1%}").format(
-                        share_total
-                    ),
+                    "share_total": fmt_share.format(share_total),
                 }
 
                 # 使用基类方法获取颜色
@@ -564,11 +565,13 @@ class PlotBarh(Plot):
                         fontcolor = "white"
 
                     if abs(v / self.ax.get_ylim()[1]) >= label_threshold:
+                        # 如果指定了 label_color，优先使用；否则使用自动计算的 fontcolor
+                        label_color = d_style.get("label_color") or fontcolor
                         self.ax.text(
                             x=pos_x,
                             y=pos_y,
                             s=label_formatter.format(**d_label),
-                            color=fontcolor,
+                            color=label_color,
                             va="center",
                             ha=ha,
                             multialignment="center",
