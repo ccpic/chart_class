@@ -91,9 +91,51 @@ export const useCanvasStore = create<CanvasStore>()(
       selectedPaletteName: null, // 默认使用默认调色板
 
   updateCanvas: (config) =>
-    set((state) => ({
-      canvas: { ...state.canvas, ...config },
-    })),
+    set((state) => {
+      const newCanvas = { ...state.canvas, ...config };
+      
+      // 如果 rows 或 cols 改变了，自动调整 widthRatios 和 heightRatios 数组长度
+      if ('rows' in config || 'cols' in config) {
+        const newRows = config.rows ?? newCanvas.rows;
+        const newCols = config.cols ?? newCanvas.cols;
+        
+        // 调整 heightRatios 数组长度以匹配新的行数
+        if ('rows' in config) {
+          const currentHeightRatios = newCanvas.heightRatios || Array(newCanvas.rows).fill(1);
+          if (currentHeightRatios.length !== newRows) {
+            if (currentHeightRatios.length > newRows) {
+              // 如果新行数更少，截断数组
+              newCanvas.heightRatios = currentHeightRatios.slice(0, newRows);
+            } else {
+              // 如果新行数更多，用默认值 1 填充
+              newCanvas.heightRatios = [
+                ...currentHeightRatios,
+                ...Array(newRows - currentHeightRatios.length).fill(1),
+              ];
+            }
+          }
+        }
+        
+        // 调整 widthRatios 数组长度以匹配新的列数
+        if ('cols' in config) {
+          const currentWidthRatios = newCanvas.widthRatios || Array(newCanvas.cols).fill(1);
+          if (currentWidthRatios.length !== newCols) {
+            if (currentWidthRatios.length > newCols) {
+              // 如果新列数更少，截断数组
+              newCanvas.widthRatios = currentWidthRatios.slice(0, newCols);
+            } else {
+              // 如果新列数更多，用默认值 1 填充
+              newCanvas.widthRatios = [
+                ...currentWidthRatios,
+                ...Array(newCols - currentWidthRatios.length).fill(1),
+              ];
+            }
+          }
+        }
+      }
+      
+      return { canvas: newCanvas };
+    }),
 
   setSelectedPalette: (paletteName) =>
     set({ selectedPaletteName: paletteName }),
