@@ -667,7 +667,12 @@ class WebChartAdapter:
             # 5. 应用样式（必须在保存前调用）
             f.style.apply_style()
 
-            # 6. 保存为 PNG（使用配置的 DPI 和透明度）
+            # 6. 应用紧凑布局（如果启用）
+            tight_layout = canvas_config.get("tight_layout", True)
+            if tight_layout:
+                f.gridspec.tight_layout(f)
+
+            # 7. 保存为 PNG（使用配置的 DPI 和透明度）
             dpi = canvas_config.get("dpi", 400)
             transparent = canvas_config.get("transparent", True)
 

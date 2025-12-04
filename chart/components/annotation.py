@@ -157,32 +157,41 @@ class Connection:
         if text_size is not None:
             text_kwargs["fontsize"] = text_size
 
-        # 构建文本框样式
-        bbox_dict: Dict[str, Any] = {}
-        if bbox_facecolor is not None:
-            bbox_dict["facecolor"] = bbox_facecolor
-        else:
-            bbox_dict["facecolor"] = "white"  # 默认白色背景
+        # 构建文本框样式（只有当至少有一个 bbox 参数被传入时才创建 bbox）
+        has_bbox = any([
+            bbox_facecolor is not None,
+            bbox_edgecolor is not None,
+            bbox_alpha is not None,
+            bbox_boxstyle is not None,
+            bbox_linewidth is not None,
+        ])
+        
+        if has_bbox:
+            bbox_dict: Dict[str, Any] = {}
+            if bbox_facecolor is not None:
+                bbox_dict["facecolor"] = bbox_facecolor
+            else:
+                bbox_dict["facecolor"] = "white"  # 默认白色背景
 
-        if bbox_alpha is not None:
-            bbox_dict["alpha"] = bbox_alpha
-        else:
-            bbox_dict["alpha"] = 0.5  # 默认半透明
+            if bbox_alpha is not None:
+                bbox_dict["alpha"] = bbox_alpha
+            else:
+                bbox_dict["alpha"] = 0.5  # 默认半透明
 
-        if bbox_edgecolor is not None:
-            bbox_dict["edgecolor"] = bbox_edgecolor
-        else:
-            bbox_dict["edgecolor"] = "black"  # 默认黑色边框
+            if bbox_edgecolor is not None:
+                bbox_dict["edgecolor"] = bbox_edgecolor
+            else:
+                bbox_dict["edgecolor"] = "black"  # 默认黑色边框
 
-        # 文本框样式（boxstyle）
-        if bbox_boxstyle is not None:
-            bbox_dict["boxstyle"] = bbox_boxstyle
+            # 文本框样式（boxstyle）
+            if bbox_boxstyle is not None:
+                bbox_dict["boxstyle"] = bbox_boxstyle
 
-        # 文本框边框宽度
-        if bbox_linewidth is not None:
-            bbox_dict["linewidth"] = bbox_linewidth
+            # 文本框边框宽度
+            if bbox_linewidth is not None:
+                bbox_dict["linewidth"] = bbox_linewidth
 
-        text_kwargs["bbox"] = bbox_dict
+            text_kwargs["bbox"] = bbox_dict
 
         self._ax.text(
             (self.x1 + self.x2) / 2,  # x 坐标：两点中点

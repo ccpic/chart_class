@@ -10,6 +10,85 @@ import pandas as pd
 from chart.plots.base import Plot
 
 
+def _apply_text_style(
+    text_kwargs: Dict[str, Any],
+    d_style: Dict[str, Any],
+    style_prefix: str,
+    default_fontsize: int,
+    default_color: str = "black",
+) -> None:
+    """应用文本样式到 text_kwargs 字典
+
+    Args:
+        text_kwargs: 文本参数字典，会被修改
+        d_style: 样式参数字典
+        style_prefix: 样式参数前缀，如 "gr_text" 或 "label"
+        default_fontsize: 默认字体大小
+        default_color: 默认颜色
+    """
+    # 字体大小：优先使用指定前缀的 fontsize，否则使用 label_fontsize，最后使用默认值
+    if d_style.get(f"{style_prefix}_fontsize"):
+        text_kwargs["fontsize"] = d_style.get(f"{style_prefix}_fontsize")
+    elif d_style.get("label_fontsize"):
+        text_kwargs["fontsize"] = d_style.get("label_fontsize")
+    else:
+        text_kwargs["fontsize"] = default_fontsize
+
+    # 标签颜色：优先使用指定前缀的 color，否则使用默认颜色
+    text_color = d_style.get(f"{style_prefix}_color")
+    if text_color:
+        text_kwargs["color"] = text_color
+    else:
+        text_kwargs["color"] = default_color
+
+    # 字体样式：weight 用于加粗，style 用于斜体
+    text_weight = d_style.get(f"{style_prefix}_weight")
+    if text_weight:
+        if text_weight == "italic":
+            text_kwargs["style"] = "italic"
+            text_kwargs["weight"] = "normal"
+        elif text_weight == "bold":
+            text_kwargs["weight"] = "bold"
+            text_kwargs["style"] = "normal"
+
+    # 文本框（bbox）：使用指定前缀的 bbox
+    text_bbox = d_style.get(f"{style_prefix}_bbox")
+    if text_bbox:
+        # 构建 bbox 样式字典
+        bbox_style = {}
+        if text_bbox.get("boxstyle"):
+            bbox_style["boxstyle"] = text_bbox["boxstyle"]
+        if text_bbox.get("facecolor"):
+            bbox_style["facecolor"] = text_bbox["facecolor"]
+        else:
+            # 如果没有指定 facecolor，使用默认颜色
+            bbox_style["facecolor"] = default_color
+        # show_border 控制是否显示边框（默认为 True）
+        show_border = text_bbox.get("show_border", True)
+        if show_border:
+            # 只有在显示边框时才设置边框相关参数
+            if text_bbox.get("edgecolor"):
+                bbox_style["edgecolor"] = text_bbox["edgecolor"]
+            else:
+                # 如果没有指定 edgecolor，使用默认颜色
+                bbox_style["edgecolor"] = default_color
+            linewidth = text_bbox.get("linewidth")
+            if linewidth is not None:
+                bbox_style["linewidth"] = float(linewidth)
+        else:
+            # 不显示边框时，明确设置 linewidth 为 0 以隐藏边框
+            bbox_style["linewidth"] = 0
+        # 确保 alpha 不是 None
+        alpha = text_bbox.get("alpha")
+        if alpha is not None:
+            bbox_style["alpha"] = float(alpha)
+        else:
+            bbox_style["alpha"] = 0.7
+
+        if bbox_style:
+            text_kwargs["bbox"] = bbox_style
+
+
 class PlotBar(Plot):
     """柱状图绘制类
 
@@ -68,10 +147,21 @@ class PlotBar(Plot):
                 "bar_width": 0.8,  # 柱宽
                 "bar_color": None,  # 柱指定颜色
                 "label_fontsize": self.fontsize,  # 标签字体大小
-                "bbox": None,  # 标签背景
+                "label_color": None,  # 标签颜色
+                "label_weight": None,  # 标签字重：normal, bold, italic
+                "label_bbox": None,  # 标签背景框配置
+                "bbox": None,  # 标签背景（向后兼容）
                 "fmt_abs": self.fmt,  # 绝对值标签格式
                 "fmt_share": "{:.1%}",  # 占比标签格式
                 "fmt_gr": "{:+.1%}",  # 增长率标签格式
+                "gr_text_fontsize": self.fontsize,  # 增长率文本字体大小
+                "gr_text_color": None,  # 增长率文本颜色
+                "gr_text_weight": None,  # 增长率文本字重：normal, bold, italic
+                "gr_text_bbox": None,  # 增长率文本背景框配置
+                "total_text_fontsize": self.fontsize,  # 堆积总计值文本字体大小
+                "total_text_color": None,  # 堆积总计值文本颜色
+                "total_text_weight": None,  # 堆积总计值文本字重：normal, bold, italic
+                "total_text_bbox": None,  # 堆积总计值文本背景框配置
                 "secondary_line_color": "darkorange",  # 次坐标轴折线颜色
                 "secondary_line_linestyle": "dashed",  # 次坐标轴折线样式
                 "secondary_line_linewidth": 1,  # 次坐标轴折线宽度
@@ -115,13 +205,20 @@ class PlotBar(Plot):
                     total_gr = 0
 
                 # 直接创建标签字典，和气泡图一样的实现方式
+                # 使用 fmt_abs 格式化绝对值
+                fmt_abs = d_style.get("fmt_abs") or self.fmt
+                # 使用 fmt_share 格式化占比
+                fmt_share = d_style.get("fmt_share") or "{:.1%}"
+                # 使用 fmt_gr 格式化增长率
+                fmt_gr = d_style.get("fmt_gr") or "{:+.1%}"
+
                 d_label = {
-                    "abs": self.fmt.format(v),
-                    "share": "{:.1%}".format(share),
-                    "gr": "{:+.1%}".format(gr),
+                    "abs": fmt_abs.format(v),
+                    "share": fmt_share.format(share),
+                    "gr": fmt_gr.format(gr),
                     "index": str(index),
                     "col": str(col),
-                    "total_gr": (d_style.get("fmt_gr") or "{:+.1%}").format(total_gr),
+                    "total_gr": fmt_gr.format(total_gr),
                 }
 
                 # 使用基类方法获取颜色
@@ -211,19 +308,81 @@ class PlotBar(Plot):
                         va = "center"
                         fontcolor = "white"
 
-                    if abs(v / self.ax.get_ylim()[1]) >= label_threshold:
-                        self.ax.text(
-                            x=pos_x,
-                            y=pos_y,
-                            s=label_formatter.format(**d_label),
-                            color=fontcolor,
-                            va=va,
-                            ha="center",
-                            multialignment="center",
-                            fontsize=d_style.get("label_fontsize"),
-                            zorder=5,
-                            bbox=d_style.get("bbox"),
-                        )
+                    # 确保 ylim 和 label_threshold 都不是 None
+                    ylim = self.ax.get_ylim()
+                    ymax = (
+                        ylim[1]
+                        if ylim and len(ylim) > 1 and ylim[1] is not None
+                        else 1.0
+                    )
+                    threshold = label_threshold if label_threshold is not None else 0.02
+                    if ymax != 0 and abs(v / ymax) >= threshold:
+                        # 构建标签文本参数
+                        text_kwargs = {
+                            "x": pos_x,
+                            "y": pos_y,
+                            "s": label_formatter.format(**d_label),
+                            "va": va,
+                            "ha": "center",
+                            "multialignment": "center",
+                            "zorder": 5,
+                        }
+
+                        # 字体大小
+                        if d_style.get("label_fontsize"):
+                            text_kwargs["fontsize"] = d_style.get("label_fontsize")
+
+                        # 标签颜色：优先使用 label_color，否则使用自动计算的 fontcolor
+                        label_color = d_style.get("label_color")
+                        if label_color:
+                            text_kwargs["color"] = label_color
+                        else:
+                            text_kwargs["color"] = fontcolor
+
+                        # 字体样式：weight 用于加粗，style 用于斜体
+                        label_weight = d_style.get("label_weight")
+                        if label_weight:
+                            if label_weight == "italic":
+                                # 斜体使用 style 参数，同时确保 weight 为 normal
+                                text_kwargs["style"] = "italic"
+                                text_kwargs["weight"] = "normal"
+                            elif label_weight == "bold":
+                                # 加粗使用 weight 参数，同时确保 style 为 normal
+                                text_kwargs["weight"] = "bold"
+                                text_kwargs["style"] = "normal"
+                            # normal 不需要设置任何参数
+
+                        # 文本框（bbox）：优先使用 label_bbox，否则使用 bbox（向后兼容）
+                        label_bbox = d_style.get("label_bbox")
+                        if label_bbox:
+                            # 构建 bbox 样式字典
+                            bbox_style = {}
+                            if label_bbox.get("boxstyle"):
+                                bbox_style["boxstyle"] = label_bbox["boxstyle"]
+                            if label_bbox.get("facecolor"):
+                                bbox_style["facecolor"] = label_bbox["facecolor"]
+                            # show_border 控制是否显示边框（默认为 True）
+                            show_border = label_bbox.get("show_border", True)
+                            if show_border:
+                                # 只有在显示边框时才设置边框相关参数
+                                if label_bbox.get("edgecolor"):
+                                    bbox_style["edgecolor"] = label_bbox["edgecolor"]
+                                linewidth = label_bbox.get("linewidth")
+                                if linewidth is not None:
+                                    bbox_style["linewidth"] = float(linewidth)
+                            else:
+                                # 不显示边框时，明确设置 linewidth 为 0 以隐藏边框
+                                bbox_style["linewidth"] = 0
+                            # 确保 alpha 不是 None
+                            alpha = label_bbox.get("alpha")
+                            if alpha is not None:
+                                bbox_style["alpha"] = float(alpha)
+                            if bbox_style:
+                                text_kwargs["bbox"] = bbox_style
+                        elif d_style.get("bbox"):
+                            text_kwargs["bbox"] = d_style.get("bbox")
+
+                        self.ax.text(**text_kwargs)
                 if v >= 0:
                     bottom_pos += v
                 else:
@@ -251,16 +410,27 @@ class PlotBar(Plot):
                                 if col in df_bar.columns
                                 else 0
                             )
-                            self.ax.text(
-                                x=k - 0.5,
-                                y=(bottom_gr + prev_val / 2 + curr_val / 2) / 2,
-                                s=d_label["gr"],
-                                ha="center",
-                                va="center",
-                                color=color,
-                                fontsize=d_style.get("label_fontsize"),
-                                zorder=5,
+
+                            # 构建增长率文本参数
+                            gr_text_kwargs = {
+                                "x": k - 0.5,
+                                "y": (bottom_gr + prev_val / 2 + curr_val / 2) / 2,
+                                "s": d_label["gr"],
+                                "ha": "center",
+                                "va": "center",
+                                "zorder": 5,
+                            }
+
+                            # 使用公共函数应用文本样式
+                            _apply_text_style(
+                                gr_text_kwargs,
+                                d_style,
+                                "gr_text",
+                                self.fontsize,
+                                color if color else "black",
                             )
+
+                            self.ax.text(**gr_text_kwargs)
                         # 累积 bottom_gr，使用 df_bar 中的值
                         if col in df_bar.columns:
                             prev_val = df_bar.iloc[k - 1, df_bar.columns.get_loc(col)]
@@ -273,36 +443,56 @@ class PlotBar(Plot):
                             if not np.isinf(total_gr_val) and not np.isnan(
                                 total_gr_val
                             ):
-                                self.ax.text(
-                                    x=k - 0.5,
-                                    y=(
+                                # 构建总体增长率文本参数
+                                total_gr_text_kwargs = {
+                                    "x": k - 0.5,
+                                    "y": (
                                         df_bar.iloc[k, :].sum()
                                         + df_bar.iloc[k - 1, :].sum()
                                     )
                                     / 2
                                     * 1.05,
-                                    s=d_label["total_gr"],
-                                    ha="center",
-                                    va="bottom",
-                                    color="black",
-                                    fontsize=d_style.get("label_fontsize"),
+                                    "s": d_label["total_gr"],
+                                    "ha": "center",
+                                    "va": "bottom",
+                                    "zorder": 5,
+                                }
+
+                                # 使用公共函数应用文本样式（总体增长率也使用 gr_text 样式）
+                                _apply_text_style(
+                                    total_gr_text_kwargs,
+                                    d_style,
+                                    "gr_text",
+                                    self.fontsize,
+                                    "black",
                                 )
+
+                                self.ax.text(**total_gr_text_kwargs)
 
             # 在柱状图顶端添加total值
             if show_total_label:
                 total = df.sum(axis=1)
+                # 使用 fmt_abs 格式化总计值（如果没有指定则使用默认格式）
+                fmt_total = d_style.get("fmt_abs") or self.fmt
                 for p, v in enumerate(total.values):
-                    self.ax.text(
-                        x=p,
-                        y=(
+                    # 构建总计值文本参数
+                    total_text_kwargs = {
+                        "x": p,
+                        "y": (
                             v * 1.05 if show_total_bar else v
                         ),  # 如果绘制整体外框则优化total值文本的位置
-                        s=self.fmt.format(float(v)),
-                        fontsize=d_style.get("label_fontsize"),
-                        ha="center",
-                        va="bottom",
-                        zorder=5,
+                        "s": fmt_total.format(float(v)),
+                        "ha": "center",
+                        "va": "bottom",
+                        "zorder": 5,
+                    }
+
+                    # 使用公共函数应用文本样式（总计值使用 total_text 样式）
+                    _apply_text_style(
+                        total_text_kwargs, d_style, "total_text", self.fontsize, "black"
                     )
+
+                    self.ax.text(**total_text_kwargs)
 
         # 如果是非堆叠图要手动指定x轴ticks
         # 解析日期字符串并将其转换为 Matplotlib 内部日期格式
@@ -454,7 +644,9 @@ class PlotBarh(Plot):
                 "bar_color": None,  # 柱指定颜色
                 "label_fontsize": self.fontsize,  # 标签字体大小
                 "label_color": None,  # 标签颜色，如果指定则使用，否则自动计算
-                "bbox": None,  # 标签背景
+                "label_weight": None,  # 标签字重：normal, bold, italic
+                "label_bbox": None,  # 标签背景框配置
+                "bbox": None,  # 标签背景（向后兼容）
                 "fmt_abs": self.fmt,  # 绝对值标签格式
                 "fmt_share": "{:.1%}",  # 占比标签格式
                 "fmt_gr": "{:+.1%}",  # 增长率标签格式
@@ -564,20 +756,80 @@ class PlotBarh(Plot):
                         ha = "center"
                         fontcolor = "white"
 
-                    if abs(v / self.ax.get_ylim()[1]) >= label_threshold:
-                        # 如果指定了 label_color，优先使用；否则使用自动计算的 fontcolor
-                        label_color = d_style.get("label_color") or fontcolor
-                        self.ax.text(
-                            x=pos_x,
-                            y=pos_y,
-                            s=label_formatter.format(**d_label),
-                            color=label_color,
-                            va="center",
-                            ha=ha,
-                            multialignment="center",
-                            fontsize=d_style.get("label_fontsize"),
-                            zorder=5,
-                        )
+                    ylim = self.ax.get_ylim()
+                    ymax = (
+                        ylim[1]
+                        if ylim and len(ylim) > 1 and ylim[1] is not None
+                        else 1.0
+                    )
+                    threshold = label_threshold if label_threshold is not None else 0.02
+                    if ymax != 0 and abs(v / ymax) >= threshold:
+                        # 构建标签文本参数
+                        text_kwargs = {
+                            "x": pos_x,
+                            "y": pos_y,
+                            "s": label_formatter.format(**d_label),
+                            "va": "center",
+                            "ha": ha,
+                            "multialignment": "center",
+                            "zorder": 5,
+                        }
+
+                        # 字体大小
+                        if d_style.get("label_fontsize"):
+                            text_kwargs["fontsize"] = d_style.get("label_fontsize")
+
+                        # 标签颜色：优先使用 label_color，否则使用自动计算的 fontcolor
+                        label_color = d_style.get("label_color")
+                        if label_color:
+                            text_kwargs["color"] = label_color
+                        else:
+                            text_kwargs["color"] = fontcolor
+
+                        # 字体样式：weight 用于加粗，style 用于斜体
+                        label_weight = d_style.get("label_weight")
+                        if label_weight:
+                            if label_weight == "italic":
+                                # 斜体使用 style 参数，同时确保 weight 为 normal
+                                text_kwargs["style"] = "italic"
+                                text_kwargs["weight"] = "normal"
+                            elif label_weight == "bold":
+                                # 加粗使用 weight 参数，同时确保 style 为 normal
+                                text_kwargs["weight"] = "bold"
+                                text_kwargs["style"] = "normal"
+                            # normal 不需要设置任何参数
+
+                        # 文本框（bbox）：优先使用 label_bbox，否则使用 bbox（向后兼容）
+                        label_bbox = d_style.get("label_bbox")
+                        if label_bbox:
+                            # 构建 bbox 样式字典
+                            bbox_style = {}
+                            if label_bbox.get("boxstyle"):
+                                bbox_style["boxstyle"] = label_bbox["boxstyle"]
+                            if label_bbox.get("facecolor"):
+                                bbox_style["facecolor"] = label_bbox["facecolor"]
+                            # show_border 控制是否显示边框（默认为 True）
+                            show_border = label_bbox.get("show_border", True)
+                            if show_border:
+                                # 只有在显示边框时才设置边框相关参数
+                                if label_bbox.get("edgecolor"):
+                                    bbox_style["edgecolor"] = label_bbox["edgecolor"]
+                                linewidth = label_bbox.get("linewidth")
+                                if linewidth is not None:
+                                    bbox_style["linewidth"] = float(linewidth)
+                            else:
+                                # 不显示边框时，明确设置 linewidth 为 0 以隐藏边框
+                                bbox_style["linewidth"] = 0
+                            # 确保 alpha 不是 None
+                            alpha = label_bbox.get("alpha")
+                            if alpha is not None:
+                                bbox_style["alpha"] = float(alpha)
+                            if bbox_style:
+                                text_kwargs["bbox"] = bbox_style
+                        elif d_style.get("bbox"):
+                            text_kwargs["bbox"] = d_style.get("bbox")
+
+                        self.ax.text(**text_kwargs)
                 if v >= 0:
                     left_pos += v
                 else:

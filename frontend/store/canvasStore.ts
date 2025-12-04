@@ -78,6 +78,7 @@ const defaultCanvas: CanvasConfig = {
   labelOuter: false,
   dpi: 400,
   transparent: true,
+  tightLayout: true,
 };
 
 export const useCanvasStore = create<CanvasStore>()(

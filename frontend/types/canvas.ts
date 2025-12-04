@@ -67,6 +67,7 @@ export interface CanvasConfig {
   labelOuter: boolean;
   dpi?: number;
   transparent?: boolean;
+  tightLayout?: boolean;
 
   style?: Record<string, any>;
 }

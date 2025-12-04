@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import ColorPicker from '@/components/color/ColorPicker';
+import LabelStyleEditor, { LabelStyle } from '@/components/ui/label-style-editor';
 
 interface Props {
   subplot: SubplotConfig;
@@ -62,8 +63,8 @@ export default function LineParamsEditor({ subplot }: Props) {
       <Tabs defaultValue="basic" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="basic" className="text-xs">基础设置</TabsTrigger>
-          <TabsTrigger value="style" className="text-xs">样式选项</TabsTrigger>
           <TabsTrigger value="label" className="text-xs">标签设置</TabsTrigger>
+          <TabsTrigger value="labelStyle" className="text-xs">标签样式</TabsTrigger>
         </TabsList>
 
         {/* Tab 1: 基础设置 */}
@@ -157,33 +158,17 @@ export default function LineParamsEditor({ subplot }: Props) {
               </p>
             </div>
           </div>
-        </TabsContent>
 
-        {/* Tab 2: 样式选项 */}
-        <TabsContent value="style" className="space-y-4 mt-4">
-          <div className="space-y-3">
+          <div className="space-y-3 pt-3 border-t">
             <h4 className="text-sm font-semibold text-gray-800">颜色设置</h4>
             
             <div className="space-y-2">
-              <Label htmlFor="line_color" className="text-sm">
-                统一线条颜色 (line_color)
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  id="line_color"
-                  type="text"
-                  value={lineColor || ''}
-                  onChange={(e) => updateParam('line_color', e.target.value || null)}
-                  placeholder="例: #1f77b4 或 blue"
-                  className="h-8 text-sm flex-1"
-                />
-                <Input
-                  type="color"
-                  value={lineColor || '#1f77b4'}
-                  onChange={(e) => updateParam('line_color', e.target.value)}
-                  className="h-8 w-16"
-                />
-              </div>
+              <ColorPicker
+                label="统一线条颜色 (line_color)"
+                value={lineColor || ''}
+                onChange={(color) => updateParam('line_color', color || null)}
+                showColorValue={true}
+              />
               <p className="text-xs text-gray-500">
                 留空则使用默认颜色方案（按列自动分配颜色）
               </p>
@@ -202,7 +187,7 @@ export default function LineParamsEditor({ subplot }: Props) {
           </div>
         </TabsContent>
 
-        {/* Tab 3: 标签设置 */}
+        {/* Tab 2: 标签设置 */}
         <TabsContent value="label" className="space-y-4 mt-4">
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-800">数据标签</h4>
@@ -331,6 +316,80 @@ export default function LineParamsEditor({ subplot }: Props) {
                 </div>
               </div>
             )}
+          </div>
+        </TabsContent>
+
+        {/* Tab 3: 标签样式 */}
+        <TabsContent value="labelStyle" className="space-y-4 mt-4">
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">
+              标签样式仅对"标签设置"中选择的系列生效
+            </p>
+            <LabelStyleEditor
+              value={{
+                fontsize: params.label_fontsize,
+                color: params.label_color,
+                weight: params.label_weight,
+                bbox: params.label_bbox ? {
+                  enabled: true,
+                  boxstyle: params.label_bbox?.boxstyle,
+                  facecolor: params.label_bbox?.facecolor,
+                  show_border: params.label_bbox?.show_border ?? true,
+                  edgecolor: params.label_bbox?.edgecolor,
+                  linewidth: params.label_bbox?.linewidth,
+                  alpha: params.label_bbox?.alpha,
+                } : { enabled: false },
+              }}
+              onChange={(labelStyle: LabelStyle) => {
+                const updates: any = {};
+                if (labelStyle.fontsize !== undefined) {
+                  updates.label_fontsize = labelStyle.fontsize;
+                }
+                if (labelStyle.color !== undefined) {
+                  updates.label_color = labelStyle.color || null;
+                }
+                if (labelStyle.weight !== undefined) {
+                  updates.label_weight = labelStyle.weight === 'normal' ? undefined : labelStyle.weight;
+                }
+                // 处理 bbox 配置
+                if (labelStyle.bbox !== undefined) {
+                  if (labelStyle.bbox.enabled) {
+                    // 只传递已定义的字段，避免传递 undefined/null
+                    const bboxConfig: any = {};
+                    if (labelStyle.bbox.boxstyle !== undefined) {
+                      bboxConfig.boxstyle = labelStyle.bbox.boxstyle;
+                    }
+                    if (labelStyle.bbox.facecolor !== undefined) {
+                      bboxConfig.facecolor = labelStyle.bbox.facecolor;
+                    }
+                    // show_border 控制是否显示边框
+                    const showBorder = labelStyle.bbox.show_border !== false; // 默认为 true
+                    if (showBorder) {
+                      // 只有在显示边框时才传递边框相关参数
+                      if (labelStyle.bbox.edgecolor !== undefined) {
+                        bboxConfig.edgecolor = labelStyle.bbox.edgecolor;
+                      }
+                      if (labelStyle.bbox.linewidth !== undefined && labelStyle.bbox.linewidth !== null) {
+                        bboxConfig.linewidth = labelStyle.bbox.linewidth;
+                      }
+                    }
+                    // show_border 参数传递给后端
+                    bboxConfig.show_border = showBorder;
+                    if (labelStyle.bbox.alpha !== undefined && labelStyle.bbox.alpha !== null) {
+                      bboxConfig.alpha = labelStyle.bbox.alpha;
+                    }
+                    updates.label_bbox = Object.keys(bboxConfig).length > 0 ? bboxConfig : null;
+                  } else {
+                    // enabled 为 false 时，设置为 null
+                    updates.label_bbox = null;
+                  }
+                }
+                updateSubplot(subplot.subplotId, {
+                  params: { ...subplot.params, ...updates },
+                });
+              }}
+              label="标签样式"
+            />
           </div>
         </TabsContent>
       </Tabs>

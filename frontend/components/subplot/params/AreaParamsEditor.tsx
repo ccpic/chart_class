@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import ColorPicker from '@/components/color/ColorPicker';
+import LabelStyleEditor, { LabelStyle } from '@/components/ui/label-style-editor';
 
 interface Props {
   subplot: SubplotConfig;
@@ -33,6 +33,11 @@ export default function AreaParamsEditor({ subplot }: Props) {
   const stacked = params.stacked ?? true;
   const showLabel = params.show_label || [];
   const endpointLabelOnly = params.endpoint_label_only ?? false;
+  const adjustLabels = params.adjust_labels ?? true;
+  const adjustLabelsDrawLines = params.adjust_labels_draw_lines ?? true;
+  const adjustLabelsLinecolor = params.adjust_labels_linecolor || 'black';
+  const adjustLabelsLinewidth = params.adjust_labels_linewidth ?? 0.8;
+  const adjustLabelsMaxDistance = params.adjust_labels_max_distance ?? 0.1;
   const linewidth = params.linewidth ?? 2;
   const alpha = params.alpha ?? 1;
 
@@ -52,9 +57,10 @@ export default function AreaParamsEditor({ subplot }: Props) {
   return (
     <div className="space-y-4">
       <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="basic" className="text-xs">基础设置</TabsTrigger>
           <TabsTrigger value="label" className="text-xs">标签设置</TabsTrigger>
+          <TabsTrigger value="labelStyle" className="text-xs">标签样式</TabsTrigger>
         </TabsList>
 
         {/* Tab 1: 基础设置 */}
@@ -121,11 +127,6 @@ export default function AreaParamsEditor({ subplot }: Props) {
             </div>
           </div>
 
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-xs text-blue-700">
-              💡 提示：堆积模式下，系列按列顺序从下往上叠加
-            </p>
-          </div>
         </TabsContent>
 
         {/* Tab 2: 标签设置 */}
@@ -160,29 +161,6 @@ export default function AreaParamsEditor({ subplot }: Props) {
               </p>
             </div>
 
-            {Array.isArray(showLabel) && showLabel.length > 0 && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                <p className="text-xs font-medium text-blue-800 mb-2">
-                  已选择 {showLabel.length} 个系列显示标签:
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {showLabel.map((col: string) => (
-                    <span
-                      key={col}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded"
-                    >
-                      {col}
-                      <button
-                        onClick={() => toggleShowLabel(col)}
-                        className="hover:bg-blue-200 rounded-full p-0.5"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="space-y-3 pt-3 border-t">
@@ -201,31 +179,160 @@ export default function AreaParamsEditor({ subplot }: Props) {
             <p className="text-xs text-gray-500">
               {endpointLabelOnly ? '只在第一个和最后一个数据点显示标签' : '在所有数据点显示标签'}
             </p>
-          </div>
 
-          <div className="space-y-3 pt-3 border-t">
-            <h4 className="text-sm font-semibold text-gray-800">标签位置说明</h4>
-            
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md space-y-2">
-              <div className="flex items-start gap-2">
-                <span className="text-xs font-medium text-gray-700 mt-0.5">堆积模式:</span>
-                <p className="text-xs text-gray-600 flex-1">
-                  标签显示在面积区域的中心位置（上下边界的中间）
-                </p>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-xs font-medium text-gray-700 mt-0.5">并列模式:</span>
-                <p className="text-xs text-gray-600 flex-1">
-                  标签显示在数据点的实际 Y 值位置
-                </p>
-              </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox
+                id="adjust_labels"
+                checked={adjustLabels}
+                onCheckedChange={(checked) => updateParam('adjust_labels', checked)}
+              />
+              <Label htmlFor="adjust_labels" className="text-sm cursor-pointer">
+                自动调整标签位置 (adjust_labels)
+              </Label>
             </div>
-          </div>
-
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
-            <p className="text-xs text-amber-700">
-              💡 提示：标签使用白色文字，并带有与面积颜色相同的背景框
+            <p className="text-xs text-gray-500">
+              {adjustLabels ? '启用标签位置自动调整，避免标签重叠' : '禁用标签位置调整，标签显示在数据点位置'}
             </p>
+
+            {adjustLabels && (
+              <div className="space-y-3 pt-3 border-t">
+                <h5 className="text-sm font-medium text-gray-700">标签调整选项</h5>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="adjust_labels_draw_lines"
+                    checked={adjustLabelsDrawLines}
+                    onCheckedChange={(checked) => updateParam('adjust_labels_draw_lines', checked)}
+                  />
+                  <Label htmlFor="adjust_labels_draw_lines" className="text-sm cursor-pointer">
+                    绘制连接线 (adjust_labels_draw_lines)
+                  </Label>
+                </div>
+
+                {adjustLabelsDrawLines && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="adjust_labels_linecolor" className="text-sm">
+                        连接线颜色 (adjust_labels_linecolor)
+                      </Label>
+                      <ColorPicker
+                        label=""
+                        value={adjustLabelsLinecolor}
+                        onChange={(color) => updateParam('adjust_labels_linecolor', color || 'black')}
+                        showColorValue={true}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="adjust_labels_linewidth" className="text-sm">
+                        连接线宽度 (adjust_labels_linewidth): {adjustLabelsLinewidth.toFixed(1)}
+                      </Label>
+                      <Slider
+                        id="adjust_labels_linewidth"
+                        min={0.1}
+                        max={3}
+                        step={0.1}
+                        value={[adjustLabelsLinewidth]}
+                        onValueChange={([value]) => updateParam('adjust_labels_linewidth', value)}
+                        className="w-full"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="adjust_labels_max_distance" className="text-sm">
+                    最大距离 (adjust_labels_max_distance): {adjustLabelsMaxDistance.toFixed(2)}
+                  </Label>
+                  <Slider
+                    id="adjust_labels_max_distance"
+                    min={0.01}
+                    max={0.5}
+                    step={0.01}
+                    value={[adjustLabelsMaxDistance]}
+                    onValueChange={([value]) => updateParam('adjust_labels_max_distance', value)}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-500">
+                    限制标签离数据点的最大距离（相对于轴范围的比例）
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Tab 3: 标签样式 */}
+        <TabsContent value="labelStyle" className="space-y-4 mt-4">
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">
+              标签样式仅对"标签设置"中选择的系列生效
+            </p>
+            <LabelStyleEditor
+              value={{
+                fontsize: params.label_fontsize,
+                color: params.label_color,
+                weight: params.label_weight,
+                bbox: params.label_bbox ? {
+                  enabled: true,
+                  boxstyle: params.label_bbox?.boxstyle,
+                  facecolor: params.label_bbox?.facecolor,
+                  show_border: params.label_bbox?.show_border ?? true,
+                  edgecolor: params.label_bbox?.edgecolor,
+                  linewidth: params.label_bbox?.linewidth,
+                  alpha: params.label_bbox?.alpha,
+                } : { enabled: false },
+              }}
+              onChange={(labelStyle: LabelStyle) => {
+                const updates: any = {};
+                if (labelStyle.fontsize !== undefined) {
+                  updates.label_fontsize = labelStyle.fontsize;
+                }
+                if (labelStyle.color !== undefined) {
+                  updates.label_color = labelStyle.color || null;
+                }
+                if (labelStyle.weight !== undefined) {
+                  updates.label_weight = labelStyle.weight === 'normal' ? undefined : labelStyle.weight;
+                }
+                // 处理 bbox 配置
+                if (labelStyle.bbox !== undefined) {
+                  if (labelStyle.bbox.enabled) {
+                    // 只传递已定义的字段，避免传递 undefined/null
+                    const bboxConfig: any = {};
+                    if (labelStyle.bbox.boxstyle !== undefined) {
+                      bboxConfig.boxstyle = labelStyle.bbox.boxstyle;
+                    }
+                    if (labelStyle.bbox.facecolor !== undefined) {
+                      bboxConfig.facecolor = labelStyle.bbox.facecolor;
+                    }
+                    // show_border 控制是否显示边框
+                    const showBorder = labelStyle.bbox.show_border !== false; // 默认为 true
+                    if (showBorder) {
+                      // 只有在显示边框时才传递边框相关参数
+                      if (labelStyle.bbox.edgecolor !== undefined) {
+                        bboxConfig.edgecolor = labelStyle.bbox.edgecolor;
+                      }
+                      if (labelStyle.bbox.linewidth !== undefined && labelStyle.bbox.linewidth !== null) {
+                        bboxConfig.linewidth = labelStyle.bbox.linewidth;
+                      }
+                    }
+                    // show_border 参数传递给后端
+                    bboxConfig.show_border = showBorder;
+                    if (labelStyle.bbox.alpha !== undefined && labelStyle.bbox.alpha !== null) {
+                      bboxConfig.alpha = labelStyle.bbox.alpha;
+                    }
+                    updates.label_bbox = Object.keys(bboxConfig).length > 0 ? bboxConfig : null;
+                  } else {
+                    // enabled 为 false 时，设置为 null
+                    updates.label_bbox = null;
+                  }
+                }
+                updateSubplot(subplot.subplotId, {
+                  params: { ...subplot.params, ...updates },
+                });
+              }}
+              label="标签样式"
+            />
           </div>
         </TabsContent>
       </Tabs>
