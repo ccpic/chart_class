@@ -231,6 +231,7 @@ class PlotBubble(Plot):
                 t.remove()
 
             # 使用 textalloc 重新分配位置
+            # 从 kwargs 中获取标签调整参数，如果没有则使用默认值
             allocate_text(
                 self.ax.figure,
                 self.ax,
@@ -240,10 +241,10 @@ class PlotBubble(Plot):
                 x_scatter=x_data,
                 y_scatter=y_data,
                 textsize=self.fontsize,
-                linecolor="black",
-                draw_lines=True,
-                linewidth=0.8,  # 连接线宽度
-                max_distance=0.1,  # 限制标签离数据点的最大距离（相对于轴范围的比例）
+                linecolor=kwargs.get("label_linecolor", "black"),
+                draw_lines=kwargs.get("label_draw_lines", True),
+                linewidth=kwargs.get("label_linewidth", 0.8),
+                max_distance=kwargs.get("label_max_distance", 0.1),
             )
 
         # 添加轴label

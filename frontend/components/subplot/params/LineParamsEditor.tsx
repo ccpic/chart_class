@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import ColorPicker from '@/components/color/ColorPicker';
 
 interface Props {
   subplot: SubplotConfig;
@@ -32,6 +34,10 @@ export default function LineParamsEditor({ subplot }: Props) {
   const showLabel = params.show_label || [];
   const endpointLabelOnly = params.endpoint_label_only ?? false;
   const adjustLabels = params.adjust_labels ?? true;
+  const adjustLabelsDrawLines = params.adjust_labels_draw_lines ?? true;
+  const adjustLabelsLinecolor = params.adjust_labels_linecolor || 'black';
+  const adjustLabelsLinewidth = params.adjust_labels_linewidth ?? 0.8;
+  const adjustLabelsMaxDistance = params.adjust_labels_max_distance ?? 0.1;
   const linewidth = params.linewidth ?? 2;
   const linestyle = params.linestyle || '-';
   const marker = params.marker || 'o';
@@ -245,6 +251,86 @@ export default function LineParamsEditor({ subplot }: Props) {
             <p className="text-xs text-gray-500">
               {endpointLabelOnly ? '只在折线的第一个和最后一个点显示标签' : '在所有数据点显示标签'}
             </p>
+
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox
+                id="adjust_labels"
+                checked={adjustLabels}
+                onCheckedChange={(checked) => updateParam('adjust_labels', checked)}
+              />
+              <Label htmlFor="adjust_labels" className="text-sm cursor-pointer">
+                自动调整标签位置 (adjust_labels)
+              </Label>
+            </div>
+            <p className="text-xs text-gray-500">
+              {adjustLabels ? '启用标签位置自动调整，避免标签重叠' : '禁用标签位置调整，标签显示在数据点位置'}
+            </p>
+
+            {adjustLabels && (
+              <div className="space-y-3 pt-3 border-t">
+                <h5 className="text-sm font-medium text-gray-700">标签调整选项</h5>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="adjust_labels_draw_lines"
+                    checked={adjustLabelsDrawLines}
+                    onCheckedChange={(checked) => updateParam('adjust_labels_draw_lines', checked)}
+                  />
+                  <Label htmlFor="adjust_labels_draw_lines" className="text-sm cursor-pointer">
+                    绘制连接线 (adjust_labels_draw_lines)
+                  </Label>
+                </div>
+
+                {adjustLabelsDrawLines && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="adjust_labels_linecolor" className="text-sm">
+                        连接线颜色 (adjust_labels_linecolor)
+                      </Label>
+                      <ColorPicker
+                        label=""
+                        value={adjustLabelsLinecolor}
+                        onChange={(color) => updateParam('adjust_labels_linecolor', color || 'black')}
+                        showColorValue={true}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="adjust_labels_linewidth" className="text-sm">
+                        连接线宽度 (adjust_labels_linewidth): {adjustLabelsLinewidth.toFixed(1)}
+                      </Label>
+                      <Slider
+                        id="adjust_labels_linewidth"
+                        min={0.1}
+                        max={3}
+                        step={0.1}
+                        value={[adjustLabelsLinewidth]}
+                        onValueChange={([value]) => updateParam('adjust_labels_linewidth', value)}
+                        className="w-full"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="adjust_labels_max_distance" className="text-sm">
+                    最大距离 (adjust_labels_max_distance): {adjustLabelsMaxDistance.toFixed(2)}
+                  </Label>
+                  <Slider
+                    id="adjust_labels_max_distance"
+                    min={0.01}
+                    max={0.5}
+                    step={0.01}
+                    value={[adjustLabelsMaxDistance]}
+                    onValueChange={([value]) => updateParam('adjust_labels_max_distance', value)}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-500">
+                    限制标签离数据点的最大距离（相对于轴范围的比例）
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
