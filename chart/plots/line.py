@@ -131,15 +131,20 @@ class PlotLine(Plot):
                         )
 
         # 优化标签位置
-        if d_style.get("adjust_labels") is True:
-            np.random.seed(0)
-            adjust_text(
-                texts,
-                ax=self.ax,
-                only_move={"text": "y", "static": "y", "explode": "y", "pull": "y"},
-                arrowprops=dict(arrowstyle="-"),
-                max_move=(1, 1),
-            )
+        if d_style.get("adjust_labels") is True and texts:
+            try:
+                np.random.seed(0)
+                adjust_text(
+                    texts,
+                    ax=self.ax,
+                    only_move={"text": "y", "static": "y", "explode": "y", "pull": "y"},
+                    arrowprops=dict(arrowstyle="-"),
+                    max_move=(1, 1),
+                )
+            except (IndexError, ValueError) as e:
+                # 如果 adjust_text 失败，不影响图表显示，只记录错误
+                import warnings
+                warnings.warn(f"标签位置调整失败: {e}", UserWarning)
 
         # 使用基类方法格式化y轴
         self._format_axis("y")

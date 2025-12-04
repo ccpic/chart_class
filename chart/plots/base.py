@@ -571,10 +571,27 @@ class Plot:
 
         fmt = formatter if formatter is not None else self.fmt
 
+        def format_value(val, pos):
+            """格式化单个值，处理可能的格式错误"""
+            try:
+                # 如果格式字符串包含位置参数（如 {0}），需要特殊处理
+                if '{0}' in fmt or '{1}' in fmt:
+                    # 使用位置参数格式化
+                    return fmt.format(val)
+                else:
+                    # 使用标准格式化
+                    return fmt.format(val)
+            except (IndexError, ValueError, KeyError) as e:
+                # 如果格式化失败，使用默认格式
+                try:
+                    return "{:,.0f}".format(val)
+                except (ValueError, TypeError):
+                    return str(val)
+
         if axis in ("x", "both"):
-            self.ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: fmt.format(x)))
+            self.ax.xaxis.set_major_formatter(FuncFormatter(format_value))
         if axis in ("y", "both"):
-            self.ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: fmt.format(y)))
+            self.ax.yaxis.set_major_formatter(FuncFormatter(format_value))
 
     def _get_column(self, col: Optional[str], default_index: int = 0):
         """获取列数据，支持列名或默认索引
