@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2 } from 'lucide-react';
 import NumberFormatEditor from '@/components/ui/number-format-editor';
 import ColorPicker from '@/components/color/ColorPicker';
+import LabelStyleEditor, { LabelStyle } from '@/components/ui/label-style-editor';
 
 interface Props {
   subplot: SubplotConfig;
@@ -237,39 +238,71 @@ export default function BarParamsEditor({ subplot }: Props) {
           </div>
 
           <div className="space-y-3 pt-3 border-t">
-            <h4 className="text-sm font-semibold text-gray-800">总计标签</h4>
-            
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="show_total_label"
-                checked={showTotalLabel}
-                onCheckedChange={(checked) => updateParam('show_total_label', checked)}
-              />
-              <Label htmlFor="show_total_label" className="text-sm cursor-pointer">
-                显示堆积总计值
-              </Label>
-            </div>
-            <p className="text-xs text-gray-500">
-              在柱状图顶端显示堆积之和
-            </p>
-          </div>
-
-          <div className="space-y-3 pt-3 border-t">
-            <h4 className="text-sm font-semibold text-gray-800">增长率显示</h4>
-            
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="show_gr_text"
-                checked={showGrText}
-                onCheckedChange={(checked) => updateParam('show_gr_text', checked)}
-              />
-              <Label htmlFor="show_gr_text" className="text-sm cursor-pointer">
-                显示增长率数字
-              </Label>
-            </div>
-            <p className="text-xs text-gray-500">
-              在柱间显示各系列的增长率数字
-            </p>
+            <LabelStyleEditor
+              value={{
+                fontsize: params.label_fontsize,
+                color: params.label_color,
+                weight: params.label_weight,
+                bbox: params.label_bbox ? {
+                  enabled: true,
+                  boxstyle: params.label_bbox?.boxstyle,
+                  facecolor: params.label_bbox?.facecolor,
+                  show_border: params.label_bbox?.show_border ?? true,
+                  edgecolor: params.label_bbox?.edgecolor,
+                  linewidth: params.label_bbox?.linewidth,
+                  alpha: params.label_bbox?.alpha,
+                } : { enabled: false },
+              }}
+              onChange={(labelStyle: LabelStyle) => {
+                const updates: any = {};
+                if (labelStyle.fontsize !== undefined) {
+                  updates.label_fontsize = labelStyle.fontsize;
+                }
+                if (labelStyle.color !== undefined) {
+                  updates.label_color = labelStyle.color || null;
+                }
+                if (labelStyle.weight !== undefined) {
+                  updates.label_weight = labelStyle.weight === 'normal' ? undefined : labelStyle.weight;
+                }
+                // 处理 bbox 配置
+                if (labelStyle.bbox !== undefined) {
+                  if (labelStyle.bbox.enabled) {
+                    // 只传递已定义的字段，避免传递 undefined/null
+                    const bboxConfig: any = {};
+                    if (labelStyle.bbox.boxstyle !== undefined) {
+                      bboxConfig.boxstyle = labelStyle.bbox.boxstyle;
+                    }
+                    if (labelStyle.bbox.facecolor !== undefined) {
+                      bboxConfig.facecolor = labelStyle.bbox.facecolor;
+                    }
+                    // show_border 控制是否显示边框
+                    const showBorder = labelStyle.bbox.show_border !== false; // 默认为 true
+                    if (showBorder) {
+                      // 只有在显示边框时才传递边框相关参数
+                      if (labelStyle.bbox.edgecolor !== undefined) {
+                        bboxConfig.edgecolor = labelStyle.bbox.edgecolor;
+                      }
+                      if (labelStyle.bbox.linewidth !== undefined && labelStyle.bbox.linewidth !== null) {
+                        bboxConfig.linewidth = labelStyle.bbox.linewidth;
+                      }
+                    }
+                    // show_border 参数传递给后端
+                    bboxConfig.show_border = showBorder;
+                    if (labelStyle.bbox.alpha !== undefined && labelStyle.bbox.alpha !== null) {
+                      bboxConfig.alpha = labelStyle.bbox.alpha;
+                    }
+                    updates.label_bbox = Object.keys(bboxConfig).length > 0 ? bboxConfig : null;
+                  } else {
+                    // enabled 为 false 时，设置为 null
+                    updates.label_bbox = null;
+                  }
+                }
+                updateSubplot(subplot.subplotId, {
+                  params: { ...subplot.params, ...updates },
+                });
+              }}
+              label="柱子标签样式"
+            />
           </div>
 
         </TabsContent>
@@ -701,29 +734,26 @@ export default function BarParamsEditor({ subplot }: Props) {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor={`conn-linewidth-${index}`} className="text-xs">
-                            线条宽度
-                          </Label>
-                          <span className="text-xs text-gray-500">
-                            {conn.linewidth || 1}
-                          </span>
-                        </div>
-                        <Slider
+                        <Label htmlFor={`conn-linewidth-${index}`} className="text-xs">
+                          线条宽度
+                        </Label>
+                        <Input
                           id={`conn-linewidth-${index}`}
-                          min={0.5}
-                          max={5}
-                          step={0.5}
-                          value={[conn.linewidth || 1]}
-                          onValueChange={(value) => {
+                          type="number"
+                          min={0.1}
+                          max={10}
+                          step={0.1}
+                          value={conn.linewidth || 1}
+                          onChange={(e) => {
                             const newConnections = [...connections];
+                            const value = e.target.value ? parseFloat(e.target.value) : 1;
                             newConnections[index] = {
                               ...newConnections[index],
-                              linewidth: value[0],
+                              linewidth: value,
                             };
                             updateParam('connections', newConnections);
                           }}
-                          className="w-full"
+                          className="text-sm"
                         />
                       </div>
 
@@ -899,100 +929,70 @@ export default function BarParamsEditor({ subplot }: Props) {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-[1fr_120px] gap-3">
-                        <div className="space-y-2">
-                          <Label htmlFor={`conn-text-preview-${index}`} className="text-xs">
-                            预览值
-                          </Label>
-                          <div className="text-sm p-2 bg-gray-50 border rounded font-mono">
-                            {(() => {
-                              const textType = conn.text_type || 'growth_rate';
-                              const textFormat = conn.text_format || '{:+.1%}';
-                              const x1 = conn.x1 ?? 0;
-                              const x2 = conn.x2 ?? 1;
+                      <div className="space-y-2">
+                        <Label htmlFor={`conn-text-preview-${index}`} className="text-xs">
+                          预览值
+                        </Label>
+                        <div className="text-sm p-2 bg-gray-50 border rounded font-mono">
+                          {(() => {
+                            const textType = conn.text_type || 'growth_rate';
+                            const textFormat = conn.text_format || '{:+.1%}';
+                            const x1 = conn.x1 ?? 0;
+                            const x2 = conn.x2 ?? 1;
+                            
+                            // 获取数据值
+                            const data = subplot.data?.data || [];
+                            let previewValue = '';
+                            
+                            if (data.length > Math.max(x1, x2)) {
+                              // 计算总和（如果是堆积图）或第一列的值
+                              const getBarValue = (idx: number) => {
+                                if (stacked && data[idx]) {
+                                  return data[idx].reduce((sum: number, val: any) => {
+                                    const num = typeof val === 'number' ? val : parseFloat(val) || 0;
+                                    return sum + num;
+                                  }, 0);
+                                } else if (data[idx] && data[idx].length > 0) {
+                                  return typeof data[idx][0] === 'number' ? data[idx][0] : parseFloat(data[idx][0]) || 0;
+                                }
+                                return 0;
+                              };
                               
-                              // 获取数据值
-                              const data = subplot.data?.data || [];
-                              let previewValue = '';
+                              const val1 = getBarValue(x1);
+                              const val2 = getBarValue(x2);
                               
-                              if (data.length > Math.max(x1, x2)) {
-                                // 计算总和（如果是堆积图）或第一列的值
-                                const getBarValue = (idx: number) => {
-                                  if (stacked && data[idx]) {
-                                    return data[idx].reduce((sum: number, val: any) => {
-                                      const num = typeof val === 'number' ? val : parseFloat(val) || 0;
-                                      return sum + num;
-                                    }, 0);
-                                  } else if (data[idx] && data[idx].length > 0) {
-                                    return typeof data[idx][0] === 'number' ? data[idx][0] : parseFloat(data[idx][0]) || 0;
-                                  }
-                                  return 0;
-                                };
-                                
-                                const val1 = getBarValue(x1);
-                                const val2 = getBarValue(x2);
-                                
-                                // 解析格式化字符串
-                                const parseFormat = (fmt: string) => {
-                                  const match = fmt.match(/\{:([+])?(,)?\.(\d+)([f%])\}/);
-                                  if (match) {
-                                    return {
-                                      showPlus: !!match[1],
-                                      showThousands: !!match[2],
-                                      decimals: parseInt(match[3] || '2', 10),
-                                      isPercent: match[4] === '%',
-                                    };
-                                  }
+                              // 解析格式化字符串
+                              const parseFormat = (fmt: string) => {
+                                const match = fmt.match(/\{:([+])?(,)?\.(\d+)([f%])\}/);
+                                if (match) {
                                   return {
-                                    showPlus: false,
-                                    showThousands: false,
-                                    decimals: 2,
-                                    isPercent: fmt.includes('%'),
+                                    showPlus: !!match[1],
+                                    showThousands: !!match[2],
+                                    decimals: parseInt(match[3] || '2', 10),
+                                    isPercent: match[4] === '%',
                                   };
+                                }
+                                return {
+                                  showPlus: false,
+                                  showThousands: false,
+                                  decimals: 2,
+                                  isPercent: fmt.includes('%'),
                                 };
-                                
-                                const formatOptions = parseFormat(textFormat);
-                                
-                                if (textType === 'growth_rate') {
-                                  // 增长率：(val2 - val1) / val1
-                                  if (val1 !== 0) {
-                                    const growthRate = (val2 - val1) / val1;
-                                    let num = formatOptions.isPercent ? growthRate : growthRate;
-                                    
-                                    // 格式化数字
-                                    if (formatOptions.isPercent) {
-                                      num = growthRate * 100; // 百分比需要乘以100
-                                    }
-                                    
-                                    let formatted = num.toFixed(formatOptions.decimals);
-                                    
-                                    // 添加千位符
-                                    if (formatOptions.showThousands) {
-                                      const parts = formatted.split('.');
-                                      parts[0] = parseInt(parts[0]).toLocaleString('en-US');
-                                      formatted = parts.join('.');
-                                    }
-                                    
-                                    // 添加加号
-                                    if (formatOptions.showPlus && num > 0) {
-                                      formatted = '+' + formatted;
-                                    }
-                                    
-                                    // 添加百分号
-                                    if (formatOptions.isPercent) {
-                                      formatted = formatted + '%';
-                                    }
-                                    
-                                    previewValue = formatted;
-                                  } else {
-                                    previewValue = 'N/A';
-                                  }
-                                } else if (textType === 'net_change') {
-                                  // 净增长：val2 - val1
-                                  const netChange = val2 - val1;
-                                  let num = netChange;
+                              };
+                              
+                              const formatOptions = parseFormat(textFormat);
+                              
+                              if (textType === 'growth_rate') {
+                                // 增长率：(val2 - val1) / val1
+                                if (val1 !== 0) {
+                                  const growthRate = (val2 - val1) / val1;
+                                  let num = formatOptions.isPercent ? growthRate : growthRate;
                                   
                                   // 格式化数字
+                                  if (formatOptions.isPercent) {
+                                    num = growthRate * 100; // 百分比需要乘以100
+                                  }
+                                  
                                   let formatted = num.toFixed(formatOptions.decimals);
                                   
                                   // 添加千位符
@@ -1007,251 +1007,154 @@ export default function BarParamsEditor({ subplot }: Props) {
                                     formatted = '+' + formatted;
                                   }
                                   
-                                  // 添加百分号（净增长通常不使用百分比，但尊重用户设置）
+                                  // 添加百分号
                                   if (formatOptions.isPercent) {
                                     formatted = formatted + '%';
                                   }
                                   
                                   previewValue = formatted;
+                                } else {
+                                  previewValue = 'N/A';
+                                }
+                              } else if (textType === 'net_change') {
+                                // 净增长：val2 - val1
+                                const netChange = val2 - val1;
+                                let num = netChange;
+                                
+                                // 格式化数字
+                                let formatted = num.toFixed(formatOptions.decimals);
+                                
+                                // 添加千位符
+                                if (formatOptions.showThousands) {
+                                  const parts = formatted.split('.');
+                                  parts[0] = parseInt(parts[0]).toLocaleString('en-US');
+                                  formatted = parts.join('.');
+                                }
+                                
+                                // 添加加号
+                                if (formatOptions.showPlus && num > 0) {
+                                  formatted = '+' + formatted;
+                                }
+                                
+                                // 添加百分号（净增长通常不使用百分比，但尊重用户设置）
+                                if (formatOptions.isPercent) {
+                                  formatted = formatted + '%';
+                                }
+                                
+                                previewValue = formatted;
+                              }
+                            } else {
+                              previewValue = '请先选择 x1 和 x2';
+                            }
+                            
+                            return previewValue;
+                          })()}
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 pt-3 border-t">
+                        <LabelStyleEditor
+                          value={{
+                            fontsize: conn.text_size,
+                            color: conn.text_color || conn.color || '#000000',
+                            weight: conn.text_weight || 'normal',
+                            bbox: (conn.bbox_facecolor || conn.bbox_edgecolor || conn.bbox_boxstyle || conn.bbox_alpha !== undefined || conn.bbox_linewidth !== undefined) ? {
+                              enabled: true,
+                              boxstyle: conn.bbox_boxstyle || 'square',
+                              facecolor: conn.bbox_facecolor || '#FFFFFF',
+                              show_border: conn.bbox_linewidth !== 0 && (conn.bbox_edgecolor !== undefined || conn.bbox_linewidth !== undefined),
+                              edgecolor: conn.bbox_edgecolor || '#000000',
+                              linewidth: conn.bbox_linewidth ?? 1,
+                              alpha: conn.bbox_alpha ?? 0.5,
+                            } : { enabled: false },
+                          }}
+                          onChange={(labelStyle: LabelStyle) => {
+                            const newConnections = [...connections];
+                            const updates: any = {};
+                            
+                            if (labelStyle.fontsize !== undefined) {
+                              updates.text_size = labelStyle.fontsize;
+                            }
+                            if (labelStyle.color !== undefined) {
+                              updates.text_color = labelStyle.color || null;
+                            }
+                            if (labelStyle.weight !== undefined) {
+                              // 后端支持 "normal", "bold", "semibold", "italic" 等
+                              updates.text_weight = labelStyle.weight === 'normal' ? undefined : labelStyle.weight;
+                            }
+                            
+                            // 处理 bbox 配置
+                            if (labelStyle.bbox !== undefined) {
+                              if (labelStyle.bbox.enabled) {
+                                if (labelStyle.bbox.boxstyle !== undefined) {
+                                  updates.bbox_boxstyle = labelStyle.bbox.boxstyle === 'square' ? undefined : labelStyle.bbox.boxstyle;
+                                }
+                                if (labelStyle.bbox.facecolor !== undefined) {
+                                  updates.bbox_facecolor = labelStyle.bbox.facecolor;
+                                }
+                                const showBorder = labelStyle.bbox.show_border !== false;
+                                if (showBorder) {
+                                  if (labelStyle.bbox.edgecolor !== undefined) {
+                                    updates.bbox_edgecolor = labelStyle.bbox.edgecolor;
+                                  }
+                                  if (labelStyle.bbox.linewidth !== undefined && labelStyle.bbox.linewidth !== null) {
+                                    updates.bbox_linewidth = labelStyle.bbox.linewidth;
+                                  }
+                                } else {
+                                  // 不显示边框时，设置 linewidth 为 0
+                                  updates.bbox_linewidth = 0;
+                                }
+                                if (labelStyle.bbox.alpha !== undefined && labelStyle.bbox.alpha !== null) {
+                                  updates.bbox_alpha = labelStyle.bbox.alpha;
                                 }
                               } else {
-                                previewValue = '请先选择 x1 和 x2';
+                                // enabled 为 false 时，清除所有 bbox 相关参数（设置为 undefined 以便删除）
+                                delete newConnections[index].bbox_boxstyle;
+                                delete newConnections[index].bbox_facecolor;
+                                delete newConnections[index].bbox_edgecolor;
+                                delete newConnections[index].bbox_alpha;
+                                delete newConnections[index].bbox_linewidth;
                               }
-                              
-                              return previewValue;
-                            })()}
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`conn-text-size-${index}`} className="text-xs">
-                            字体大小
-                          </Label>
-                          <Input
-                            id={`conn-text-size-${index}`}
-                            type="number"
-                            min={8}
-                            max={72}
-                            step={1}
-                            value={conn.text_size ?? 12}
-                            onChange={(e) => {
-                              const newConnections = [...connections];
-                              newConnections[index] = {
-                                ...newConnections[index],
-                                text_size: e.target.value ? parseFloat(e.target.value) : undefined,
-                              };
-                              updateParam('connections', newConnections);
-                            }}
-                            placeholder="12"
-                            className="text-sm"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <Label htmlFor={`conn-text-color-${index}`} className="text-xs">
-                            文本颜色
-                          </Label>
-                          <ColorPicker
-                            value={conn.text_color || conn.color || '#000000'}
-                            onChange={(color) => {
-                              const newConnections = [...connections];
-                              newConnections[index] = {
-                                ...newConnections[index],
-                                text_color: color,
-                              };
-                              updateParam('connections', newConnections);
-                            }}
-                            showColorValue={false}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor={`conn-text-weight-${index}`} className="text-xs">
-                            字体加粗
-                          </Label>
-                          <Select
-                            value={conn.text_weight || 'normal'}
-                            onValueChange={(value) => {
-                              const newConnections = [...connections];
-                              newConnections[index] = {
-                                ...newConnections[index],
-                                text_weight: value === 'normal' ? undefined : value,
-                              };
-                              updateParam('connections', newConnections);
-                            }}
-                          >
-                            <SelectTrigger id={`conn-text-weight-${index}`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="normal">正常</SelectItem>
-                              <SelectItem value="bold">加粗</SelectItem>
-                              <SelectItem value="semibold">半粗</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                            }
+                            
+                            newConnections[index] = {
+                              ...newConnections[index],
+                              ...updates,
+                            };
+                            updateParam('connections', newConnections);
+                          }}
+                          label="文本样式"
+                        />
                       </div>
 
-                      <div className="space-y-3 pt-2">
-                        <h6 className="text-xs font-medium text-gray-600">文本框样式</h6>
-                        
-                        {/* 第一行：文本框形状和文本垂直偏移量 */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label htmlFor={`conn-bbox-boxstyle-${index}`} className="text-xs">
-                              文本框形状
-                            </Label>
-                            <Select
-                              value={conn.bbox_boxstyle || 'square'}
-                              onValueChange={(value) => {
-                                const newConnections = [...connections];
-                                newConnections[index] = {
-                                  ...newConnections[index],
-                                  bbox_boxstyle: value === 'square' ? undefined : value,
-                                };
-                                updateParam('connections', newConnections);
-                              }}
-                            >
-                              <SelectTrigger id={`conn-bbox-boxstyle-${index}`}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="square">方形</SelectItem>
-                                <SelectItem value="round">圆角</SelectItem>
-                                <SelectItem value="round,pad=0.5">圆角（大内边距）</SelectItem>
-                                <SelectItem value="circle">圆形</SelectItem>
-                                <SelectItem value="sawtooth">锯齿</SelectItem>
-                                <SelectItem value="larrow">左箭头</SelectItem>
-                                <SelectItem value="rarrow">右箭头</SelectItem>
-                                <SelectItem value="darrow">双箭头</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={`conn-text-offset-${index}`} className="text-xs">
-                                文本垂直偏移量
-                              </Label>
-                              <span className="text-xs text-gray-500">
-                                {conn.text_offset !== undefined ? conn.text_offset.toFixed(2) : '0.00'}
-                              </span>
-                            </div>
-                            <Slider
-                              id={`conn-text-offset-${index}`}
-                              min={-0.5}
-                              max={0.5}
-                              step={0.01}
-                              value={[conn.text_offset ?? 0]}
-                              onValueChange={(value) => {
-                                const newConnections = [...connections];
-                                newConnections[index] = {
-                                  ...newConnections[index],
-                                  text_offset: value[0],
-                                };
-                                updateParam('connections', newConnections);
-                              }}
-                              className="w-full"
-                            />
-                          </div>
+                      <div className="space-y-2 pt-3 border-t">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor={`conn-text-offset-${index}`} className="text-xs">
+                            文本垂直偏移量
+                          </Label>
+                          <span className="text-xs text-gray-500">
+                            {conn.text_offset !== undefined ? conn.text_offset.toFixed(2) : '0.00'}
+                          </span>
                         </div>
-
-                        {/* 第二行：背景颜色和边框颜色 */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label htmlFor={`conn-bbox-facecolor-${index}`} className="text-xs">
-                              背景颜色
-                            </Label>
-                            <ColorPicker
-                              value={conn.bbox_facecolor || '#FFFFFF'}
-                              onChange={(color) => {
-                                const newConnections = [...connections];
-                                newConnections[index] = {
-                                  ...newConnections[index],
-                                  bbox_facecolor: color,
-                                };
-                                updateParam('connections', newConnections);
-                              }}
-                              showColorValue={false}
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor={`conn-bbox-edgecolor-${index}`} className="text-xs">
-                              边框颜色
-                            </Label>
-                            <ColorPicker
-                              value={conn.bbox_edgecolor || '#000000'}
-                              onChange={(color) => {
-                                const newConnections = [...connections];
-                                newConnections[index] = {
-                                  ...newConnections[index],
-                                  bbox_edgecolor: color,
-                                };
-                                updateParam('connections', newConnections);
-                              }}
-                              showColorValue={false}
-                            />
-                          </div>
-                        </div>
-
-                        {/* 第三行：背景透明度和边框宽度 */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={`conn-bbox-alpha-${index}`} className="text-xs">
-                                背景透明度
-                              </Label>
-                              <span className="text-xs text-gray-500">
-                                {((conn.bbox_alpha ?? 0.5) * 100).toFixed(0)}%
-                              </span>
-                            </div>
-                            <Slider
-                              id={`conn-bbox-alpha-${index}`}
-                              min={0}
-                              max={1}
-                              step={0.05}
-                              value={[conn.bbox_alpha ?? 0.5]}
-                              onValueChange={(value) => {
-                                const newConnections = [...connections];
-                                newConnections[index] = {
-                                  ...newConnections[index],
-                                  bbox_alpha: value[0],
-                                };
-                                updateParam('connections', newConnections);
-                              }}
-                              className="w-full"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={`conn-bbox-linewidth-${index}`} className="text-xs">
-                                边框宽度
-                              </Label>
-                              <span className="text-xs text-gray-500">
-                                {conn.bbox_linewidth ?? 1}
-                              </span>
-                            </div>
-                            <Slider
-                              id={`conn-bbox-linewidth-${index}`}
-                              min={0}
-                              max={3}
-                              step={0.1}
-                              value={[conn.bbox_linewidth ?? 1]}
-                              onValueChange={(value) => {
-                                const newConnections = [...connections];
-                                newConnections[index] = {
-                                  ...newConnections[index],
-                                  bbox_linewidth: value[0],
-                                };
-                                updateParam('connections', newConnections);
-                              }}
-                              className="w-full"
-                            />
-                          </div>
-                        </div>
+                        <Slider
+                          id={`conn-text-offset-${index}`}
+                          min={-0.5}
+                          max={0.5}
+                          step={0.01}
+                          value={[conn.text_offset ?? 0]}
+                          onValueChange={(value) => {
+                            const newConnections = [...connections];
+                            newConnections[index] = {
+                              ...newConnections[index],
+                              text_offset: value[0],
+                            };
+                            updateParam('connections', newConnections);
+                          }}
+                          className="w-full"
+                        />
+                        <p className="text-xs text-gray-500">
+                          文本相对于水平连接线的垂直偏移量（单位：数据坐标）
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -1293,6 +1196,182 @@ export default function BarParamsEditor({ subplot }: Props) {
             <p className="text-xs text-gray-500">
               在柱状图外显示总体表现的虚线框
             </p>
+          </div>
+
+          <div className="space-y-3 pt-3 border-t">
+            <h4 className="text-sm font-semibold text-gray-800">总计标签</h4>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="show_total_label"
+                checked={showTotalLabel}
+                onCheckedChange={(checked) => updateParam('show_total_label', checked)}
+              />
+              <Label htmlFor="show_total_label" className="text-sm cursor-pointer">
+                显示堆积总计值
+              </Label>
+            </div>
+            <p className="text-xs text-gray-500">
+              在柱状图顶端显示堆积之和，使用绝对值格式 (fmt_abs) 格式化
+            </p>
+
+            {showTotalLabel && (
+              <div className="space-y-3 pt-3 border-t">
+                <LabelStyleEditor
+                  value={{
+                    fontsize: params.total_text_fontsize,
+                    color: params.total_text_color,
+                    weight: params.total_text_weight,
+                    bbox: params.total_text_bbox ? {
+                      enabled: true,
+                      boxstyle: params.total_text_bbox?.boxstyle,
+                      facecolor: params.total_text_bbox?.facecolor,
+                      show_border: params.total_text_bbox?.show_border ?? true,
+                      edgecolor: params.total_text_bbox?.edgecolor,
+                      linewidth: params.total_text_bbox?.linewidth,
+                      alpha: params.total_text_bbox?.alpha,
+                    } : { enabled: false },
+                  }}
+                  onChange={(labelStyle: LabelStyle) => {
+                    const updates: any = {};
+                    if (labelStyle.fontsize !== undefined) {
+                      updates.total_text_fontsize = labelStyle.fontsize;
+                    }
+                    if (labelStyle.color !== undefined) {
+                      updates.total_text_color = labelStyle.color || null;
+                    }
+                    if (labelStyle.weight !== undefined) {
+                      updates.total_text_weight = labelStyle.weight === 'normal' ? undefined : labelStyle.weight;
+                    }
+                    // 处理 bbox 配置
+                    if (labelStyle.bbox !== undefined) {
+                      if (labelStyle.bbox.enabled) {
+                        // 只传递已定义的字段，避免传递 undefined/null
+                        const bboxConfig: any = {};
+                        if (labelStyle.bbox.boxstyle !== undefined) {
+                          bboxConfig.boxstyle = labelStyle.bbox.boxstyle;
+                        }
+                        if (labelStyle.bbox.facecolor !== undefined) {
+                          bboxConfig.facecolor = labelStyle.bbox.facecolor;
+                        }
+                        // show_border 控制是否显示边框
+                        const showBorder = labelStyle.bbox.show_border !== false; // 默认为 true
+                        if (showBorder) {
+                          // 只有在显示边框时才传递边框相关参数
+                          if (labelStyle.bbox.edgecolor !== undefined) {
+                            bboxConfig.edgecolor = labelStyle.bbox.edgecolor;
+                          }
+                          if (labelStyle.bbox.linewidth !== undefined && labelStyle.bbox.linewidth !== null) {
+                            bboxConfig.linewidth = labelStyle.bbox.linewidth;
+                          }
+                        }
+                        // show_border 参数传递给后端
+                        bboxConfig.show_border = showBorder;
+                        if (labelStyle.bbox.alpha !== undefined && labelStyle.bbox.alpha !== null) {
+                          bboxConfig.alpha = labelStyle.bbox.alpha;
+                        }
+                        updates.total_text_bbox = Object.keys(bboxConfig).length > 0 ? bboxConfig : null;
+                      } else {
+                        // enabled 为 false 时，设置为 null
+                        updates.total_text_bbox = null;
+                      }
+                    }
+                    updateSubplot(subplot.subplotId, {
+                      params: { ...subplot.params, ...updates },
+                    });
+                  }}
+                  label="总计值文本样式"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3 pt-3 border-t">
+            <h4 className="text-sm font-semibold text-gray-800">增长率显示</h4>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="show_gr_text"
+                checked={showGrText}
+                onCheckedChange={(checked) => updateParam('show_gr_text', checked)}
+              />
+              <Label htmlFor="show_gr_text" className="text-sm cursor-pointer">
+                显示增长率数字
+              </Label>
+            </div>
+            <p className="text-xs text-gray-500">
+              在柱间显示各系列的增长率数字
+            </p>
+
+            {showGrText && (
+              <div className="space-y-3 pt-3 border-t">
+                <LabelStyleEditor
+                  value={{
+                    fontsize: params.gr_text_fontsize,
+                    color: params.gr_text_color,
+                    weight: params.gr_text_weight,
+                    bbox: params.gr_text_bbox ? {
+                      enabled: true,
+                      boxstyle: params.gr_text_bbox?.boxstyle,
+                      facecolor: params.gr_text_bbox?.facecolor,
+                      show_border: params.gr_text_bbox?.show_border ?? true,
+                      edgecolor: params.gr_text_bbox?.edgecolor,
+                      linewidth: params.gr_text_bbox?.linewidth,
+                      alpha: params.gr_text_bbox?.alpha,
+                    } : { enabled: false },
+                  }}
+                  onChange={(labelStyle: LabelStyle) => {
+                    const updates: any = {};
+                    if (labelStyle.fontsize !== undefined) {
+                      updates.gr_text_fontsize = labelStyle.fontsize;
+                    }
+                    if (labelStyle.color !== undefined) {
+                      updates.gr_text_color = labelStyle.color || null;
+                    }
+                    if (labelStyle.weight !== undefined) {
+                      updates.gr_text_weight = labelStyle.weight === 'normal' ? undefined : labelStyle.weight;
+                    }
+                    // 处理 bbox 配置
+                    if (labelStyle.bbox !== undefined) {
+                      if (labelStyle.bbox.enabled) {
+                        // 只传递已定义的字段，避免传递 undefined/null
+                        const bboxConfig: any = {};
+                        if (labelStyle.bbox.boxstyle !== undefined) {
+                          bboxConfig.boxstyle = labelStyle.bbox.boxstyle;
+                        }
+                        if (labelStyle.bbox.facecolor !== undefined) {
+                          bboxConfig.facecolor = labelStyle.bbox.facecolor;
+                        }
+                        // show_border 控制是否显示边框
+                        const showBorder = labelStyle.bbox.show_border !== false; // 默认为 true
+                        if (showBorder) {
+                          // 只有在显示边框时才传递边框相关参数
+                          if (labelStyle.bbox.edgecolor !== undefined) {
+                            bboxConfig.edgecolor = labelStyle.bbox.edgecolor;
+                          }
+                          if (labelStyle.bbox.linewidth !== undefined && labelStyle.bbox.linewidth !== null) {
+                            bboxConfig.linewidth = labelStyle.bbox.linewidth;
+                          }
+                        }
+                        // show_border 参数传递给后端
+                        bboxConfig.show_border = showBorder;
+                        if (labelStyle.bbox.alpha !== undefined && labelStyle.bbox.alpha !== null) {
+                          bboxConfig.alpha = labelStyle.bbox.alpha;
+                        }
+                        updates.gr_text_bbox = Object.keys(bboxConfig).length > 0 ? bboxConfig : null;
+                      } else {
+                        // enabled 为 false 时，设置为 null
+                        updates.gr_text_bbox = null;
+                      }
+                    }
+                    updateSubplot(subplot.subplotId, {
+                      params: { ...subplot.params, ...updates },
+                    });
+                  }}
+                  label="增长率文本样式"
+                />
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>

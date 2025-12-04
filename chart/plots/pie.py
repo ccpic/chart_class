@@ -52,6 +52,9 @@ class PlotPie(Plot):
                 "line_width": 1,
                 "edgecolor": "white",
                 "label_fontsize": self.fontsize,
+                "label_color": None,  # 标签颜色
+                "label_weight": None,  # 标签字重：normal, bold, italic
+                "label_bbox": None,  # 标签背景框配置
                 "circle_distance": 0.7,
             },
             **kwargs,
@@ -91,11 +94,63 @@ class PlotPie(Plot):
             if fmt_share := kwargs.get("fmt_share"):
                 d_label["share"] = fmt_share.format(share.iloc[k])
 
-            autotext.set_color("white")
-            autotext.set_fontsize(self.fontsize)
-            autotext.set_text(label_formatter.format(**d_label))
-            if size.iloc[k] < 0:
+            # 字体大小
+            if d_style.get("label_fontsize"):
+                autotext.set_fontsize(d_style.get("label_fontsize"))
+            else:
+                autotext.set_fontsize(self.fontsize)
+            
+            # 标签颜色：优先使用 label_color，否则根据数值正负决定
+            label_color = d_style.get("label_color")
+            if label_color:
+                autotext.set_color(label_color)
+            elif size.iloc[k] < 0:
                 autotext.set_color("r")
+            else:
+                autotext.set_color("white")
+            
+            # 字体样式：weight 用于加粗，style 用于斜体
+            label_weight = d_style.get("label_weight")
+            if label_weight:
+                if label_weight == "italic":
+                    autotext.set_style("italic")
+                    autotext.set_weight("normal")
+                elif label_weight == "bold":
+                    autotext.set_weight("bold")
+                    autotext.set_style("normal")
+            
+            autotext.set_text(label_formatter.format(**d_label))
+            
+            # 文本框（bbox）：优先使用 label_bbox
+            label_bbox = d_style.get("label_bbox")
+            if label_bbox and label_bbox.get("enabled"):
+                # 构建 bbox 样式字典
+                bbox_style = {}
+                if label_bbox.get("boxstyle"):
+                    bbox_style["boxstyle"] = label_bbox["boxstyle"]
+                if label_bbox.get("facecolor"):
+                    bbox_style["facecolor"] = label_bbox["facecolor"]
+                # show_border 控制是否显示边框（默认为 True）
+                show_border = label_bbox.get("show_border", True)
+                if show_border:
+                    # 只有在显示边框时才设置边框相关参数
+                    if label_bbox.get("edgecolor"):
+                        bbox_style["edgecolor"] = label_bbox["edgecolor"]
+                    linewidth = label_bbox.get("linewidth")
+                    if linewidth is not None:
+                        bbox_style["linewidth"] = float(linewidth)
+                else:
+                    # 不显示边框时，明确设置 linewidth 为 0 以隐藏边框
+                    bbox_style["linewidth"] = 0
+                # 确保 alpha 不是 None
+                alpha = label_bbox.get("alpha")
+                if alpha is not None:
+                    bbox_style["alpha"] = float(alpha)
+                else:
+                    bbox_style["alpha"] = 0.7
+                
+                if bbox_style:
+                    autotext.set_bbox(bbox_style)
 
         if donut:
             # Prepare the white center circle for Donat shape

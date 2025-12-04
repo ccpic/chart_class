@@ -10,7 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Check, X } from 'lucide-react';
+import { Check, X, ChevronDown } from 'lucide-react';
 
 // Matplotlib 基础命名颜色
 const MATPLOTLIB_COLORS = {
@@ -279,6 +279,7 @@ interface ColorPickerProps {
   showColorValue?: boolean; // 是否显示颜色值文本，默认为 true
   compact?: boolean; // 最小模式：只显示颜色方块，不显示标签和文本
   size?: 'sm' | 'md' | 'lg'; // 颜色方块大小（仅在 compact 模式下有效）
+  variant?: 'button' | 'input'; // 外观变体：button（颜色方块按钮）或 input（类似 Select/Input 的外观）
 }
 
 /**
@@ -299,6 +300,7 @@ export default function ColorPicker({
   showColorValue = true,
   compact = false,
   size = 'md',
+  variant = 'button', // 默认为 button 模式
 }: ColorPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentColor, setCurrentColor] = useState(value);
@@ -440,6 +442,234 @@ export default function ColorPicker({
 
   // 最小模式：只显示颜色方块
   if (compact) {
+    // input 变体：类似 Select/Input 的外观
+    if (variant === 'input') {
+      return (
+        <Popover open={isOpen} onOpenChange={handleOpenChange}>
+          <PopoverTrigger asChild>
+            <button
+              disabled={disabled}
+              className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              type="button"
+            >
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div
+                  className="w-4 h-4 rounded border border-gray-300 flex-shrink-0"
+                  style={{ backgroundColor: currentColor }}
+                />
+                {showColorValue && (
+                  <span className="text-xs text-muted-foreground truncate">
+                    {currentNamedColor || currentColor}
+                  </span>
+                )}
+              </div>
+              <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />
+            </button>
+          </PopoverTrigger>
+        <PopoverContent className="w-96 p-0" align="start">
+          <div className="p-4 space-y-4 relative">
+            {/* 关闭按钮 */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-2 h-6 w-6 rounded-full"
+              onClick={() => handleOpenChange(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+
+            {/* 当前颜色预览 */}
+            <div className="flex items-center gap-3">
+              <div
+                className="w-20 h-20 rounded border-2 border-gray-300 shadow-sm"
+                style={{ backgroundColor: currentColor }}
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium">当前颜色</div>
+                <div className="text-xs text-muted-foreground font-mono">
+                  {currentColor}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  RGB({rgbInput.r}, {rgbInput.g}, {rgbInput.b})
+                </div>
+              </div>
+            </div>
+
+            {/* 标签页 */}
+            <Tabs defaultValue="named" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="picker">调色板</TabsTrigger>
+                <TabsTrigger value="input">输入</TabsTrigger>
+                <TabsTrigger value="named">命名颜色</TabsTrigger>
+              </TabsList>
+
+              {/* 调色板 */}
+              <TabsContent value="picker" className="space-y-3">
+                <div className="space-y-2">
+                  <Label>浏览器颜色选择器</Label>
+                  <Input
+                    type="color"
+                    value={currentColor}
+                    onChange={(e) => {
+                      const newColor = e.target.value.toUpperCase();
+                      const namedColor = getNamedColorFromHex(newColor);
+                      handleColorSelect(newColor, namedColor);
+                    }}
+                    className="w-full h-40 cursor-pointer"
+                  />
+                </div>
+              </TabsContent>
+
+              {/* 输入 */}
+              <TabsContent value="input" className="space-y-3">
+                {/* HEX 输入 */}
+                <div className="space-y-2">
+                  <Label htmlFor="hex">HEX / 颜色名称</Label>
+                  <Input
+                    id="hex"
+                    value={hexInput}
+                    onChange={(e) => handleHexChange(e.target.value)}
+                    placeholder="#000000 或 red, blue, tab:blue..."
+                    className="font-mono"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    支持 HEX 值或 matplotlib 颜色名称
+                  </p>
+                </div>
+
+                {/* RGB 输入 */}
+                <div className="space-y-2">
+                  <Label>RGB</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Label htmlFor="r" className="text-xs">
+                        R
+                      </Label>
+                      <Input
+                        id="r"
+                        type="number"
+                        min="0"
+                        max="255"
+                        value={rgbInput.r}
+                        onChange={(e) => handleRgbChange('r', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="g" className="text-xs">
+                        G
+                      </Label>
+                      <Input
+                        id="g"
+                        type="number"
+                        min="0"
+                        max="255"
+                        value={rgbInput.g}
+                        onChange={(e) => handleRgbChange('g', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="b" className="text-xs">
+                        B
+                      </Label>
+                      <Input
+                        id="b"
+                        type="number"
+                        min="0"
+                        max="255"
+                        value={rgbInput.b}
+                        onChange={(e) => handleRgbChange('b', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* 命名颜色 */}
+              <TabsContent value="named" className="space-y-3">
+                {/* 搜索 */}
+                <Input
+                  placeholder="搜索颜色名称..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+
+                {/* 颜色列表 - 固定容器，无横向滚动 */}
+                <div 
+                  className="h-64 w-full overflow-y-auto overflow-x-hidden rounded-md border p-2"
+                  style={{ overscrollBehavior: 'contain' }}
+                  onWheel={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  {/* 使用固定列数的网格，避免横向滚动 */}
+                  <div className="grid grid-cols-16 gap-0.5">
+                    {filteredAndSortedColors.map(([name, hex], index) => {
+                      // 计算 tooltip 显示位置
+                      const colsPerRow = 16;
+                      const row = Math.floor(index / colsPerRow);
+                      const col = index % colsPerRow;
+                      
+                      // 根据位置智能调整 tooltip 方向
+                      let tooltipPosition = '';
+                      let arrowPosition = '';
+                      
+                      // 前3行：tooltip 显示在下方
+                      if (row < 3) {
+                        tooltipPosition = 'top-full mt-1';
+                        arrowPosition = 'bottom-full border-b-gray-900';
+                      } 
+                      // 其他行：tooltip 显示在上方
+                      else {
+                        tooltipPosition = 'bottom-full mb-1';
+                        arrowPosition = 'top-full border-t-gray-900';
+                      }
+                      
+                      // 左右对齐调整
+                      let horizontalAlign = 'left-1/2 -translate-x-1/2'; // 默认居中
+                      if (col < 3) {
+                        // 最左侧：tooltip 左对齐
+                        horizontalAlign = 'left-0';
+                      } else if (col >= colsPerRow - 3) {
+                        // 最右侧：tooltip 右对齐
+                        horizontalAlign = 'right-0';
+                      }
+                      
+                      return (
+                        <button
+                          key={name}
+                          onClick={() => handleColorSelect(hex, name)}
+                          className="relative group w-5 h-5 rounded-sm border border-gray-200 hover:scale-150 hover:z-50 hover:shadow-lg transition-all"
+                          style={{ backgroundColor: hex }}
+                        >
+                          {currentColor && currentColor.toUpperCase() === hex.toUpperCase() && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Check className="w-3 h-3 text-white drop-shadow-lg" />
+                            </div>
+                          )}
+                          {/* Hover 提示 - 智能定位 */}
+                          <div 
+                            className={`absolute ${tooltipPosition} ${horizontalAlign} hidden group-hover:block bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-50 pointer-events-none shadow-xl`}
+                          >
+                            {name} - {hex}
+                            {/* 小三角箭头 */}
+                            <div 
+                              className={`absolute ${col < 3 ? 'left-2' : col >= colsPerRow - 3 ? 'right-2' : 'left-1/2 -translate-x-1/2'} border-4 border-transparent ${arrowPosition}`}
+                            ></div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+    }
+    
+    // button 变体：颜色方块按钮（原有 compact 模式）
     return (
       <Popover open={isOpen} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>

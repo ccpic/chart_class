@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import NumberFormatEditor from '@/components/ui/number-format-editor';
 import ColorPicker from '@/components/color/ColorPicker';
+import LabelStyleEditor, { LabelStyle } from '@/components/ui/label-style-editor';
 
 interface Props {
   subplot: SubplotConfig;
@@ -42,8 +43,6 @@ export default function BarhParamsEditor({ subplot }: Props) {
   const fmtAbs = params.fmt_abs ?? '{:,.0f}';
   const fmtShare = params.fmt_share ?? '{:.1%}';
   const fmtGr = params.fmt_gr ?? '{:+.1%}';
-  const labelFontsize = params.label_fontsize ?? 11;
-  const labelColor = params.label_color ?? null;
 
   return (
     <div className="space-y-4">
@@ -198,42 +197,71 @@ export default function BarhParamsEditor({ subplot }: Props) {
           </div>
 
           <div className="space-y-3 pt-3 border-t">
-            <h4 className="text-sm font-semibold text-gray-800">标签样式</h4>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="label_fontsize" className="text-sm font-medium">
-                  标签字体大小
-                </Label>
-                <div className="mt-1.5">
-                  <Input
-                    id="label_fontsize"
-                    type="number"
-                    min="4"
-                    max="24"
-                    step="1"
-                    value={labelFontsize}
-                    onChange={(e) => updateParam('label_fontsize', parseInt(e.target.value) || 11)}
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  控制标签文字的字体大小（4-24）
-                </p>
-              </div>
-
-              <div>
-                <ColorPicker
-                  label="标签字体颜色"
-                  value={labelColor || ''}
-                  onChange={(color) => updateParam('label_color', color || null)}
-                  showColorValue={true}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  如果留空，将根据背景自动选择颜色（白色或黑色）以确保可见性
-                </p>
-              </div>
-            </div>
+            <LabelStyleEditor
+              value={{
+                fontsize: params.label_fontsize,
+                color: params.label_color,
+                weight: params.label_weight,
+                bbox: params.label_bbox ? {
+                  enabled: true,
+                  boxstyle: params.label_bbox?.boxstyle,
+                  facecolor: params.label_bbox?.facecolor,
+                  show_border: params.label_bbox?.show_border ?? true,
+                  edgecolor: params.label_bbox?.edgecolor,
+                  linewidth: params.label_bbox?.linewidth,
+                  alpha: params.label_bbox?.alpha,
+                } : { enabled: false },
+              }}
+              onChange={(labelStyle: LabelStyle) => {
+                const updates: any = {};
+                if (labelStyle.fontsize !== undefined) {
+                  updates.label_fontsize = labelStyle.fontsize;
+                }
+                if (labelStyle.color !== undefined) {
+                  updates.label_color = labelStyle.color || null;
+                }
+                if (labelStyle.weight !== undefined) {
+                  updates.label_weight = labelStyle.weight === 'normal' ? undefined : labelStyle.weight;
+                }
+                // 处理 bbox 配置
+                if (labelStyle.bbox !== undefined) {
+                  if (labelStyle.bbox.enabled) {
+                    // 只传递已定义的字段，避免传递 undefined/null
+                    const bboxConfig: any = {};
+                    if (labelStyle.bbox.boxstyle !== undefined) {
+                      bboxConfig.boxstyle = labelStyle.bbox.boxstyle;
+                    }
+                    if (labelStyle.bbox.facecolor !== undefined) {
+                      bboxConfig.facecolor = labelStyle.bbox.facecolor;
+                    }
+                    // show_border 控制是否显示边框
+                    const showBorder = labelStyle.bbox.show_border !== false; // 默认为 true
+                    if (showBorder) {
+                      // 只有在显示边框时才传递边框相关参数
+                      if (labelStyle.bbox.edgecolor !== undefined) {
+                        bboxConfig.edgecolor = labelStyle.bbox.edgecolor;
+                      }
+                      if (labelStyle.bbox.linewidth !== undefined && labelStyle.bbox.linewidth !== null) {
+                        bboxConfig.linewidth = labelStyle.bbox.linewidth;
+                      }
+                    }
+                    // show_border 参数传递给后端
+                    bboxConfig.show_border = showBorder;
+                    if (labelStyle.bbox.alpha !== undefined && labelStyle.bbox.alpha !== null) {
+                      bboxConfig.alpha = labelStyle.bbox.alpha;
+                    }
+                    updates.label_bbox = Object.keys(bboxConfig).length > 0 ? bboxConfig : null;
+                  } else {
+                    // enabled 为 false 时，设置为 null
+                    updates.label_bbox = null;
+                  }
+                }
+                updateSubplot(subplot.subplotId, {
+                  params: { ...subplot.params, ...updates },
+                });
+              }}
+              label="标签样式"
+            />
           </div>
         </TabsContent>
 

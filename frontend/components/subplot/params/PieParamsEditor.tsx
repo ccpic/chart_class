@@ -10,6 +10,8 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ColorPicker from '@/components/color/ColorPicker';
+import NumberFormatEditor from '@/components/ui/number-format-editor';
+import LabelStyleEditor, { LabelStyle } from '@/components/ui/label-style-editor';
 
 interface Props {
   subplot: SubplotConfig;
@@ -39,10 +41,9 @@ export default function PieParamsEditor({ subplot }: Props) {
   const counterClock = params.counter_clock ?? false;
   const lineWidth = params.line_width ?? 1;
   const edgecolor = params.edgecolor ?? 'white';
-  const labelFontsize = params.label_fontsize ?? canvas?.fontsize ?? 14;
   const circleDistance = params.circle_distance ?? 0.7;
-  const fmtAbs = params.fmt_abs ?? '';
-  const fmtShare = params.fmt_share ?? '';
+  const fmtAbs = params.fmt_abs ?? '{:,.0f}';
+  const fmtShare = params.fmt_share ?? '{:.1%}';
 
   // 获取数据框的列名用于字段选择
   const columnOptions = subplot.data.columns || [];
@@ -58,10 +59,11 @@ export default function PieParamsEditor({ subplot }: Props) {
   return (
     <div className="space-y-4">
       <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="basic" className="text-xs">基础设置</TabsTrigger>
           <TabsTrigger value="label" className="text-xs">标签选项</TabsTrigger>
           <TabsTrigger value="style" className="text-xs">样式设置</TabsTrigger>
+          <TabsTrigger value="labelStyle" className="text-xs">标签样式</TabsTrigger>
         </TabsList>
 
         {/* Tab 1: 基础设置 */}
@@ -219,25 +221,6 @@ export default function PieParamsEditor({ subplot }: Props) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="label_fontsize" className="text-sm font-medium">
-              标签字体大小 (label_fontsize)
-            </Label>
-            <Input
-              id="label_fontsize"
-              type="number"
-              min={8}
-              max={24}
-              step={1}
-              value={labelFontsize}
-              onChange={(e) => updateParam('label_fontsize', parseInt(e.target.value) || 14)}
-              className="text-sm"
-            />
-            <p className="text-xs text-gray-500">
-              标签文字的字体大小，范围 8-24，默认使用全局字体大小
-            </p>
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="pct_distance" className="text-sm font-medium">
               标签距离 (pct_distance)
             </Label>
@@ -267,38 +250,20 @@ export default function PieParamsEditor({ subplot }: Props) {
           </div>
 
           <div className="space-y-3 pt-3 border-t">
-            <h4 className="text-sm font-semibold text-gray-800">自定义格式化（可选）</h4>
+            <h4 className="text-sm font-semibold text-gray-800">数值格式化</h4>
             
-            <div className="space-y-2">
-              <Label htmlFor="fmt_abs" className="text-sm font-medium">
-                绝对值格式化 (fmt_abs)
-              </Label>
-              <Input
-                id="fmt_abs"
+            <div className="space-y-4">
+              <NumberFormatEditor
                 value={fmtAbs}
-                onChange={(e) => updateParam('fmt_abs', e.target.value || null)}
-                placeholder={'例如: {:,.0f}'}
-                className="text-sm"
+                onChange={(format) => updateParam('fmt_abs', format)}
+                label="绝对值格式 (fmt_abs)"
               />
-              <p className="text-xs text-gray-500">
-                自定义绝对值显示格式，如 &quot;{'{:,.0f}'}&quot; 表示千分位分隔的整数
-              </p>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="fmt_share" className="text-sm font-medium">
-                占比格式化 (fmt_share)
-              </Label>
-              <Input
-                id="fmt_share"
+              <NumberFormatEditor
                 value={fmtShare}
-                onChange={(e) => updateParam('fmt_share', e.target.value || null)}
-                placeholder={'例如: {:.1%}'}
-                className="text-sm"
+                onChange={(format) => updateParam('fmt_share', format)}
+                label="占比格式 (fmt_share)"
               />
-              <p className="text-xs text-gray-500">
-                自定义占比显示格式，如 &quot;{'{:.1%}'}&quot; 表示保留1位小数的百分比
-              </p>
             </div>
           </div>
         </TabsContent>
@@ -345,6 +310,77 @@ export default function PieParamsEditor({ subplot }: Props) {
             <p className="text-xs text-gray-500">
               扇叶边框的颜色，默认白色
             </p>
+          </div>
+        </TabsContent>
+
+        {/* Tab 4: 标签样式 */}
+        <TabsContent value="labelStyle" className="space-y-4 mt-4">
+          <div className="space-y-3">
+            <LabelStyleEditor
+              value={{
+                fontsize: params.label_fontsize,
+                color: params.label_color,
+                weight: params.label_weight,
+                bbox: params.label_bbox ? {
+                  enabled: true,
+                  boxstyle: params.label_bbox?.boxstyle,
+                  facecolor: params.label_bbox?.facecolor,
+                  show_border: params.label_bbox?.show_border ?? true,
+                  edgecolor: params.label_bbox?.edgecolor,
+                  linewidth: params.label_bbox?.linewidth,
+                  alpha: params.label_bbox?.alpha,
+                } : { enabled: false },
+              }}
+              onChange={(labelStyle: LabelStyle) => {
+                const updates: any = {};
+                if (labelStyle.fontsize !== undefined) {
+                  updates.label_fontsize = labelStyle.fontsize;
+                }
+                if (labelStyle.color !== undefined) {
+                  updates.label_color = labelStyle.color || null;
+                }
+                if (labelStyle.weight !== undefined) {
+                  updates.label_weight = labelStyle.weight === 'normal' ? undefined : labelStyle.weight;
+                }
+                // 处理 bbox 配置
+                if (labelStyle.bbox !== undefined) {
+                  if (labelStyle.bbox.enabled) {
+                    // 只传递已定义的字段，避免传递 undefined/null
+                    const bboxConfig: any = {};
+                    if (labelStyle.bbox.boxstyle !== undefined) {
+                      bboxConfig.boxstyle = labelStyle.bbox.boxstyle;
+                    }
+                    if (labelStyle.bbox.facecolor !== undefined) {
+                      bboxConfig.facecolor = labelStyle.bbox.facecolor;
+                    }
+                    // show_border 控制是否显示边框
+                    const showBorder = labelStyle.bbox.show_border !== false; // 默认为 true
+                    if (showBorder) {
+                      // 只有在显示边框时才传递边框相关参数
+                      if (labelStyle.bbox.edgecolor !== undefined) {
+                        bboxConfig.edgecolor = labelStyle.bbox.edgecolor;
+                      }
+                      if (labelStyle.bbox.linewidth !== undefined && labelStyle.bbox.linewidth !== null) {
+                        bboxConfig.linewidth = labelStyle.bbox.linewidth;
+                      }
+                    }
+                    // show_border 参数传递给后端
+                    bboxConfig.show_border = showBorder;
+                    if (labelStyle.bbox.alpha !== undefined && labelStyle.bbox.alpha !== null) {
+                      bboxConfig.alpha = labelStyle.bbox.alpha;
+                    }
+                    updates.label_bbox = Object.keys(bboxConfig).length > 0 ? bboxConfig : null;
+                  } else {
+                    // enabled 为 false 时，设置为 null
+                    updates.label_bbox = null;
+                  }
+                }
+                updateSubplot(subplot.subplotId, {
+                  params: { ...subplot.params, ...updates },
+                });
+              }}
+              label="标签样式"
+            />
           </div>
         </TabsContent>
       </Tabs>

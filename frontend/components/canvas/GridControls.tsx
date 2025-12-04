@@ -204,59 +204,6 @@ export default function GridControls() {
         )}
       </div>
       
-      {/* 导出设置 */}
-      <div className="space-y-3 pt-3 border-t">
-        <div className="grid grid-cols-2 gap-4 items-center">
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <label className="text-xs text-gray-600">图片 DPI</label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="w-3 h-3 text-gray-400 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs">更高的 DPI 获得更清晰的图片</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <input
-              type="number"
-              min={72}
-              max={600}
-              step={50}
-              value={canvas.dpi || 400}
-              onChange={(e) => updateCanvas({ dpi: parseInt(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
-            />
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="transparent"
-              checked={canvas.transparent ?? true}
-              onCheckedChange={(checked) => updateCanvas({ transparent: !!checked })}
-            />
-            <div className="flex items-center gap-1 flex-1">
-              <Label htmlFor="transparent" className="text-xs cursor-pointer">
-                透明背景
-              </Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="w-3 h-3 text-gray-400 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs">保存图片时使用透明背景</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
-        </div>
-      </div>
-      
       {/* 坐标轴共享 */}
       <div className="space-y-3 pt-3 border-t">
         <label className="text-xs text-gray-600">坐标轴共享</label>
@@ -333,6 +280,82 @@ export default function GridControls() {
           <Label htmlFor="labelOuter" className="text-xs cursor-pointer">
             启用
           </Label>
+        </div>
+      </div>
+
+      {/* 导出设置 */}
+      <div className="space-y-3 pt-3 border-t">
+        <div className="grid grid-cols-2 gap-4 items-center">
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <label className="text-xs text-gray-600">图片 DPI</label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-3 h-3 text-gray-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">更高的 DPI 获得更清晰的图片</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <input
+              type="number"
+              min={72}
+              max={600}
+              step={50}
+              value={canvas.dpi || 400}
+              onChange={(e) => updateCanvas({ dpi: parseInt(e.target.value) })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="transparent"
+              checked={canvas.transparent ?? true}
+              onCheckedChange={(checked) => updateCanvas({ transparent: !!checked })}
+            />
+            <div className="flex items-center gap-1 flex-1">
+              <Label htmlFor="transparent" className="text-xs cursor-pointer">
+                透明背景
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-3 h-3 text-gray-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">保存图片时使用透明背景</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="tightLayout"
+            checked={canvas.tightLayout ?? true}
+            onCheckedChange={(checked) => updateCanvas({ tightLayout: !!checked })}
+          />
+          <div className="flex items-center gap-1 flex-1">
+            <Label htmlFor="tightLayout" className="text-xs cursor-pointer">
+              紧凑布局
+            </Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-3 h-3 text-gray-400 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">自动调整子图参数，使之填充整个图像区域</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
       </div>
     </div>
