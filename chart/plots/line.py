@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, List
 import numpy as np
 from chart.plots.base import Plot
-from adjustText import adjust_text
+from textalloc import allocate_text
 
 
 class PlotLine(Plot):
@@ -44,6 +44,10 @@ class PlotLine(Plot):
         d_style = self._merge_style_kwargs(
             {
                 "adjust_labels": True,
+                "adjust_labels_draw_lines": True,  # 是否绘制连接线
+                "adjust_labels_linecolor": "black",  # 连接线颜色
+                "adjust_labels_linewidth": 0.8,  # 连接线宽度
+                "adjust_labels_max_distance": 0.1,  # 标签离数据点的最大距离
                 "linewidth": 2,  # 线条粗细
                 "linestyle": "-",  # 线条样式
                 "marker": "o",  # 标记点样式
@@ -55,6 +59,8 @@ class PlotLine(Plot):
 
         lines = []
         texts = []
+        # 保存每个文本对应的颜色信息，用于后续添加 bbox 样式
+        text_colors = []
         for i, column in enumerate(df.columns):
             # 如果有指定颜色就颜色，否则按预设列表选取
             color = (
@@ -89,20 +95,38 @@ class PlotLine(Plot):
             # 标签
             if column in show_label:
                 for k, idx in enumerate(df.index):
+                    # 获取数值并转换为浮点数，处理可能的对象类型
+                    try:
+                        value = float(df.iloc[k, i])
+                        if np.isnan(value) or np.isinf(value):
+                            continue
+                    except (ValueError, TypeError):
+                        # 如果无法转换为数值，跳过这个标签
+                        continue
+
+                    # 确定 x 坐标：如果 idx 是数值类型则使用 idx，否则使用数值索引 k
+                    # 这样可以避免 adjust_text 函数遇到对象类型时的类型转换错误
+                    x_pos = (
+                        idx
+                        if isinstance(idx, (int, float, np.integer, np.floating))
+                        else k
+                    )
+
+                    # 保存当前文本对应的颜色
+                    text_colors.append(color)
+
+                    # 创建文本时不添加 bbox，等 adjust_labels 处理后再添加
                     if endpoint_label_only:
                         if k == 0 or k == len(df.index) - 1:
                             texts.append(
                                 self.ax.text(
-                                    idx,
-                                    df.iloc[k, i],
-                                    self.fmt.format(df.iloc[k, i]),
+                                    x_pos,
+                                    value,
+                                    self.fmt.format(value),
                                     ha="right" if k == 0 else "left",
                                     va="center",
                                     size=self.fontsize,
                                     color="white",
-                                    bbox=dict(
-                                        facecolor=color, alpha=0.7, edgecolor=color
-                                    ),
                                     zorder=(
                                         100
                                         if self.focus is not None
@@ -114,14 +138,13 @@ class PlotLine(Plot):
                     else:
                         texts.append(
                             self.ax.text(
-                                idx,
-                                df.iloc[k, i],
-                                self.fmt.format(df.iloc[k, i]),
+                                x_pos,
+                                value,
+                                self.fmt.format(value),
                                 ha="center",
                                 va="center",
                                 size=self.fontsize,
                                 color="white",
-                                bbox=dict(facecolor=color, alpha=0.7, edgecolor=color),
                                 zorder=(
                                     100
                                     if self.focus is not None and column in self.focus
@@ -133,18 +156,61 @@ class PlotLine(Plot):
         # 优化标签位置
         if d_style.get("adjust_labels") is True and texts:
             try:
-                np.random.seed(0)
-                adjust_text(
-                    texts,
-                    ax=self.ax,
-                    only_move={"text": "y", "static": "y", "explode": "y", "pull": "y"},
-                    arrowprops=dict(arrowstyle="-"),
-                    max_move=(1, 1),
+                # 提取文本位置和内容
+                x_data = [t.get_position()[0] for t in texts]
+                y_data = [t.get_position()[1] for t in texts]
+                text_list = [t.get_text() for t in texts]
+
+                # 记录调用前的文本对象集合
+                texts_before = set(self.ax.texts)
+
+                # 移除原始文本对象
+                for t in texts:
+                    t.remove()
+
+                # 使用 textalloc 重新分配位置
+                allocate_text(
+                    self.ax.figure,
+                    self.ax,
+                    x_data,
+                    y_data,
+                    text_list,
+                    x_scatter=x_data,
+                    y_scatter=y_data,
+                    textsize=self.fontsize,
+                    linecolor=d_style.get("adjust_labels_linecolor", "black"),
+                    draw_lines=d_style.get("adjust_labels_draw_lines", True),
+                    linewidth=d_style.get("adjust_labels_linewidth", 0.8),
+                    max_distance=d_style.get("adjust_labels_max_distance", 0.1),
                 )
-            except (IndexError, ValueError) as e:
-                # 如果 adjust_text 失败，不影响图表显示，只记录错误
+
+                # 找到新创建的文本对象
+                texts_after = set(self.ax.texts)
+                new_texts = list(texts_after - texts_before)
+
+                # 按照 text_list 的顺序匹配新文本对象（textalloc 会按照输入顺序创建文本）
+                # 为新文本对象添加 bbox 样式和文本颜色
+                for idx, new_text in enumerate(new_texts):
+                    if idx < len(text_colors):
+                        color = text_colors[idx]
+                        # 添加 bbox 样式
+                        new_text.set_bbox(
+                            dict(facecolor=color, alpha=0.7, edgecolor=color)
+                        )
+                        # 设置文本颜色
+                        new_text.set_color("white")
+            except (IndexError, ValueError, TypeError, AttributeError) as e:
+                # 如果标签位置调整失败，不影响图表显示，只记录错误
                 import warnings
+
                 warnings.warn(f"标签位置调整失败: {e}", UserWarning)
+        else:
+            # 如果未启用 adjust_labels，直接为文本添加 bbox 样式
+            # 按照 text_colors 的顺序为文本添加 bbox
+            for idx, text in enumerate(texts):
+                if idx < len(text_colors):
+                    color = text_colors[idx]
+                    text.set_bbox(dict(facecolor=color, alpha=0.7, edgecolor=color))
 
         # 使用基类方法格式化y轴
         self._format_axis("y")
@@ -239,36 +305,53 @@ class PlotArea(Plot):
             # 标签
             if column in show_label:
                 for k, idx in enumerate(df.index):
+                    # 获取数值并转换为浮点数，处理可能的对象类型
+                    try:
+                        value = float(df.iloc[k, i])
+                        if np.isnan(value) or np.isinf(value):
+                            continue
+                    except (ValueError, TypeError):
+                        # 如果无法转换为数值，跳过这个标签
+                        continue
+
                     if stacked is True:
                         # 如果堆积，标签要挪到面积图中间
-                        position_y = (
-                            df.iloc[k, :i].sum() + df.iloc[k, : i + 1].sum()
-                        ) / 2
+                        try:
+                            # 确保求和操作返回数值类型
+                            sum_before = float(df.iloc[k, :i].sum())
+                            sum_after = float(df.iloc[k, : i + 1].sum())
+                            position_y = (sum_before + sum_after) / 2
+                        except (ValueError, TypeError):
+                            position_y = value
                     else:
-                        position_y = df.iloc[k, i]
+                        position_y = value
+
                     if endpoint_label_only:
                         if k == 0 or k == len(df.index) - 1:
                             t = self.ax.text(
                                 idx,
                                 position_y,
-                                self.fmt.format(df.iloc[k, i]),
+                                self.fmt.format(value),
                                 ha="center",
                                 # ha="right" if k == 0 else "left",
                                 va="center",
                                 size=self.fontsize,
                                 color="white",
                             )
+                            t.set_bbox(
+                                dict(facecolor=color, alpha=0.7, edgecolor=color)
+                            )
                     else:
                         t = self.ax.text(
                             idx,
                             position_y,
-                            self.fmt.format(df.iloc[k, i]),
+                            self.fmt.format(value),
                             ha="center",
                             va="center",
                             size=self.fontsize,
                             color="white",
                         )
-                    t.set_bbox(dict(facecolor=color, alpha=0.7, edgecolor=color))
+                        t.set_bbox(dict(facecolor=color, alpha=0.7, edgecolor=color))
 
             # 使用基类方法格式化y轴
             self._format_axis("y")

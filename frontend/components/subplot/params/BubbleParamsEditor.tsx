@@ -398,6 +398,71 @@ export default function BubbleParamsEditor({ subplot }: Props) {
             </p>
           </div>
 
+          {(subplot.params.label_limit ?? 0) > 1 && (
+            <div className="space-y-3 pt-3 border-t">
+              <h5 className="text-sm font-medium text-gray-700">标签调整选项</h5>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="label_draw_lines"
+                  checked={subplot.params.label_draw_lines ?? true}
+                  onCheckedChange={(checked) => updateParam('label_draw_lines', checked)}
+                />
+                <Label htmlFor="label_draw_lines" className="text-sm cursor-pointer">
+                  绘制连接线 (label_draw_lines)
+                </Label>
+              </div>
+
+              {(subplot.params.label_draw_lines ?? true) && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="label_linecolor" className="text-sm">
+                      连接线颜色 (label_linecolor)
+                    </Label>
+                    <ColorPicker
+                      label=""
+                      value={subplot.params.label_linecolor || 'black'}
+                      onChange={(color) => updateParam('label_linecolor', color || 'black')}
+                      showColorValue={true}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="label_linewidth" className="text-sm">
+                      连接线宽度 (label_linewidth): {(subplot.params.label_linewidth ?? 0.8).toFixed(1)}
+                    </Label>
+                    <Slider
+                      id="label_linewidth"
+                      min={0.1}
+                      max={3}
+                      step={0.1}
+                      value={[subplot.params.label_linewidth ?? 0.8]}
+                      onValueChange={([value]) => updateParam('label_linewidth', value)}
+                      className="w-full"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="label_max_distance" className="text-sm">
+                  最大距离 (label_max_distance): {(subplot.params.label_max_distance ?? 0.1).toFixed(2)}
+                </Label>
+                <Slider
+                  id="label_max_distance"
+                  min={0.01}
+                  max={0.5}
+                  step={0.01}
+                  value={[subplot.params.label_max_distance ?? 0.1]}
+                  onValueChange={([value]) => updateParam('label_max_distance', value)}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500">
+                  限制标签离数据点的最大距离（相对于轴范围的比例）
+                </p>
+              </div>
+            </div>
+          )}
           
         </TabsContent>
 
