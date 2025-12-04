@@ -845,6 +845,9 @@ CITY_NAME_MAP = {
 }
 
 
+# 无下属区县的地级市列表（这些城市没有区县，直接作为地级市显示）
+CITIES_WITHOUT_COUNTIES = ["东莞市", "中山市", "嘉峪关市", "儋州市"]
+
 # 区县简称字典（用于标签显示）
 COUNTY_ABBR_MAP = {
     # 云南省
@@ -996,8 +999,14 @@ class PlotMap(Plot):
     - 区县：指定地级市的区县热力图
 
     数据要求：
-    - DataFrame 的索引应为行政区划名称（如"北京"、"上海"、"朝阳区"等）
+    - 省级/地级市：DataFrame 的索引应为行政区划名称（如"北京"、"上海"、"昆明市"等）
+    - 区县层级：由于区县名有重复，必须提供省市区县四级数据
+      - 方式1（推荐）：提供 province_column, city_column, county_column 三列
+      - 方式2（兼容）：仅提供 region_column（区县名），但可能匹配错误
     - 至少包含一列数值数据用于热力图着色
+
+    特殊处理：
+    - 东莞、中山、嘉峪关、儋州这4个地级市无下属区县，会自动降级为地级市显示
 
     示例：
         >>> # 省级热力图
@@ -1008,9 +1017,10 @@ class PlotMap(Plot):
         >>> f.plot(kind='map', data=df, value_column='人口',
         ...        level='prefecture', province='云南')
 
-        >>> # 区县热力图
+        >>> # 区县热力图（推荐：使用省市区县四级匹配）
         >>> f.plot(kind='map', data=df, value_column='销售额',
-        ...        level='county', province='云南', city='昆明')
+        ...        level='county', scope='cities', regions=['昆明市'],
+        ...        province_column='省份', city_column='地级市', county_column='区县')
     """
 
     def __init__(
@@ -1058,6 +1068,9 @@ class PlotMap(Plot):
         regions: Optional[List[str]] = None,
         exclude_regions: Optional[List[str]] = None,
         region_column: Optional[str] = None,
+        province_column: Optional[str] = None,
+        city_column: Optional[str] = None,
+        county_column: Optional[str] = None,
         label_column: Optional[str] = None,
         label_format: Optional[str] = None,
         label_value_format: str = "{:,.0f}",
@@ -1088,6 +1101,12 @@ class PlotMap(Plot):
             exclude_regions: 排除的区域列表（全国省级地图时默认自动排除三沙市以避免地图变形，
                            展示海南省或三沙市本身时会保留）
             region_column: 数据中的行政区划列名，如不指定则使用索引
+                          （区县层级时，如果提供了 province_column/city_column/county_column，
+                          则 region_column 可省略）
+            province_column: 省级数据列名（仅 level='county' 时使用，用于省市区县四级匹配）
+            city_column: 地级市数据列名（仅 level='county' 时使用，用于省市区县四级匹配）
+            county_column: 区县数据列名（仅 level='county' 时使用，用于省市区县四级匹配）
+                         如果未指定，则使用 region_column 作为区县列
             label_column: 用于标注的列名（可选）
             label_format: 标签格式化字符串，支持占位符：
                          {index} - 区域名称
@@ -1143,21 +1162,89 @@ class PlotMap(Plot):
         if value_column is None:
             value_column = self.data.columns[0]
 
-        if region_column is None:
-            region_column = self.data.index.name or "region"
-            # 将索引转为列
-            plot_data = self.data.reset_index()
-            plot_data.rename(
-                columns={plot_data.columns[0]: region_column}, inplace=True
-            )
+        # 处理区县层级的省市区县列
+        if level == "county":
+            # 区县层级：检查是否提供了省市区县列
+            if province_column or city_column or county_column:
+                # 使用省市区县四级匹配
+                plot_data = self.data.copy()
+                # 如果未指定 county_column，使用 region_column 或默认列名
+                if county_column is None:
+                    if region_column is None:
+                        region_column = self.data.index.name or "county"
+                        plot_data = self.data.reset_index()
+                        plot_data.rename(
+                            columns={plot_data.columns[0]: region_column}, inplace=True
+                        )
+                    county_column = region_column
+            else:
+                # 兼容旧方式：只使用 region_column
+                if region_column is None:
+                    region_column = self.data.index.name or "region"
+                    plot_data = self.data.reset_index()
+                    plot_data.rename(
+                        columns={plot_data.columns[0]: region_column}, inplace=True
+                    )
+                else:
+                    plot_data = self.data.copy()
         else:
-            plot_data = self.data.copy()
+            # 省级或地级市层级：使用 region_column
+            if region_column is None:
+                region_column = self.data.index.name or "region"
+                plot_data = self.data.reset_index()
+                plot_data.rename(
+                    columns={plot_data.columns[0]: region_column}, inplace=True
+                )
+            else:
+                plot_data = self.data.copy()
 
         # 加载 shapefile
         self._load_shapefile(level, shapefile_dir)
 
         # 准备数据（筛选范围）
-        self._prepare_data(plot_data, region_column, scope, regions, exclude_regions)
+        self._prepare_data(
+            plot_data,
+            region_column,
+            scope,
+            regions,
+            exclude_regions,
+            province_column,
+            city_column,
+            county_column,
+        )
+
+        # 检查合并后的数据是否为空
+        if self.plot_data.empty:
+            raise ValueError(
+                "合并后的数据为空。请检查：\n"
+                "1. 数据中的省市区县名称是否与地图数据匹配\n"
+                "2. 选择的区域范围是否正确\n"
+                "3. 省市区县列名是否正确"
+            )
+
+        # 验证 value_column 是否存在
+        if value_column not in self.plot_data.columns:
+            raise ValueError(
+                f"数值列 '{value_column}' 在合并后的数据中不存在。\n"
+                f"可用列: {list(self.plot_data.columns)}\n"
+                f"请检查数据列名是否正确，或者是否在合并过程中丢失。"
+            )
+
+        # 过滤掉 value_column 为 NaN 的行（只保留有数据的区域）
+        initial_count = len(self.plot_data)
+        self.plot_data = self.plot_data[
+            self.plot_data[value_column].notna()
+        ].copy()
+        
+        if self.plot_data.empty:
+            raise ValueError(
+                f"所有区域的数值列 '{value_column}' 都是 NaN。\n"
+                "请检查数据是否正确匹配。"
+            )
+        
+        if len(self.plot_data) < initial_count:
+            # 有部分区域没有数据，这是正常的（只显示有数据的区域）
+            pass
 
         # 设置边界线宽（如未指定则使用基础线宽）
         if national_border_width is None:
@@ -1295,6 +1382,9 @@ class PlotMap(Plot):
         scope: str = "national",
         regions: Optional[List[str]] = None,
         exclude_regions: Optional[List[str]] = None,
+        province_column: Optional[str] = None,
+        city_column: Optional[str] = None,
+        county_column: Optional[str] = None,
     ) -> None:
         """准备绘图数据
 
@@ -1304,6 +1394,9 @@ class PlotMap(Plot):
             scope: 地图范围类型
             regions: 指定区域列表
             exclude_regions: 排除的区域列表
+            province_column: 省级数据列名（仅 level='county' 时使用）
+            city_column: 地级市数据列名（仅 level='county' 时使用）
+            county_column: 区县数据列名（仅 level='county' 时使用）
         """
         # 保存scope参数，用于后续边界设置
         self.map_scope = scope
@@ -1333,13 +1426,35 @@ class PlotMap(Plot):
 
         # 归一化用户数据的区域名称
         normalized_data = data.copy()
+        
+        # 处理无下属区县的地级市：检测并降级处理
+        cities_without_counties_normalized = [
+            CITY_NAME_MAP.get(city, city) for city in CITIES_WITHOUT_COUNTIES
+        ]
+        
         if self.map_level == "province":
             # 省级数据：使用PROVINCE_NAME_MAP归一化
             normalized_data[region_column] = normalized_data[region_column].map(
                 lambda x: PROVINCE_NAME_MAP.get(x, x)
             )
+        elif self.map_level == "county" and (
+            province_column or city_column or county_column
+        ):
+            # 区县数据：使用省市区县四级匹配
+            # 归一化省市区县列
+            if province_column and province_column in normalized_data.columns:
+                normalized_data[province_column] = normalized_data[
+                    province_column
+                ].map(lambda x: PROVINCE_NAME_MAP.get(x, x))
+            if city_column and city_column in normalized_data.columns:
+                normalized_data[city_column] = normalized_data[city_column].map(
+                    lambda x: CITY_NAME_MAP.get(x, x)
+                )
+            if county_column and county_column in normalized_data.columns:
+                # 区县名不需要映射，直接使用
+                pass
         else:
-            # 地级市/区县数据：使用CITY_NAME_MAP归一化
+            # 地级市数据或区县数据（旧方式）：使用CITY_NAME_MAP归一化
             normalized_data[region_column] = normalized_data[region_column].map(
                 lambda x: CITY_NAME_MAP.get(x, x)
             )
@@ -1406,9 +1521,44 @@ class PlotMap(Plot):
                 # 区县数据：根据地级市筛选
                 if "地级" not in self.map_data_regional.columns:
                     raise ValueError("县级数据缺少地级市列")
-                self.map_data_regional = self.map_data_regional[
-                    self.map_data_regional["地级"].isin(regions)
-                ].copy()
+                
+                # 检查是否有无下属区县的地级市
+                cities_without_counties_normalized = [
+                    CITY_NAME_MAP.get(city, city) for city in CITIES_WITHOUT_COUNTIES
+                ]
+                regions_normalized = [
+                    CITY_NAME_MAP.get(region, region) for region in regions
+                ]
+                cities_without_counties_in_regions = [
+                    city
+                    for city in regions_normalized
+                    if city in cities_without_counties_normalized
+                ]
+                
+                # 筛选有区县的地级市
+                if cities_without_counties_in_regions:
+                    # 分离有区县和无区县的地级市
+                    cities_with_counties = [
+                        city
+                        for city in regions_normalized
+                        if city not in cities_without_counties_normalized
+                    ]
+                    if cities_with_counties:
+                        # 只筛选有区县的地级市
+                        self.map_data_regional = self.map_data_regional[
+                            self.map_data_regional["地级"].isin(cities_with_counties)
+                        ].copy()
+                    else:
+                        # 如果所有选择的地级市都无区县，map_data_regional为空
+                        # 后续会在合并数据时处理
+                        self.map_data_regional = self.map_data_regional[
+                            self.map_data_regional["地级"].isin([])
+                        ].copy()
+                else:
+                    # 所有地级市都有区县，正常筛选
+                    self.map_data_regional = self.map_data_regional[
+                        self.map_data_regional["地级"].isin(regions_normalized)
+                    ].copy()
 
         elif scope == "counties":
             # 指定区县范围
@@ -1427,13 +1577,238 @@ class PlotMap(Plot):
         # 如果用户需要排除某些区域，可以在regions参数中不包含它们
 
         # 合并用户数据和地图数据
+        if (
+            self.map_level == "county"
+            and province_column
+            and city_column
+            and county_column
+            and province_column in normalized_data.columns
+            and city_column in normalized_data.columns
+            and county_column in normalized_data.columns
+        ):
+            # 区县层级：使用省市区县四级匹配
+            # 检查是否有无下属区县的地级市
+            cities_in_data = normalized_data[city_column].unique()
+            cities_without_counties_in_data = [
+                city
+                for city in cities_in_data
+                if city in cities_without_counties_normalized
+            ]
 
-        self.plot_data = self.map_data_regional.merge(
-            normalized_data,
-            left_on=self.data_mapper,
-            right_on=region_column,
-            how="left",
-        )
+            if cities_without_counties_in_data:
+                # 分离有区县的地级市和无区县的地级市
+                data_with_counties = normalized_data[
+                    ~normalized_data[city_column].isin(cities_without_counties_in_data)
+                ].copy()
+                data_without_counties = normalized_data[
+                    normalized_data[city_column].isin(cities_without_counties_in_data)
+                ].copy()
+                
+                # 如果 scope == "provinces"，需要根据省份范围过滤无区县的地级市数据
+                if scope == "provinces" and regions and province_column in normalized_data.columns:
+                    # 只保留属于选择省份的这些城市
+                    data_without_counties = data_without_counties[
+                        data_without_counties[province_column].isin(regions)
+                    ].copy()
+
+                # 有区县的地级市：使用省市区县四级匹配
+                plot_data_with_counties = None
+                if not data_with_counties.empty:
+                    # 处理直辖市：直辖市的省份和地级市名称相同
+                    municipalities = ["北京市", "天津市", "上海市", "重庆市"]
+                    is_municipality = data_with_counties[province_column].isin(municipalities) & (
+                        data_with_counties[province_column] == data_with_counties[city_column]
+                    )
+                    municipalities_data = data_with_counties[is_municipality].copy()
+                    non_municipalities_data = data_with_counties[~is_municipality].copy()
+                    
+                    plot_data_list = []
+                    
+                    # 非直辖市：使用标准匹配
+                    if not non_municipalities_data.empty:
+                        plot_data_non_municipality = self.map_data_regional.merge(
+                            non_municipalities_data,
+                            left_on=["省份", "地级", "地名"],
+                            right_on=[province_column, city_column, county_column],
+                            how="inner",
+                        )
+                        if not plot_data_non_municipality.empty:
+                            plot_data_list.append(plot_data_non_municipality)
+                    
+                    # 直辖市：尝试多种匹配方式
+                    if not municipalities_data.empty:
+                        map_data_municipality = self.map_data_regional[
+                            self.map_data_regional["省份"].isin(municipalities)
+                        ].copy()
+                        
+                        # 方式1：标准匹配
+                        plot_data_municipality_1 = map_data_municipality.merge(
+                            municipalities_data,
+                            left_on=["省份", "地级", "地名"],
+                            right_on=[province_column, city_column, county_column],
+                            how="inner",
+                        )
+                        
+                        if not plot_data_municipality_1.empty:
+                            plot_data_list.append(plot_data_municipality_1)
+                        else:
+                            # 方式2：只匹配省份和区县（忽略地级列）
+                            plot_data_municipality_2 = map_data_municipality.merge(
+                                municipalities_data,
+                                left_on=["省份", "地名"],
+                                right_on=[province_column, county_column],
+                                how="inner",
+                            )
+                            if not plot_data_municipality_2.empty:
+                                plot_data_list.append(plot_data_municipality_2)
+                    
+                    # 合并所有匹配结果
+                    if plot_data_list:
+                        plot_data_with_counties = pd.concat(plot_data_list, ignore_index=True)
+
+                # 无区县的地级市：降级为地级市显示
+                # 需要加载地级市 shapefile 来显示这些城市
+                plot_data_without_counties = None
+                if not data_without_counties.empty:
+                    # 对于无下属区县的地级市，如果有多条记录，只取第一条
+                    # （因为这些城市实际上没有区县，多条记录可能是错误数据）
+                    data_without_counties_dedup = (
+                        data_without_counties.groupby(city_column).first().reset_index()
+                    )
+
+                    # 临时加载地级市 shapefile
+                    project_root = os.path.dirname(
+                        os.path.dirname(os.path.dirname(__file__))
+                    )
+                    shapefile_dir = os.path.join(project_root, "data", "map")
+                    prefecture_shapefile = os.path.join(
+                        shapefile_dir, "地级/T2024年初地级.shp"
+                    )
+                    if os.path.exists(prefecture_shapefile):
+                        prefecture_data = gpd.read_file(
+                            prefecture_shapefile, encoding="utf-8"
+                        )
+                        if prefecture_data.crs is not None:
+                            prefecture_data = prefecture_data.to_crs(epsg=2343)
+                        
+                        # 筛选无区县的地级市
+                        prefecture_data_filtered = prefecture_data[
+                            prefecture_data["地名"].isin(cities_without_counties_in_data)
+                        ].copy()
+                        
+                        # 根据当前范围（scope）进一步筛选
+                        if scope == "provinces" and regions:
+                            # 省份范围：只显示属于选择省份的这些城市
+                            prov_col = (
+                                "省级" if "省级" in prefecture_data_filtered.columns else "省份"
+                            )
+                            if prov_col in prefecture_data_filtered.columns:
+                                prefecture_data_filtered = prefecture_data_filtered[
+                                    prefecture_data_filtered[prov_col].isin(regions)
+                                ].copy()
+                        elif scope == "cities" and regions:
+                            # 城市范围：只显示在regions中的这些城市
+                            regions_normalized = [
+                                CITY_NAME_MAP.get(region, region) for region in regions
+                            ]
+                            prefecture_data_filtered = prefecture_data_filtered[
+                                prefecture_data_filtered["地名"].isin(regions_normalized)
+                            ].copy()
+                        # scope == "national" 或 "counties" 时，显示所有匹配的城市
+                        
+                        # 合并数据（使用地级市名称匹配）
+                        plot_data_without_counties = prefecture_data_filtered.merge(
+                            data_without_counties_dedup,
+                            left_on="地名",
+                            right_on=city_column,
+                            how="inner",  # 只保留有匹配数据的区域
+                        )
+
+                # 合并两部分数据
+                if plot_data_with_counties is not None and not plot_data_with_counties.empty:
+                    if plot_data_without_counties is not None and not plot_data_without_counties.empty:
+                        self.plot_data = pd.concat(
+                            [plot_data_with_counties, plot_data_without_counties],
+                            ignore_index=True,
+                        )
+                    else:
+                        self.plot_data = plot_data_with_counties
+                elif plot_data_without_counties is not None and not plot_data_without_counties.empty:
+                    self.plot_data = plot_data_without_counties
+                else:
+                    # 如果两部分都为空，使用空数据
+                    self.plot_data = self.map_data_regional.copy()
+            else:
+                # 所有地级市都有区县，使用省市区县四级匹配
+                # 处理直辖市：直辖市的省份和地级市名称相同
+                # 在shapefile中，直辖市的"地级"列可能是省份名称或其他值
+                # 需要特殊处理
+                
+                municipalities = ["北京市", "天津市", "上海市", "重庆市"]
+                
+                # 分离直辖市数据和非直辖市数据
+                is_municipality = normalized_data[province_column].isin(municipalities) & (
+                    normalized_data[province_column] == normalized_data[city_column]
+                )
+                municipalities_data = normalized_data[is_municipality].copy()
+                non_municipalities_data = normalized_data[~is_municipality].copy()
+                
+                plot_data_list = []
+                
+                # 非直辖市：使用标准匹配（省份、地级、区县）
+                if not non_municipalities_data.empty:
+                    plot_data_non_municipality = self.map_data_regional.merge(
+                        non_municipalities_data,
+                        left_on=["省份", "地级", "地名"],
+                        right_on=[province_column, city_column, county_column],
+                        how="inner",
+                    )
+                    if not plot_data_non_municipality.empty:
+                        plot_data_list.append(plot_data_non_municipality)
+                
+                # 直辖市：尝试多种匹配方式
+                if not municipalities_data.empty:
+                    # 筛选直辖市的区县数据
+                    map_data_municipality = self.map_data_regional[
+                        self.map_data_regional["省份"].isin(municipalities)
+                    ].copy()
+                    
+                    # 方式1：标准匹配（省份、地级、区县）
+                    plot_data_municipality_1 = map_data_municipality.merge(
+                        municipalities_data,
+                        left_on=["省份", "地级", "地名"],
+                        right_on=[province_column, city_column, county_column],
+                        how="inner",
+                    )
+                    
+                    if not plot_data_municipality_1.empty:
+                        plot_data_list.append(plot_data_municipality_1)
+                    else:
+                        # 方式2：如果方式1失败，尝试只匹配省份和区县（忽略地级列）
+                        # 在shapefile中，直辖市的"地级"列可能不是省份名称
+                        plot_data_municipality_2 = map_data_municipality.merge(
+                            municipalities_data,
+                            left_on=["省份", "地名"],
+                            right_on=[province_column, county_column],
+                            how="inner",
+                        )
+                        if not plot_data_municipality_2.empty:
+                            plot_data_list.append(plot_data_municipality_2)
+                
+                # 合并所有匹配结果
+                if plot_data_list:
+                    self.plot_data = pd.concat(plot_data_list, ignore_index=True)
+                else:
+                    # 如果所有匹配都失败，创建空数据
+                    self.plot_data = self.map_data_regional.head(0).copy()
+        else:
+            # 其他情况：使用单列匹配（兼容旧方式）
+            self.plot_data = self.map_data_regional.merge(
+                normalized_data,
+                left_on=self.data_mapper,
+                right_on=region_column,
+                how="left",
+            )
 
     def _plot_base_map(self, edgecolor: str = "black", linewidth: float = 0.1) -> None:
         """绘制底图边界"""
@@ -1481,7 +1856,9 @@ class PlotMap(Plot):
         # 国界（全国范围时绘制）
         if scope == "national" and national_border_width > 0:
             # 绘制全国外边界
-            national_boundary = self.plot_data.geometry.union_all()
+            # 使用 map_data_regional 而不是 plot_data，因为 plot_data 只包含有数据的区域
+            # 而国界应该基于完整的地图区域
+            national_boundary = self.map_data_regional.geometry.union_all()
             if national_boundary.geom_type == "MultiPolygon":
                 for geom in national_boundary.geoms:
                     gpd.GeoSeries([geom]).boundary.plot(
