@@ -44,6 +44,7 @@ export default function BarParamsEditor({ subplot }: Props) {
   const showAvgLine = params.show_avg_line ?? false;
   const labelThreshold = params.label_threshold ?? 0.02;
   const barWidth = params.bar_width ?? 0.8;
+  const barColor = params.bar_color ?? null;
   const fmtAbs = params.fmt_abs ?? '{:,.0f}';
   const fmtShare = params.fmt_share ?? '{:.1%}';
   const fmtGr = params.fmt_gr ?? '{:+.1%}';
@@ -115,6 +116,22 @@ export default function BarParamsEditor({ subplot }: Props) {
               />
               <p className="text-xs text-gray-500">
                 控制柱状图的宽度（0.1-1.0，默认0.8）
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-3 border-t">
+            <h4 className="text-sm font-semibold text-gray-800">颜色设置</h4>
+            
+            <div className="space-y-2">
+              <ColorPicker
+                label="柱状图颜色 (bar_color)"
+                value={barColor || ''}
+                onChange={(color) => updateParam('bar_color', color || null)}
+                showColorValue={true}
+              />
+              <p className="text-xs text-gray-500">
+                指定柱状图的统一颜色，留空则使用默认颜色方案
               </p>
             </div>
           </div>
