@@ -28,6 +28,18 @@ import {
 import { Button } from '@/components/ui/button';
 import DeleteSubplotDialog from './DeleteSubplotDialog';
 import { CHART_TYPE_LABELS } from '@/constants/chartTypes';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { getChartTypeName } from '@/constants/chartTypes';
 
 // 图表类型图标映射
 const CHART_TYPE_ICONS: Record<ChartType, React.ReactNode> = {
@@ -47,8 +59,9 @@ const CHART_TYPE_ICONS: Record<ChartType, React.ReactNode> = {
 
 export default function GridPreview() {
   const router = useRouter();
-  const { canvas, subplots, addSubplot, getSubplotByAxIndex, updateSubplot, updateCanvas, deleteSubplot } = useCanvasStore();
+  const { canvas, subplots, addSubplot, cloneSubplotConfig, getSubplotByAxIndex, updateSubplot, updateCanvas, deleteSubplot } = useCanvasStore();
   const [pendingChartTypes, setPendingChartTypes] = useState<Record<number, ChartType>>({});
+  const [pendingCloneSource, setPendingCloneSource] = useState<Record<number, string>>({});
   
   const { rows, cols } = canvas;
   const totalCells = rows * cols;
@@ -116,6 +129,30 @@ export default function GridPreview() {
       delete newState[axIndex];
       return newState;
     });
+  };
+
+  const handleCloneSourceSelect = (axIndex: number, sourceSubplotId: string) => {
+    setPendingCloneSource(prev => ({ ...prev, [axIndex]: sourceSubplotId }));
+  };
+
+  const handleConfirmClone = (axIndex: number) => {
+    const sourceSubplotId = pendingCloneSource[axIndex];
+    if (!sourceSubplotId) return;
+
+    cloneSubplotConfig(sourceSubplotId, axIndex);
+    
+    // 清除待定克隆源
+    setPendingCloneSource(prev => {
+      const newState = { ...prev };
+      delete newState[axIndex];
+      return newState;
+    });
+    
+    // 跳转到新创建的子图编辑页面
+    const newSubplot = getSubplotByAxIndex(axIndex);
+    if (newSubplot) {
+      router.push(`/subplot/${newSubplot.subplotId}`);
+    }
   };
   
   return (
@@ -244,15 +281,87 @@ export default function GridPreview() {
                 )}
               </div>
               
+              {/* 克隆选项 - 所有单元格都显示（如果有其他子图且不是自己） */}
+              {subplots.length > 0 && subplots.some(sp => sp.subplotId !== subplot?.subplotId) && (
+                <div className="space-y-1.5 border-t pt-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <label className="text-xs font-medium text-gray-600">
+                    {subplot ? '克隆其他子图（覆盖当前配置）' : '或克隆已有子图'}
+                  </label>
+                  <Select
+                    value={pendingCloneSource[axIndex] || ''}
+                    onValueChange={(value) => handleCloneSourceSelect(axIndex, value)}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="选择要克隆的子图..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subplots
+                        .filter(sp => sp.subplotId !== subplot?.subplotId) // 排除自己
+                        .map((sp) => (
+                          <SelectItem key={sp.subplotId} value={sp.subplotId} className="text-sm">
+                            <div className="flex items-center gap-2">
+                              {CHART_TYPE_ICONS[sp.chartType]}
+                              <span>
+                                位置 {sp.axIndex + 1} - {getChartTypeName(sp.chartType)}
+                                {sp.data.columns.length > 0 && ' (已配置)'}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {/* 操作按钮 */}
               {subplot ? (
                 <div className="flex gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => handleEditSubplot(subplot.subplotId)}
-                    className="flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors"
-                  >
-                    编辑子图
-                  </button>
+                  {pendingCloneSource[axIndex] ? (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          className="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors border border-blue-600"
+                        >
+                          克隆并覆盖
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>确认克隆并覆盖</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {(() => {
+                              const sourceSubplot = subplots.find(s => s.subplotId === pendingCloneSource[axIndex]);
+                              if (!sourceSubplot) return '';
+                              return `确定要用位置 ${sourceSubplot.axIndex + 1} 的 ${getChartTypeName(sourceSubplot.chartType)} 子图的所有配置（包括数据、参数等）覆盖当前位置 ${axIndex + 1} 的子图吗？此操作将替换当前子图的所有配置，无法撤销。`;
+                            })()}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel
+                            onClick={() => {
+                              setPendingCloneSource(prev => {
+                                const newState = { ...prev };
+                                delete newState[axIndex];
+                                return newState;
+                              });
+                            }}
+                          >
+                            取消
+                          </AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleConfirmClone(axIndex)}>
+                            确认覆盖
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  ) : (
+                    <button
+                      onClick={() => handleEditSubplot(subplot.subplotId)}
+                      className="flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors"
+                    >
+                      编辑子图
+                    </button>
+                  )}
                   <DeleteSubplotDialog
                     subplot={subplot}
                     trigger={
@@ -268,19 +377,62 @@ export default function GridPreview() {
                   />
                 </div>
               ) : (
-                <button
-                  onClick={() => handleCreateSubplot(axIndex)}
-                  disabled={!pendingType}
-                  className={`
-                    w-full px-3 py-1.5 text-sm font-medium rounded transition-colors flex-shrink-0 border
-                    ${pendingType
-                      ? 'text-white bg-gray-800 hover:bg-gray-900 border-gray-800'
-                      : 'text-gray-400 bg-gray-200 border-gray-200 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  {pendingType ? '创建子图' : '先选择类型'}
-                </button>
+                <div className="space-y-2 flex-shrink-0">
+                  {/* 创建/克隆按钮 */}
+                  {pendingCloneSource[axIndex] ? (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          className="w-full px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors flex-shrink-0 border border-blue-600"
+                        >
+                          克隆子图
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>确认克隆子图</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {(() => {
+                              const sourceSubplot = subplots.find(s => s.subplotId === pendingCloneSource[axIndex]);
+                              if (!sourceSubplot) return '';
+                              return `确定要将位置 ${sourceSubplot.axIndex + 1} 的 ${getChartTypeName(sourceSubplot.chartType)} 子图的所有配置（包括数据、参数等）克隆到位置 ${axIndex + 1} 吗？`;
+                            })()}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel
+                            onClick={() => {
+                              setPendingCloneSource(prev => {
+                                const newState = { ...prev };
+                                delete newState[axIndex];
+                                return newState;
+                              });
+                            }}
+                          >
+                            取消
+                          </AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleConfirmClone(axIndex)}>
+                            确认克隆
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  ) : (
+                    <button
+                      onClick={() => handleCreateSubplot(axIndex)}
+                      disabled={!pendingType}
+                      className={`
+                        w-full px-3 py-1.5 text-sm font-medium rounded transition-colors flex-shrink-0 border
+                        ${pendingType
+                          ? 'text-white bg-gray-800 hover:bg-gray-900 border-gray-800'
+                          : 'text-gray-400 bg-gray-200 border-gray-200 cursor-not-allowed'
+                        }
+                      `}
+                    >
+                      {pendingType ? '创建子图' : '先选择类型'}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           );

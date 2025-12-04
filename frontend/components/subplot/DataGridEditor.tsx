@@ -768,18 +768,12 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
   // 行索引粘贴处理
   const handleRowIndexPaste = (pastedRows: string[][], startRow: number) => {
     saveToHistory(true); // 立即保存
-    // 如果粘贴的是多列数据（不只是一列索引），转为数据区域粘贴
     const maxCols = Math.max(...pastedRows.map(row => row.length));
-    if (maxCols > 1) {
-      console.log('检测到多列粘贴，转为数据区域粘贴');
-      handleDataPaste(pastedRows, startRow, 0);
-      return;
-    }
-
+    
     // 取第一列作为行索引
     const pastedIndex = pastedRows.map(row => row[0] || '');
     const newIndex = [...index];
-    const newRows = [...rows];
+    const newRows = rows.map(row => [...row]); // 深拷贝
 
     // 扩展行数（如果需要）
     const neededRows = startRow + pastedIndex.length;
@@ -793,9 +787,51 @@ export default function DataGridEditor({ data, onChange }: DataGridEditorProps) 
       newIndex[startRow + i] = idx;
     });
 
-    setIndex(newIndex);
-    setRows(newRows);
-    syncToParent(columns, newIndex, newRows);
+    // 如果粘贴的是多列数据，第一列作为行索引，其余列作为数据
+    if (maxCols > 1) {
+      console.log('检测到多列粘贴，第一列作为行索引，其余列作为数据');
+      // 提取数据部分（跳过第一列）
+      const pastedData = pastedRows.map(row => row.slice(1));
+      const pasteWidth = Math.max(...pastedData.map(row => row.length));
+      
+      // 扩展列数（如果需要）
+      let newColumns = [...columns];
+      const neededCols = pasteWidth;
+      if (neededCols > newColumns.length) {
+        const additionalCols = neededCols - newColumns.length;
+        for (let i = 0; i < additionalCols; i++) {
+          newColumns.push(`列${newColumns.length + 1}`);
+        }
+        // 为现有行添加新列
+        newRows.forEach(row => {
+          while (row.length < neededCols) {
+            row.push('');
+          }
+        });
+      }
+
+      // 填充数据（从第0列开始）
+      pastedData.forEach((dataRow, i) => {
+        const targetRow = startRow + i;
+        if (targetRow < newRows.length) {
+          dataRow.forEach((cell, j) => {
+            if (j < newRows[targetRow].length) {
+              newRows[targetRow][j] = safeParseNumber(cell);
+            }
+          });
+        }
+      });
+
+      setColumns(newColumns);
+      setIndex(newIndex);
+      setRows(newRows);
+      syncToParent(newColumns, newIndex, newRows);
+    } else {
+      // 只有一列，只更新行索引
+      setIndex(newIndex);
+      setRows(newRows);
+      syncToParent(columns, newIndex, newRows);
+    }
   };
 
   // 数据区域粘贴处理

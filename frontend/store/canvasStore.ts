@@ -24,6 +24,7 @@ interface CanvasStore {
 
   // Subplot Actions
   addSubplot: (axIndex: number, chartType?: ChartType) => void;
+  cloneSubplotConfig: (sourceSubplotId: string, targetAxIndex: number) => void;
   updateSubplot: (subplotId: string, updates: Partial<SubplotConfig>) => void;
   updateSubplotData: (
     subplotId: string,
@@ -227,6 +228,57 @@ export const useCanvasStore = create<CanvasStore>()(
       subplots: [...state.subplots, newSubplot],
       selectedSubplotId: newSubplot.subplotId,
     }));
+  },
+
+  cloneSubplotConfig: (sourceSubplotId, targetAxIndex) => {
+    const state = get();
+    const sourceSubplot = state.subplots.find((s) => s.subplotId === sourceSubplotId);
+    if (!sourceSubplot) return;
+
+    // 检查目标位置是否已有子图
+    const existingSubplot = state.subplots.find((s) => s.axIndex === targetAxIndex);
+    
+    if (existingSubplot) {
+      // 如果目标位置已有子图，覆盖其配置
+      const clonedConfig: Partial<SubplotConfig> = {
+        chartType: sourceSubplot.chartType,
+        data: {
+          columns: [...sourceSubplot.data.columns],
+          index: sourceSubplot.data.index ? [...sourceSubplot.data.index] : undefined,
+          index_name: sourceSubplot.data.index_name,
+          data: sourceSubplot.data.data.map(row => [...row]),
+        },
+        params: JSON.parse(JSON.stringify(sourceSubplot.params)), // 深拷贝 params
+      };
+      
+      set((state) => ({
+        subplots: state.subplots.map((s) =>
+          s.subplotId === existingSubplot.subplotId
+            ? { ...s, ...clonedConfig }
+            : s
+        ),
+        selectedSubplotId: existingSubplot.subplotId,
+      }));
+    } else {
+      // 如果目标位置没有子图，创建新的子图
+      const clonedSubplot: SubplotConfig = {
+        subplotId: `subplot-${Date.now()}`,
+        axIndex: targetAxIndex,
+        chartType: sourceSubplot.chartType,
+        data: {
+          columns: [...sourceSubplot.data.columns],
+          index: sourceSubplot.data.index ? [...sourceSubplot.data.index] : undefined,
+          index_name: sourceSubplot.data.index_name,
+          data: sourceSubplot.data.data.map(row => [...row]),
+        },
+        params: JSON.parse(JSON.stringify(sourceSubplot.params)), // 深拷贝 params
+      };
+
+      set((state) => ({
+        subplots: [...state.subplots, clonedSubplot],
+        selectedSubplotId: clonedSubplot.subplotId,
+      }));
+    }
   },
 
   updateSubplot: (subplotId, updates) =>

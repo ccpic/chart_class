@@ -37,7 +37,7 @@ export default function SubplotTabs({ subplot }: Props) {
   const { updateSubplot, selectedPaletteName } = useCanvasStore();
   
   // Tab 状态管理
-  const [activeTab, setActiveTab] = useState('preview');
+  const [activeTab, setActiveTab] = useState('grid');
   
   // 渲染相关状态
   const [isRendering, setIsRendering] = useState(false);
@@ -191,10 +191,6 @@ export default function SubplotTabs({ subplot }: Props) {
       {/* Tabs 区域 */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
         <TabsList className="mx-6 mt-4 flex-shrink-0 sticky top-[137px] z-10 bg-white">
-          <TabsTrigger value="preview" className="gap-2">
-            <Eye className="h-4 w-4" />
-            渲染预览
-          </TabsTrigger>
           <TabsTrigger value="grid" className="gap-2">
             <Table2 className="h-4 w-4" />
             表格编辑
@@ -207,50 +203,13 @@ export default function SubplotTabs({ subplot }: Props) {
             <Settings className="h-4 w-4" />
             图表参数
           </TabsTrigger>
+          <TabsTrigger value="preview" className="gap-2">
+            <Eye className="h-4 w-4" />
+            渲染预览
+          </TabsTrigger>
         </TabsList>
 
-        {/* Tab 1: 渲染预览 */}
-        <TabsContent value="preview" className="flex-1 mt-0 px-6 pb-6 pt-4 overflow-visible">
-          <div className="space-y-4">
-            {/* 错误提示 */}
-            {renderError && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-md flex-shrink-0">
-                <p className="text-sm text-red-600 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4" />
-                  {renderError}
-                </p>
-              </div>
-            )}
-
-            {/* 渲染结果或空状态 */}
-            {renderedImage ? (
-              <div className="bg-white rounded-lg border">
-                <Image
-                  src={renderedImage}
-                  alt="Subplot Preview"
-                  width={800}
-                  height={600}
-                  className="w-full h-auto"
-                  unoptimized
-                />
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-[400px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                <div className="text-center">
-                  <BarChart3 className="h-16 w-16 mx-auto mb-3 text-gray-400" />
-                  <p className="text-gray-700 font-medium mb-1">
-                    {hasData ? '点击上方"渲染预览"按钮查看图表' : '请先配置数据'}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                图表类型：{getChartTypeName(subplot.chartType)}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* Tab 2: 表格编辑 */}
+        {/* Tab 1: 表格编辑 */}
         <TabsContent value="grid" className="flex-1 mt-0 px-6 pb-6 pt-4 overflow-visible">
           <DataGridEditor 
             data={subplot.data} 
@@ -258,7 +217,7 @@ export default function SubplotTabs({ subplot }: Props) {
           />
         </TabsContent>
 
-        {/* Tab 3: JSON 编辑 */}
+        {/* Tab 2: JSON 编辑 */}
         <TabsContent value="json" className="flex-1 mt-0 px-6 pb-6 pt-4 overflow-visible">
           <div className="space-y-4">
             {/* 说明文字 */}
@@ -312,9 +271,50 @@ export default function SubplotTabs({ subplot }: Props) {
           </div>
         </TabsContent>
 
-        {/* Tab 4: 图表参数 */}
+        {/* Tab 3: 图表参数 */}
         <TabsContent value="params" className="flex-1 mt-0 overflow-visible">
           <PlotSpecificParamsTab subplot={subplot} />
+        </TabsContent>
+
+        {/* Tab 4: 渲染预览 */}
+        <TabsContent value="preview" className="flex-1 mt-0 px-6 pb-6 pt-4 overflow-visible">
+          <div className="space-y-4">
+            {/* 错误提示 */}
+            {renderError && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-md flex-shrink-0">
+                <p className="text-sm text-red-600 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  {renderError}
+                </p>
+              </div>
+            )}
+
+            {/* 渲染结果或空状态 */}
+            {renderedImage ? (
+              <div className="bg-white rounded-lg border">
+                <Image
+                  src={renderedImage}
+                  alt="Subplot Preview"
+                  width={800}
+                  height={600}
+                  className="w-full h-auto"
+                  unoptimized
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-[400px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                <div className="text-center">
+                  <BarChart3 className="h-16 w-16 mx-auto mb-3 text-gray-400" />
+                  <p className="text-gray-700 font-medium mb-1">
+                    {hasData ? '点击上方"渲染预览"按钮查看图表' : '请先配置数据'}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                图表类型：{getChartTypeName(subplot.chartType)}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     </div>
