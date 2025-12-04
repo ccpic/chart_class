@@ -42,6 +42,9 @@ export default function MapParamsEditor({ subplot }: Props) {
   const excludeRegions = params.exclude_regions ?? ['三沙市'];
   const valueColumn = params.value_column ?? '';
   const regionColumn = params.region_column ?? '';
+  const provinceColumn = params.province_column ?? '';
+  const cityColumn = params.city_column ?? '';
+  const countyColumn = params.county_column ?? '';
   
   // 标签参数
   const labelColumn = params.label_column ?? '';
@@ -65,6 +68,9 @@ export default function MapParamsEditor({ subplot }: Props) {
   // 新区域输入状态
   const [newRegion, setNewRegion] = useState('');
   const [newExcludeRegion, setNewExcludeRegion] = useState('');
+
+  // 获取数据列名列表
+  const columnOptions = subplot.data?.columns || [];
 
   // 常用省份列表
   const commonProvinces = [
@@ -175,13 +181,27 @@ export default function MapParamsEditor({ subplot }: Props) {
               <Label htmlFor="value_column" className="text-sm">
                 数值列 (value_column)
               </Label>
-              <Input
-                id="value_column"
-                value={valueColumn}
-                onChange={(e) => updateParam('value_column', e.target.value)}
-                placeholder="留空则使用第一列"
-                className="text-sm"
-              />
+              {columnOptions.length > 0 ? (
+                <Select
+                  value={valueColumn || columnOptions[0] || ''}
+                  onValueChange={(value) => updateParam('value_column', value || '')}
+                >
+                  <SelectTrigger id="value_column" className="text-sm">
+                    <SelectValue placeholder="选择数值列" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {columnOptions.map((col: string) => (
+                      <SelectItem key={col} value={col}>
+                        {col}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="h-10 px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-500 flex items-center">
+                  暂无数据列
+                </div>
+              )}
               <p className="text-xs text-gray-500">
                 用于地图着色的数值列名，如不指定则自动使用数据的第一列
               </p>
@@ -191,17 +211,140 @@ export default function MapParamsEditor({ subplot }: Props) {
               <Label htmlFor="region_column" className="text-sm">
                 区域列 (region_column)
               </Label>
-              <Input
-                id="region_column"
-                value={regionColumn}
-                onChange={(e) => updateParam('region_column', e.target.value)}
-                placeholder="留空则使用索引"
-                className="text-sm"
-              />
+              {columnOptions.length > 0 ? (
+                <Select
+                  value={regionColumn || '__index__'}
+                  onValueChange={(value) => {
+                    const newValue = value === '__index__' ? '' : value;
+                    updateParam('region_column', newValue);
+                  }}
+                >
+                  <SelectTrigger id="region_column" className="text-sm">
+                    <SelectValue placeholder="留空则使用索引" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__index__">（使用索引）</SelectItem>
+                    {columnOptions.map((col: string) => (
+                      <SelectItem key={col} value={col}>
+                        {col}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="h-10 px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-500 flex items-center">
+                  暂无数据列
+                </div>
+              )}
               <p className="text-xs text-gray-500">
                 包含行政区划名称的列名，留空则使用数据索引
+                {level === 'county' && '（区县层级建议使用省市区县列）'}
               </p>
             </div>
+
+            {/* 区县层级的省市区县列设置 */}
+            {level === 'county' && (
+              <>
+                <div className="space-y-2 pt-2 border-t">
+                  <Label htmlFor="province_column" className="text-sm">
+                    省级列 (province_column) <span className="text-red-500">*</span>
+                  </Label>
+                  {columnOptions.length > 0 ? (
+                    <Select
+                      value={provinceColumn || ''}
+                      onValueChange={(value) => updateParam('province_column', value || '')}
+                    >
+                      <SelectTrigger id="province_column" className="text-sm">
+                        <SelectValue placeholder="选择省级列" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {columnOptions.map((col: string) => (
+                          <SelectItem key={col} value={col}>
+                            {col}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="h-10 px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-500 flex items-center">
+                      暂无数据列
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    区县层级必须提供省级列，用于唯一标识区县（区县名有重复）
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="city_column" className="text-sm">
+                    地级市列 (city_column) <span className="text-red-500">*</span>
+                  </Label>
+                  {columnOptions.length > 0 ? (
+                    <Select
+                      value={cityColumn || ''}
+                      onValueChange={(value) => updateParam('city_column', value || '')}
+                    >
+                      <SelectTrigger id="city_column" className="text-sm">
+                        <SelectValue placeholder="选择地级市列" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {columnOptions.map((col: string) => (
+                          <SelectItem key={col} value={col}>
+                            {col}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="h-10 px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-500 flex items-center">
+                      暂无数据列
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    区县层级必须提供地级市列，用于唯一标识区县
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="county_column" className="text-sm">
+                    区县列 (county_column) <span className="text-red-500">*</span>
+                  </Label>
+                  {columnOptions.length > 0 ? (
+                    <Select
+                      value={countyColumn || ''}
+                      onValueChange={(value) => updateParam('county_column', value || '')}
+                    >
+                      <SelectTrigger id="county_column" className="text-sm">
+                        <SelectValue placeholder="选择区县列" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {columnOptions.map((col: string) => (
+                          <SelectItem key={col} value={col}>
+                            {col}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="h-10 px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-500 flex items-center">
+                      暂无数据列
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    区县层级必须提供区县列，如未指定则使用 region_column
+                  </p>
+                </div>
+
+                <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
+                  <p className="text-xs text-blue-800">
+                    <strong>提示：</strong>由于中国区县名有重复（如多个"朝阳区"），
+                    区县层级必须提供省市区县四级数据才能正确匹配。
+                    特殊处理：东莞、中山、嘉峪关、儋州这4个地级市无下属区县，
+                    会自动降级为地级市显示。
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </TabsContent>
 
