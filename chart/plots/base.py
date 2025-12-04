@@ -329,37 +329,51 @@ class Plot:
             self._plot.ax.yaxis.set_ticks_position("left")
             self._plot.ax.xaxis.set_ticks_position("bottom")
 
-        def xlim(self, xlim: Tuple[Union[float, str], Union[float, str]]) -> None:
+        def xlim(self, xlim: Tuple[Union[float, str, None], Union[float, str, None]]) -> None:
             """设置x轴的边界
 
             Parameters
             ----------
-            xlim : Tuple[Union[float,str], Union[float,str]]
-                包含x轴下界和上界的tuple，如果填"-"则保持当前不变
+            xlim : Tuple[Union[float,str,None], Union[float,str,None]]
+                包含x轴下界和上界的tuple，如果填"-"或None则保持当前不变
             """
             current_xlim = self._plot.ax.get_xlim()
-            if xlim[0] == "-":
-                self._plot.ax.set_xlim(current_xlim[0], xlim[1])
-            elif xlim[1] == "-":
-                self._plot.ax.set_xlim(xlim[0], current_xlim[1])
+            if xlim[0] == "-" or xlim[0] is None:
+                # 保持当前最小值
+                min_val = current_xlim[0]
             else:
-                self._plot.ax.set_xlim(current_xlim[0], xlim[1])
+                min_val = xlim[0]
+            
+            if xlim[1] == "-" or xlim[1] is None:
+                # 保持当前最大值
+                max_val = current_xlim[1]
+            else:
+                max_val = xlim[1]
+            
+            self._plot.ax.set_xlim(min_val, max_val)
 
-        def ylim(self, ylim: Tuple[Union[float, str], Union[float, str]]) -> None:
+        def ylim(self, ylim: Tuple[Union[float, str, None], Union[float, str, None]]) -> None:
             """设置y轴的边界
 
             Parameters
             ----------
-            ylim : Tuple[Union[float,str], Union[float,str]]
-                包含y轴下界和上界的tuple，如果填"-"则保持当前不变
+            ylim : Tuple[Union[float,str,None], Union[float,str,None]]
+                包含y轴下界和上界的tuple，如果填"-"或None则保持当前不变
             """
             current_ylim = self._plot.ax.get_ylim()
-            if ylim[0] == "-":
-                self._plot.ax.set_ylim(current_ylim[0], ylim[1])
-            elif ylim[1] == "-":
-                self._plot.ax.set_ylim(ylim[0], current_ylim[1])
+            if ylim[0] == "-" or ylim[0] is None:
+                # 保持当前最小值
+                min_val = current_ylim[0]
             else:
-                self._plot.ax.set_ylim(current_ylim[0], ylim[1])
+                min_val = ylim[0]
+            
+            if ylim[1] == "-" or ylim[1] is None:
+                # 保持当前最大值
+                max_val = current_ylim[1]
+            else:
+                max_val = ylim[1]
+            
+            self._plot.ax.set_ylim(min_val, max_val)
 
         def y2lim(self, y2lim: Tuple[Tuple[float, float]]) -> None:
             """设置y轴次坐标轴的边界
