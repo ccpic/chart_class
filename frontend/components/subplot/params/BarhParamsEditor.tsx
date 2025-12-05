@@ -43,6 +43,7 @@ export default function BarhParamsEditor({ subplot }: Props) {
   const fmtAbs = params.fmt_abs ?? '{:,.0f}';
   const fmtShare = params.fmt_share ?? '{:.1%}';
   const fmtGr = params.fmt_gr ?? '{:+.1%}';
+  const showTotalLabel = params.show_total_label ?? false;
 
   return (
     <div className="space-y-4">
@@ -262,6 +263,94 @@ export default function BarhParamsEditor({ subplot }: Props) {
               }}
               label="标签样式"
             />
+          </div>
+
+          <div className="space-y-3 pt-3 border-t">
+            <h4 className="text-sm font-semibold text-gray-800">总计标签</h4>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="show_total_label"
+                checked={showTotalLabel}
+                onCheckedChange={(checked) => updateParam('show_total_label', checked)}
+              />
+              <Label htmlFor="show_total_label" className="text-sm cursor-pointer">
+                显示堆积总计值
+              </Label>
+            </div>
+            <p className="text-xs text-gray-500">
+              在条形图整体外侧右边显示堆积之和，使用绝对值格式 (fmt_abs) 格式化
+            </p>
+
+            {showTotalLabel && (
+              <div className="space-y-3 pt-3 border-t">
+                <LabelStyleEditor
+                  value={{
+                    fontsize: params.total_text_fontsize,
+                    color: params.total_text_color,
+                    weight: params.total_text_weight,
+                    bbox: params.total_text_bbox ? {
+                      enabled: true,
+                      boxstyle: params.total_text_bbox?.boxstyle,
+                      facecolor: params.total_text_bbox?.facecolor,
+                      show_border: params.total_text_bbox?.show_border ?? true,
+                      edgecolor: params.total_text_bbox?.edgecolor,
+                      linewidth: params.total_text_bbox?.linewidth,
+                      alpha: params.total_text_bbox?.alpha,
+                    } : { enabled: false },
+                  }}
+                  onChange={(labelStyle: LabelStyle) => {
+                    const updates: any = {};
+                    if (labelStyle.fontsize !== undefined) {
+                      updates.total_text_fontsize = labelStyle.fontsize;
+                    }
+                    if (labelStyle.color !== undefined) {
+                      updates.total_text_color = labelStyle.color || null;
+                    }
+                    if (labelStyle.weight !== undefined) {
+                      updates.total_text_weight = labelStyle.weight === 'normal' ? undefined : labelStyle.weight;
+                    }
+                    // 处理 bbox 配置
+                    if (labelStyle.bbox !== undefined) {
+                      if (labelStyle.bbox.enabled) {
+                        // 只传递已定义的字段，避免传递 undefined/null
+                        const bboxConfig: any = {};
+                        if (labelStyle.bbox.boxstyle !== undefined) {
+                          bboxConfig.boxstyle = labelStyle.bbox.boxstyle;
+                        }
+                        if (labelStyle.bbox.facecolor !== undefined) {
+                          bboxConfig.facecolor = labelStyle.bbox.facecolor;
+                        }
+                        // show_border 控制是否显示边框
+                        const showBorder = labelStyle.bbox.show_border !== false; // 默认为 true
+                        if (showBorder) {
+                          // 只有在显示边框时才传递边框相关参数
+                          if (labelStyle.bbox.edgecolor !== undefined) {
+                            bboxConfig.edgecolor = labelStyle.bbox.edgecolor;
+                          }
+                          if (labelStyle.bbox.linewidth !== undefined && labelStyle.bbox.linewidth !== null) {
+                            bboxConfig.linewidth = labelStyle.bbox.linewidth;
+                          }
+                        }
+                        // show_border 参数传递给后端
+                        bboxConfig.show_border = showBorder;
+                        if (labelStyle.bbox.alpha !== undefined && labelStyle.bbox.alpha !== null) {
+                          bboxConfig.alpha = labelStyle.bbox.alpha;
+                        }
+                        updates.total_text_bbox = Object.keys(bboxConfig).length > 0 ? bboxConfig : null;
+                      } else {
+                        // enabled 为 false 时，设置为 null
+                        updates.total_text_bbox = null;
+                      }
+                    }
+                    updateSubplot(subplot.subplotId, {
+                      params: { ...subplot.params, ...updates },
+                    });
+                  }}
+                  label="总计值文本样式"
+                />
+              </div>
+            )}
           </div>
         </TabsContent>
 
