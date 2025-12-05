@@ -33,6 +33,8 @@ export interface PlotStyle {
   ylabel_fontsize?: number | null;
   xlim?: [number | null, number | null] | null;
   ylim?: [number | null, number | null] | null;
+  hide_xaxis?: boolean;  // 隐藏整体 x 轴
+  hide_yaxis?: boolean;  // 隐藏整体 y 轴
   
   // ===== 边框 =====
   show_top_spine?: boolean;    // 上边框，默认 true

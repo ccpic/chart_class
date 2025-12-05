@@ -85,6 +85,18 @@ export function AxisSection({ style, onChange }: AxisSectionProps) {
           </div>
           <p className="text-xs text-gray-500">留空为自动</p>
         </div>
+
+        {/* 隐藏整体 X 轴 */}
+        <div className="flex items-center space-x-2 pt-2">
+          <Checkbox
+            id="hide_xaxis"
+            checked={style.hide_xaxis ?? false}
+            onCheckedChange={(checked) => onChange({ hide_xaxis: !!checked })}
+          />
+          <Label htmlFor="hide_xaxis" className="text-sm cursor-pointer">
+            隐藏整体 X 轴
+          </Label>
+        </div>
       </div>
 
       {/* Y 轴设置 */}
@@ -143,6 +155,18 @@ export function AxisSection({ style, onChange }: AxisSectionProps) {
             />
           </div>
           <p className="text-xs text-gray-500">留空为自动</p>
+        </div>
+
+        {/* 隐藏整体 Y 轴 */}
+        <div className="flex items-center space-x-2 pt-2">
+          <Checkbox
+            id="hide_yaxis"
+            checked={style.hide_yaxis ?? false}
+            onCheckedChange={(checked) => onChange({ hide_yaxis: !!checked })}
+          />
+          <Label htmlFor="hide_yaxis" className="text-sm cursor-pointer">
+            隐藏整体 Y 轴
+          </Label>
         </div>
       </div>
     </div>

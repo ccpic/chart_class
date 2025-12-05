@@ -85,7 +85,7 @@ class CanvasConfigModel(BaseModel):
     label_outer: bool = Field(False, description="仅显示外围刻度标签")
     dpi: int = Field(400, description="图片保存 DPI")
     transparent: bool = Field(True, description="是否使用透明背景")
-    tight_layout: bool = Field(True, description="是否使用紧凑布局")
+    tight_layout: bool = Field(False, description="是否使用紧凑布局")
 
     style: Optional[Dict[str, Any]] = Field(None, description="其他全局样式")
 

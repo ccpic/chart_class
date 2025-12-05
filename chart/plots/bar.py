@@ -510,7 +510,13 @@ class PlotBar(Plot):
         # 使用基类方法格式化y轴
         self._format_axis("y")
 
-        self.ax.axhline(0, color="black", linewidth=0.5)  # y轴为0的横线
+        # 只有在未隐藏 x 轴时才绘制 y=0 的参考线
+        # 检查样式参数中是否隐藏了 x 轴
+        hide_xaxis = d_style.get("hide_xaxis", False) or getattr(
+            self.style, "_hide_xaxis", False
+        )
+        if not hide_xaxis:
+            self.ax.axhline(0, color="black", linewidth=0.5)  # y轴为0的横线
 
         if secondary_line_column is not None:
             # 增加次坐标轴
@@ -616,6 +622,7 @@ class PlotBarh(Plot):
         label_formatter: str = "{abs}",
         label_threshold: float = 0.02,
         label_pos: Literal["smart", "center", "outer"] = "smart",
+        show_total_label: bool = False,
         **kwargs: Any,
     ) -> PlotBarh:
         """继承基本Plot类，绘制柱状图
@@ -625,7 +632,7 @@ class PlotBarh(Plot):
             show_label (bool, optional): 是否显示数字标签. Defaults to True.
             label_formatter (str, optional): 主标签的格式，支持通配符{abs},{share},{gr},{index},{col}. Defaults to "{abs}".
             show_total_bar (bool, optional): 是否显示一个总体表现外框. Defaults to False.
-            show_total_label (bool, optional): 是否在最上方显示堆积之和数字标签. Defaults to False.
+            show_total_label (bool, optional): 是否在条形图整体外侧右边显示堆积之和数字标签. Defaults to False.
             show_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
             label_threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
             label_pos (Literal["smart", "center", "outer"], optional): 标签位置，smart为自动判断，center为居中，outer为外侧. Defaults to "smart".
@@ -650,6 +657,10 @@ class PlotBarh(Plot):
                 "fmt_abs": self.fmt,  # 绝对值标签格式
                 "fmt_share": "{:.1%}",  # 占比标签格式
                 "fmt_gr": "{:+.1%}",  # 增长率标签格式
+                "total_text_fontsize": self.fontsize,  # 堆积总计值文本字体大小
+                "total_text_color": None,  # 堆积总计值文本颜色
+                "total_text_weight": None,  # 堆积总计值文本字重：normal, bold, italic
+                "total_text_bbox": None,  # 堆积总计值文本背景框配置
             },
             **kwargs,
         )
@@ -858,9 +869,48 @@ class PlotBarh(Plot):
         # 使用基类方法格式化x轴
         self._format_axis("x")
 
-        self.ax.axvline(0, color="black", linewidth=0.5)  # x轴为0的竖线
+        # 只有在未隐藏 y 轴时才绘制 x=0 的参考线
+        # 检查样式参数中是否隐藏了 y 轴
+        hide_yaxis = d_style.get("hide_yaxis", False) or getattr(
+            self.style, "_hide_yaxis", False
+        )
+        if not hide_yaxis:
+            self.ax.axvline(0, color="black", linewidth=0.5)  # x轴为0的竖线
 
         self.ax.invert_yaxis()  # 翻转y轴，最上方显示排名靠前的序列
+
+        # 在条形图整体外侧右边添加total值
+        if show_total_label:
+            total = df.sum(axis=1)
+            # 使用 fmt_abs 格式化总计值（如果没有指定则使用默认格式）
+            fmt_total = d_style.get("fmt_abs") or self.fmt
+            # 获取 x 轴范围，用于计算标签位置
+            xlim = self.ax.get_xlim()
+            # 计算标签的 x 位置（在条形图外侧右边）
+            # 使用 x 轴范围的 2% 作为边距
+            margin = (
+                abs(xlim[1] - xlim[0]) * 0.02
+                if xlim and len(xlim) > 1
+                else abs(max_v - min_v) * 0.02
+            )
+
+            for p, v in enumerate(total.values):
+                # 构建总计值文本参数
+                total_text_kwargs = {
+                    "x": v + margin,  # x 坐标：总计值 + 边距（显示在右侧）
+                    "y": p,  # y 坐标：对应条形的位置
+                    "s": fmt_total.format(float(v)),
+                    "ha": "left",  # 水平对齐：左对齐（因为标签在右侧）
+                    "va": "center",  # 垂直对齐：居中
+                    "zorder": 5,
+                }
+
+                # 使用公共函数应用文本样式（总计值使用 total_text 样式）
+                _apply_text_style(
+                    total_text_kwargs, d_style, "total_text", self.fontsize, "black"
+                )
+
+                self.ax.text(**total_text_kwargs)
 
         return self
 

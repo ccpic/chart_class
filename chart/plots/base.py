@@ -106,6 +106,8 @@ class Plot:
                 "xlim": None,  # x轴边界(最小值, 最大值)
                 "ylim": None,  # y轴边界(最小值, 最大值)
                 "y2lim": None,  # y轴次坐标轴边界(最小值, 最大值)
+                "hide_xaxis": False,  # 隐藏整体 x 轴
+                "hide_yaxis": False,  # 隐藏整体 y 轴
                 # 刻度相关的风格
                 "all_xticks": False,  # 显示所有x轴刻度
                 "xticklabel_fontsize": plot.fontsize,  # x轴刻度标签字体大小
@@ -193,6 +195,11 @@ class Plot:
             elif self._hide_top_right_spines:
                 # 向后兼容：如果设置了 hide_top_right_spines，则隐藏上/右边框
                 self.hide_top_right_spines()
+            # 隐藏整体轴（包括边框、刻度、标签等）
+            if self._hide_xaxis:
+                self._plot.ax.xaxis.set_visible(False)
+            if self._hide_yaxis:
+                self._plot.ax.yaxis.set_visible(False)
             if self._xlim is not None:
                 self.xlim(self._xlim)
             if self._ylim is not None:

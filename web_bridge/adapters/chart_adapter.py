@@ -668,7 +668,7 @@ class WebChartAdapter:
             f.style.apply_style()
 
             # 6. 应用紧凑布局（如果启用）
-            tight_layout = canvas_config.get("tight_layout", True)
+            tight_layout = canvas_config.get("tight_layout", False)
             if tight_layout:
                 f.gridspec.tight_layout(f)
 

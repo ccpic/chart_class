@@ -653,7 +653,7 @@ class GridFigure(Figure):
     def save(
         self,
         savepath: Optional[str] = None,
-        tight_layout: bool = True,
+        tight_layout: bool = False,
         transparent: bool = True,
         dpi: int = 300,
     ) -> str:

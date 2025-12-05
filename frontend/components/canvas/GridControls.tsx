@@ -338,7 +338,7 @@ export default function GridControls() {
         <div className="flex items-center space-x-2">
           <Checkbox
             id="tightLayout"
-            checked={canvas.tightLayout ?? true}
+            checked={canvas.tightLayout ?? false}
             onCheckedChange={(checked) => updateCanvas({ tightLayout: !!checked })}
           />
           <div className="flex items-center gap-1 flex-1">
