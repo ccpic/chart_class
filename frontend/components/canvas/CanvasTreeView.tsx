@@ -117,7 +117,7 @@ export default function CanvasTreeView({
               
               return {
                 id: subplot.subplotId,
-                name: `${getChartTypeName(subplot.chartType)} [${subplot.axIndex}]`,
+                name: `${getChartTypeName(subplot.chartType)} [${subplot.axIndex + 1}]`,
                 icon: IconComponent,
                 onClick: () => router.push(`/subplot/${subplot.subplotId}`),
                 // 添加删除按钮
