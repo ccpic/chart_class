@@ -521,6 +521,36 @@ class PlotBar(Plot):
             # 增加次坐标轴
             ax2 = self.ax.twinx()
 
+            # 根据样式设置控制次坐标轴的边框
+            # 次坐标轴应该遵循主坐标轴的边框设置
+            if (
+                hasattr(self.style, "_show_top_spine")
+                or hasattr(self.style, "_show_right_spine")
+                or hasattr(self.style, "_show_bottom_spine")
+                or hasattr(self.style, "_show_left_spine")
+            ):
+                # 使用新的四个独立字段控制边框
+                show_top = getattr(self.style, "_show_top_spine", True)
+                show_right = getattr(self.style, "_show_right_spine", True)
+                show_bottom = getattr(self.style, "_show_bottom_spine", True)
+                show_left = getattr(self.style, "_show_left_spine", True)
+
+                # 次坐标轴的边框控制：
+                # - 上边框：遵循主坐标轴设置
+                # - 右边框：遵循主坐标轴设置
+                # - 下边框：隐藏（与主坐标轴共享）
+                # - 左边框：隐藏（与主坐标轴共享）
+                ax2.spines["top"].set_visible(show_top)
+                ax2.spines["right"].set_visible(show_right)
+                ax2.spines["bottom"].set_visible(False)
+                ax2.spines["left"].set_visible(False)
+            elif getattr(self.style, "_hide_top_right_spines", False):
+                # 向后兼容：如果设置了 hide_top_right_spines，则隐藏上/右边框
+                ax2.spines["top"].set_visible(False)
+                ax2.spines["right"].set_visible(False)
+                ax2.spines["bottom"].set_visible(False)
+                ax2.spines["left"].set_visible(False)
+
             # 如果指定了列，绘制该列的原始值
             if secondary_line_column not in df.columns:
                 raise ValueError(
