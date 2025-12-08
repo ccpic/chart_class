@@ -45,6 +45,7 @@ export default function BarParamsEditor({ subplot }: Props) {
   const showAvgLine = params.show_avg_line ?? false;
   const labelThreshold = params.label_threshold ?? 0.02;
   const barWidth = params.bar_width ?? 0.8;
+  const totalBarWidth = params.total_bar_width ?? 0.6;
   const barColor = params.bar_color ?? null;
   const fmtAbs = params.fmt_abs ?? '{:,.0f}';
   const fmtShare = params.fmt_share ?? '{:.1%}';
@@ -1196,6 +1197,29 @@ export default function BarParamsEditor({ subplot }: Props) {
             <p className="text-xs text-gray-500">
               在柱状图外显示总体表现的虚线框
             </p>
+
+            {showTotalBar && (
+              <div className="space-y-2 mt-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="total_bar_width" className="text-sm">
+                    总体表现外框宽度 (total_bar_width)
+                  </Label>
+                  <span className="text-xs text-gray-500">{totalBarWidth.toFixed(1)}</span>
+                </div>
+                <Slider
+                  id="total_bar_width"
+                  min={0.1}
+                  max={1.0}
+                  step={0.1}
+                  value={[totalBarWidth]}
+                  onValueChange={(value) => updateParam('total_bar_width', value[0])}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500">
+                  控制总体表现外框的宽度（0.1-1.0，默认0.6）
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-3 pt-3 border-t">

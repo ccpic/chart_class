@@ -266,7 +266,7 @@ export default function GridPreview() {
                 {subplot ? (
                   <>
                     <div className="text-xs text-gray-500 mb-1">
-                      位置 {axIndex}
+                      位置 {axIndex + 1}
                     </div>
                     {subplot.data.columns.length > 0 && (
                       <div className="text-xs text-green-600">
@@ -276,7 +276,7 @@ export default function GridPreview() {
                   </>
                 ) : (
                   <div className="text-xs text-gray-400">
-                    位置 {axIndex}
+                    位置 {axIndex + 1}
                   </div>
                 )}
               </div>

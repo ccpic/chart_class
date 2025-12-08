@@ -106,6 +106,7 @@ class PlotBar(Plot):
         secondary_line_column: Optional[str] = None,
         show_avg_line: bool = False,
         label_threshold: float = 0.02,
+        total_bar_width: float = 0.6,
         **kwargs: Any,
     ) -> PlotBar:
         """继承基本Plot类，绘制柱状图
@@ -120,6 +121,7 @@ class PlotBar(Plot):
             secondary_line_column (Optional[str], optional): 次坐标轴折线图要绘制的列名.
                                                              如果指定，则在次坐标轴上绘制该列的原始值折线图；如果为None，则不显示折线图. Defaults to None.
             label_threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
+            total_bar_width (float, optional): 总体表现外框的宽度. Defaults to 0.6.
 
         Returns:
             self: 返回自身plot实例
@@ -264,15 +266,23 @@ class PlotBar(Plot):
                     self.ax.bar(
                         df_bar.index,
                         df_bar.sum(axis=1) * 1.03,
-                        width=0.6,
+                        width=total_bar_width,
                         linewidth=1,
                         linestyle="--",
                         facecolor=(1, 0, 0, 0.0),
                         edgecolor=(0, 0, 0, 1),
                     )
 
-                    # 因为多了总体表现外框，移除右、上边框
-                    self.style._hide_top_right_spines = True
+                    # 因为多了总体表现外框，如果用户没有明确设置边框显示，则默认移除右、上边框
+                    # 检查用户是否明确设置了边框显示（通过检查是否有新的四个独立字段）
+                    if not (
+                        hasattr(self.style, "_show_top_spine")
+                        or hasattr(self.style, "_show_right_spine")
+                        or hasattr(self.style, "_show_bottom_spine")
+                        or hasattr(self.style, "_show_left_spine")
+                    ):
+                        # 用户没有明确设置，使用默认行为：隐藏上/右边框
+                        self.style._hide_top_right_spines = True
 
                 if show_label is True:
                     if (
@@ -471,7 +481,7 @@ class PlotBar(Plot):
 
             # 在柱状图顶端添加total值
             if show_total_label:
-                total = df.sum(axis=1)
+                total = df_bar.sum(axis=1)
                 # 使用 fmt_abs 格式化总计值（如果没有指定则使用默认格式）
                 fmt_total = d_style.get("fmt_abs") or self.fmt
                 for p, v in enumerate(total.values):
