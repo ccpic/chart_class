@@ -273,17 +273,6 @@ class PlotBar(Plot):
                         edgecolor=(0, 0, 0, 1),
                     )
 
-                    # 因为多了总体表现外框，如果用户没有明确设置边框显示，则默认移除右、上边框
-                    # 检查用户是否明确设置了边框显示（通过检查是否有新的四个独立字段）
-                    if not (
-                        hasattr(self.style, "_show_top_spine")
-                        or hasattr(self.style, "_show_right_spine")
-                        or hasattr(self.style, "_show_bottom_spine")
-                        or hasattr(self.style, "_show_left_spine")
-                    ):
-                        # 用户没有明确设置，使用默认行为：隐藏上/右边框
-                        self.style._hide_top_right_spines = True
-
                 if show_label is True:
                     if (
                         stacked is False or df.shape[1] == 1
