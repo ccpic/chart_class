@@ -1,50 +1,95 @@
-# 部署：使用 NSSM 在 Windows 上为后端创建服务
+# Chart Class Web API 部署指南
 
-本说明介绍如何在 Windows 上使用 `nssm` 将后端 FastAPI（通过 `uvicorn`）作为系统服务运行。假设项目位于 `D:\Projects\chart_class2`。
+本目录包含 Windows 服务部署（NSSM + Apache 2.4）所需的所有文件。
 
-重要前提
-- `nssm.exe` 已安装并可用（示例路径 `C:\tools\nssm\nssm.exe`）。
-- 已创建并可用的 Python 虚拟环境（示例：`D:\Projects\chart_class2\.venv\Scripts\python.exe`）。
-- 需要以管理员权限运行 PowerShell 来安装/管理服务。
+## 文件说明
 
-包含文件
-- `install-backend-service.ps1`：可执行脚本，会根据参数创建并启动名为 `ChartClass2API`（可自定义）的服务，并设置日志与环境变量。
+- `start_service.bat` - NSSM 服务安装脚本
+- `stop_service.bat` - NSSM 服务卸载脚本
+- `apache_vhost.conf` - Apache 2.4 反向代理配置文件
+- `DEPLOYMENT_CHECKLIST.md` - 详细的部署检查清单
 
-快速开始（示例）
-1. 以管理员身份打开 PowerShell。
-2. 切换到仓库 `deploy` 目录：
-```powershell
-Set-Location "D:\Projects\chart_class2\deploy"
-```
-3. 运行示例安装命令（示例会提示并替换 JWT_SECRET_KEY 等）：
-```powershell
-.\install-backend-service.ps1 `
-  -NssmPath 'C:\tools\nssm\nssm.exe' `
-  -ServiceName 'ChartClass2API' `
-  -ProjectRoot 'D:\Projects\chart_class2' `
-  -PythonExe 'D:\Projects\chart_class2\.venv\Scripts\python.exe' `
-  -UvicornArgs '-m uvicorn web_api.main:app --host 127.0.0.1 --port 8001'
+## 快速开始
+
+### 1. 安装 NSSM 服务
+
+以管理员身份运行：
+```batch
+deploy\start_service.bat
 ```
 
-脚本会完成以下操作：
-- 在项目根创建 `logs` 目录（如果不存在）。
-- 使用 `nssm install` 创建服务条目，运行命令为 `python -m uvicorn web_api.main:app ...`。
-- 将 stdout/stderr 重定向到 `logs` 下的文件，并开启 nssm 的日志轮转。
-- 将环境变量（例如 `ENVIRONMENT`、`JWT_SECRET_KEY`）写入服务（可在脚本参数中修改）。
+### 2. 配置 Apache
 
-安全提示
-- 请勿在脚本中硬编码生产 `JWT_SECRET_KEY`；最好从安全存储或通过交互输入设置。
-- 在生产环境中检查 `uvicorn` 启动参数（建议移除 `--reload`，并调整 `--log-level`）。
+1. 复制 `apache_vhost.conf` 到 Apache 配置目录
+2. 修改配置文件中的域名和 SSL 证书路径
+3. 在 `httpd.conf` 中引入配置文件
+4. 重启 Apache
 
-调试
-- 若服务未启动，先查看 `D:\Projects\chart_class2\logs\chart_class2-err.log`。
-- 可在 shell 中手动运行：
-```powershell
-& 'D:\Projects\chart_class2\.venv\Scripts\python.exe' -m uvicorn web_api.main:app --host 127.0.0.1 --port 8001
+详细步骤请参考 `DEPLOYMENT_CHECKLIST.md`。
+
+## 环境变量配置
+
+服务通过 NSSM 脚本设置环境变量，主要配置项：
+
+- `UVICORN_WORKERS=4` - Worker 进程数量
+- `THREAD_POOL_SIZE=4` - 线程池大小
+- `UVICORN_PORT=8001` - 服务端口
+- `UVICORN_HOST=127.0.0.1` - 监听地址（仅本地）
+
+如需修改，请编辑 `start_service.bat` 中的环境变量设置。
+
+## 服务管理
+
+### 查看服务状态
+```batch
+nssm status ChartClassAPI
 ```
-以确认应用可在不通过服务的情况下运行。
 
-更多
-- 如果希望同时以服务方式运行前端（`next start`），我可以为前端生成一个类似的 `nssm` 安装脚本，或建议在 Windows 上使用进程管理工具（例如 `pm2`）或 Docker 容器化部署。
+### 重启服务
+```batch
+nssm restart ChartClassAPI
+```
 
-如果你准备好了，我可以现在把这个脚本写到仓库（我已经准备好），然后演示如何运行（仅生成，不会自动执行）。
+### 停止服务
+```batch
+nssm stop ChartClassAPI
+```
+
+### 卸载服务
+```batch
+deploy\stop_service.bat
+```
+
+## 日志位置
+
+- 服务标准输出：`logs\service_stdout.log`
+- 服务错误输出：`logs\service_stderr.log`
+- Apache 访问日志：`C:\Apache24\logs\chart_class_access.log`
+- Apache 错误日志：`C:\Apache24\logs\chart_class_error.log`
+
+## 性能优化
+
+### Workers 数量
+建议设置为 CPU 核心数。例如：
+- 4 核 CPU → 4 workers
+- 8 核 CPU → 8 workers
+
+### 线程池大小
+建议设置为 workers 数量，确保每个 worker 有一个线程处理 CPU 密集型任务。
+
+### 修改配置
+1. 停止服务：`nssm stop ChartClassAPI`
+2. 编辑 `start_service.bat` 中的环境变量
+3. 重新运行：`deploy\start_service.bat`
+
+## 故障排查
+
+如果遇到问题，请：
+
+1. 检查服务日志：`type logs\service_stderr.log`
+2. 检查服务状态：`nssm status ChartClassAPI`
+3. 测试本地服务：`curl http://127.0.0.1:8001/`
+4. 检查 Apache 日志：`type C:\Apache24\logs\error.log`
+
+更多故障排查信息请参考 `DEPLOYMENT_CHECKLIST.md`。
+

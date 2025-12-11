@@ -12,6 +12,8 @@ from pydantic import BaseModel
 from typing import Any, Dict, List, Optional, Tuple
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
 
 # 导入桥接层
 import sys
@@ -80,6 +82,11 @@ def _startup_checks():
 
 # 执行启动检查
 _startup_checks()
+
+# 创建线程池用于处理 CPU 密集型任务（图表渲染）
+THREAD_POOL_SIZE = int(os.getenv("THREAD_POOL_SIZE", "4"))
+_executor = ThreadPoolExecutor(max_workers=THREAD_POOL_SIZE)
+logger.info(f"线程池已创建，大小: {THREAD_POOL_SIZE}")
 
 # 创建应用
 app = FastAPI(
@@ -267,7 +274,7 @@ async def render_canvas(
                     detail=f"子图索引 {subplot.ax_index} 超出范围 (0-{total_grids-1})",
                 )
 
-        # 调用桥接层渲染
+        # 调用桥接层渲染（使用线程池避免阻塞事件循环）
         adapter = get_adapter()
         canvas_dict = request.canvas.dict()
         subplots_list = [s.dict() for s in request.subplots]
@@ -276,11 +283,15 @@ async def render_canvas(
         palette_name = request.palette_name
         color_dict, palette_colors = _build_user_color_config(current_user.id, db, palette_name=palette_name)
 
-        image_bytes = adapter.render_canvas(
+        # 将 CPU 密集型的渲染任务放到线程池中执行
+        loop = asyncio.get_event_loop()
+        image_bytes = await loop.run_in_executor(
+            _executor,
+            adapter.render_canvas,
             canvas_dict,
             subplots_list,
-            color_dict=color_dict,
-            palette=palette_colors,
+            color_dict,
+            palette_colors,
         )
 
         logger.info(f"画布渲染成功，图片大小: {len(image_bytes)} bytes")
@@ -353,11 +364,15 @@ async def render_subplot(
         palette_name = subplot.palette_name
         color_dict, palette_colors = _build_user_color_config(current_user.id, db, palette_name=palette_name)
 
-        image_bytes = adapter.render_canvas(
+        # 将 CPU 密集型的渲染任务放到线程池中执行
+        loop = asyncio.get_event_loop()
+        image_bytes = await loop.run_in_executor(
+            _executor,
+            adapter.render_canvas,
             canvas_config,
             [subplot_config],
-            color_dict=color_dict,
-            palette=palette_colors,
+            color_dict,
+            palette_colors,
         )
 
         logger.info(f"子图渲染成功，图片大小: {len(image_bytes)} bytes")
@@ -453,11 +468,34 @@ async def render_chart(request: RenderRequest):
 # ============ 启动服务 ============
 if __name__ == "__main__":
     import uvicorn
+    import multiprocessing
+
+    # 从环境变量获取配置
+    workers = int(os.getenv("UVICORN_WORKERS", "1"))
+    port = int(os.getenv("UVICORN_PORT", "8001"))
+    host = os.getenv("UVICORN_HOST", "0.0.0.0")  # 开发模式默认监听所有接口
+    reload = os.getenv("UVICORN_RELOAD", "true").lower() == "true"
+    
+    # 服务模式（通过 NSSM）只监听本地地址
+    if os.getenv("UVICORN_HOST"):
+        host = os.getenv("UVICORN_HOST")
+    elif not reload:
+        # 生产环境默认监听本地
+        host = "127.0.0.1"
 
     print("🚀 启动 Chart Class Web API 服务...")
-    print("📊 图表渲染 API: http://localhost:8001/api/render/*")
-    print("🎨 颜色管理 API: http://localhost:8001/api/colors/*")
-    print("📚 API 文档: http://localhost:8001/docs")
+    print(f"📊 图表渲染 API: http://{host}:{port}/api/render/*")
+    print(f"🎨 颜色管理 API: http://{host}:{port}/api/colors/*")
+    print(f"📚 API 文档: http://{host}:{port}/docs")
+    print(f"⚙️  Workers: {workers if not reload else 1} (reload={reload})")
+    print(f"🧵 线程池大小: {THREAD_POOL_SIZE}")
     print("")
 
-    uvicorn.run(app, host="0.0.0.0", port=8001, reload=True)
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        workers=workers if not reload else 1,  # reload 模式不支持多 workers
+        reload=reload,
+        log_level="info"
+    )

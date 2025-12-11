@@ -17,11 +17,14 @@ DATA_DIR.mkdir(exist_ok=True)
 DB_PATH = DATA_DIR / "chart_class.db"
 DATABASE_URL = f"sqlite:///{DB_PATH}"
 
-# 创建数据库引擎
+# 创建数据库引擎（优化连接池配置）
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False},  # SQLite 需要这个参数
     echo=False,  # 设置为 True 可以查看 SQL 语句
+    pool_size=10,  # 连接池大小
+    max_overflow=20,  # 最大溢出连接数
+    pool_pre_ping=True,  # 连接前检查，确保连接健康
 )
 
 # 创建会话工厂

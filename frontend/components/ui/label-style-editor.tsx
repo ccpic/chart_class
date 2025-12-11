@@ -84,7 +84,7 @@ export default function LabelStyleEditor({
           <Label className="text-xs text-gray-600">字体颜色</Label>
           <ColorPicker
             value={value.color || '#000000'}
-            onChange={(color) => updateValue({ color })}
+            onChange={(color) => updateValue({ color: color || undefined })}
             compact={true}
             variant="input"
             showColorValue={false}
