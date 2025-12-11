@@ -8,8 +8,10 @@ from matplotlib.ticker import FuncFormatter
 import numpy as np
 import pandas as pd
 from chart.plots.base import Plot
+
 try:
     from textalloc import allocate_text
+
     _HAS_TEXTALLOC = True
 except ImportError:
     _HAS_TEXTALLOC = False
@@ -661,7 +663,13 @@ class PlotBar(Plot):
             )
 
         # 优化标签位置
-        if d_style.get("adjust_labels") is True and texts and _HAS_TEXTALLOC and allocate_text:
+        # 只有当 adjust_labels 为 True 且 textalloc 可用时才处理
+        if (
+            d_style.get("adjust_labels") is True
+            and texts
+            and _HAS_TEXTALLOC
+            and allocate_text is not None
+        ):
             try:
                 # 提取文本位置和内容
                 x_data = [t.get_position()[0] for t in texts]
@@ -729,7 +737,9 @@ class PlotBar(Plot):
                                 bbox_style["alpha"] = float(alpha)
                             if bbox_style:
                                 new_text.set_bbox(bbox_style)
-                        elif hasattr(texts[idx], "_temp_bbox") and texts[idx]._temp_bbox:
+                        elif (
+                            hasattr(texts[idx], "_temp_bbox") and texts[idx]._temp_bbox
+                        ):
                             # 使用保存的临时 bbox
                             new_text.set_bbox(texts[idx]._temp_bbox)
 
@@ -750,8 +760,37 @@ class PlotBar(Plot):
                                 new_text.set_style("normal")
             except Exception as e:
                 import logging
+
                 logger = logging.getLogger(__name__)
                 logger.warning(f"标签位置调整失败: {e}")
+            else:
+                # 如果 textalloc 不可用，但 adjust_labels 为 True，需要为已创建的文本对象应用 bbox 样式
+                label_bbox = d_style.get("label_bbox")
+                for idx, text_obj in enumerate(texts):
+                    if hasattr(text_obj, "_temp_bbox") and text_obj._temp_bbox:
+                        # 应用保存的临时 bbox
+                        text_obj.set_bbox(text_obj._temp_bbox)
+                    elif label_bbox and label_bbox.get("enabled"):
+                        # 应用 label_bbox 配置
+                        bbox_style = {}
+                        if label_bbox.get("boxstyle"):
+                            bbox_style["boxstyle"] = label_bbox["boxstyle"]
+                        if label_bbox.get("facecolor"):
+                            bbox_style["facecolor"] = label_bbox["facecolor"]
+                        show_border = label_bbox.get("show_border", True)
+                        if show_border:
+                            if label_bbox.get("edgecolor"):
+                                bbox_style["edgecolor"] = label_bbox["edgecolor"]
+                            linewidth = label_bbox.get("linewidth")
+                            if linewidth is not None:
+                                bbox_style["linewidth"] = float(linewidth)
+                        else:
+                            bbox_style["linewidth"] = 0
+                        alpha = label_bbox.get("alpha")
+                        if alpha is not None:
+                            bbox_style["alpha"] = float(alpha)
+                        if bbox_style:
+                            text_obj.set_bbox(bbox_style)
 
         return self
 
@@ -789,7 +828,8 @@ class PlotBarh(Plot):
         """
         df = self.data
         df_share = self._calculate_share(df, axis=1)
-        df_share_total = df.div(df.sum())
+        # 对于条形图（横向），计算每个值占该行总和的百分比
+        df_share_total = df.div(df.sum(axis=1), axis=0)
 
         # 使用基类方法合并样式参数
         d_style = self._merge_style_kwargs(
@@ -924,19 +964,13 @@ class PlotBarh(Plot):
 
                     threshold = label_threshold if label_threshold is not None else 0.02
                     # 对于堆积图，使用 share_total（系列占堆积之和的比例）
-                    # 对于非堆积图，使用 x 轴最大值计算比例
+                    # 对于非堆积图，使用 max_v 计算比例（因为在绘制过程中 xlim 可能还没有设置）
                     if stacked and df.shape[1] > 1:
                         # 堆积图：使用占比判断
                         should_show = abs(share_total) >= threshold
                     else:
-                        # 非堆积图：使用 x 轴最大值计算比例
-                        xlim = self.ax.get_xlim()
-                        xmax = (
-                            xlim[1]
-                            if xlim and len(xlim) > 1 and xlim[1] is not None
-                            else 1.0
-                        )
-                        should_show = xmax != 0 and abs(v / xmax) >= threshold
+                        # 非堆积图：使用 max_v 计算比例
+                        should_show = max_v != 0 and abs(v / max_v) >= threshold
 
                     if should_show:
                         # 构建标签文本参数
@@ -1088,7 +1122,13 @@ class PlotBarh(Plot):
                 self.ax.text(**total_text_kwargs)
 
         # 优化标签位置
-        if d_style.get("adjust_labels") is True and texts and _HAS_TEXTALLOC and allocate_text:
+        # 只有当 adjust_labels 为 True 且 textalloc 可用时才处理
+        if (
+            d_style.get("adjust_labels") is True
+            and texts
+            and _HAS_TEXTALLOC
+            and allocate_text is not None
+        ):
             try:
                 # 提取文本位置和内容
                 x_data = [t.get_position()[0] for t in texts]
@@ -1156,7 +1196,9 @@ class PlotBarh(Plot):
                                 bbox_style["alpha"] = float(alpha)
                             if bbox_style:
                                 new_text.set_bbox(bbox_style)
-                        elif hasattr(texts[idx], "_temp_bbox") and texts[idx]._temp_bbox:
+                        elif (
+                            hasattr(texts[idx], "_temp_bbox") and texts[idx]._temp_bbox
+                        ):
                             # 使用保存的临时 bbox
                             new_text.set_bbox(texts[idx]._temp_bbox)
 
@@ -1177,8 +1219,37 @@ class PlotBarh(Plot):
                                 new_text.set_style("normal")
             except Exception as e:
                 import logging
+
                 logger = logging.getLogger(__name__)
                 logger.warning(f"标签位置调整失败: {e}")
+            else:
+                # 如果 textalloc 不可用，但 adjust_labels 为 True，需要为已创建的文本对象应用 bbox 样式
+                label_bbox = d_style.get("label_bbox")
+                for idx, text_obj in enumerate(texts):
+                    if hasattr(text_obj, "_temp_bbox") and text_obj._temp_bbox:
+                        # 应用保存的临时 bbox
+                        text_obj.set_bbox(text_obj._temp_bbox)
+                    elif label_bbox and label_bbox.get("enabled"):
+                        # 应用 label_bbox 配置
+                        bbox_style = {}
+                        if label_bbox.get("boxstyle"):
+                            bbox_style["boxstyle"] = label_bbox["boxstyle"]
+                        if label_bbox.get("facecolor"):
+                            bbox_style["facecolor"] = label_bbox["facecolor"]
+                        show_border = label_bbox.get("show_border", True)
+                        if show_border:
+                            if label_bbox.get("edgecolor"):
+                                bbox_style["edgecolor"] = label_bbox["edgecolor"]
+                            linewidth = label_bbox.get("linewidth")
+                            if linewidth is not None:
+                                bbox_style["linewidth"] = float(linewidth)
+                        else:
+                            bbox_style["linewidth"] = 0
+                        alpha = label_bbox.get("alpha")
+                        if alpha is not None:
+                            bbox_style["alpha"] = float(alpha)
+                        if bbox_style:
+                            text_obj.set_bbox(bbox_style)
 
         return self
 

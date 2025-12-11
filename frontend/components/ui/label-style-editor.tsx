@@ -82,45 +82,13 @@ export default function LabelStyleEditor({
         {/* 字体颜色 */}
         <div className="space-y-1">
           <Label className="text-xs text-gray-600">字体颜色</Label>
-          <div className="flex items-center gap-2">
-            {value.color ? (
-              <>
-                <ColorPicker
-                  value={value.color}
-                  onChange={(color) => updateValue({ color })}
-                  compact={true}
-                  variant="input"
-                  showColorValue={false}
-                />
-                <button
-                  type="button"
-                  onClick={() => updateValue({ color: undefined })}
-                  className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100"
-                  title="恢复为自动颜色（后端根据位置自动计算）"
-                >
-                  自动
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="h-8 w-8 rounded border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center cursor-pointer hover:border-gray-400 hover:bg-gray-100 transition-colors" title="当前为自动颜色（后端根据位置自动计算，通常为白色）">
-                  <span className="text-xs text-gray-400">自动</span>
-                </div>
-                <ColorPicker
-                  value="#000000"
-                  onChange={(color) => updateValue({ color })}
-                  compact={true}
-                  variant="input"
-                  showColorValue={false}
-                />
-              </>
-            )}
-          </div>
-          {!value.color && (
-            <p className="text-xs text-gray-500 mt-1">
-              未设置时，后端会根据标签位置自动选择颜色（通常为白色）
-            </p>
-          )}
+          <ColorPicker
+            value={value.color || '#000000'}
+            onChange={(color) => updateValue({ color: color || undefined })}
+            compact={true}
+            variant="input"
+            showColorValue={false}
+          />
         </div>
 
         {/* 字体样式 */}
