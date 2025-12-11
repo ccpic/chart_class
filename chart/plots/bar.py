@@ -796,14 +796,23 @@ class PlotBarh(Plot):
                         ha = "center"
                         fontcolor = "white"
 
-                    ylim = self.ax.get_ylim()
-                    ymax = (
-                        ylim[1]
-                        if ylim and len(ylim) > 1 and ylim[1] is not None
-                        else 1.0
-                    )
                     threshold = label_threshold if label_threshold is not None else 0.02
-                    if ymax != 0 and abs(v / ymax) >= threshold:
+                    # 对于堆积图，使用 share_total（系列占堆积之和的比例）
+                    # 对于非堆积图，使用 x 轴最大值计算比例
+                    if stacked and df.shape[1] > 1:
+                        # 堆积图：使用占比判断
+                        should_show = abs(share_total) >= threshold
+                    else:
+                        # 非堆积图：使用 x 轴最大值计算比例
+                        xlim = self.ax.get_xlim()
+                        xmax = (
+                            xlim[1]
+                            if xlim and len(xlim) > 1 and xlim[1] is not None
+                            else 1.0
+                        )
+                        should_show = xmax != 0 and abs(v / xmax) >= threshold
+
+                    if should_show:
                         # 构建标签文本参数
                         text_kwargs = {
                             "x": pos_x,
