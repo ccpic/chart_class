@@ -113,7 +113,7 @@ class PlotBar(Plot):
         show_gr_text: bool = False,
         secondary_line_column: Optional[str] = None,
         show_avg_line: bool = False,
-        label_threshold: float = 0.02,
+        label_threshold: float = 0.0,
         total_bar_width: float = 0.6,
         **kwargs: Any,
     ) -> PlotBar:
@@ -128,7 +128,7 @@ class PlotBar(Plot):
             show_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
             secondary_line_column (Optional[str], optional): 次坐标轴折线图要绘制的列名.
                                                              如果指定，则在次坐标轴上绘制该列的原始值折线图；如果为None，则不显示折线图. Defaults to None.
-            label_threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
+            label_threshold (float, optional): 显示数字标签的阈值，标签的绝对值大于等于此值才显示. Defaults to 0.0.
             total_bar_width (float, optional): 总体表现外框的宽度. Defaults to 0.6.
 
         Returns:
@@ -323,15 +323,9 @@ class PlotBar(Plot):
                         va = "center"
                         fontcolor = "white"
 
-                    # 确保 ylim 和 label_threshold 都不是 None
-                    ylim = self.ax.get_ylim()
-                    ymax = (
-                        ylim[1]
-                        if ylim and len(ylim) > 1 and ylim[1] is not None
-                        else 1.0
-                    )
-                    threshold = label_threshold if label_threshold is not None else 0.02
-                    if ymax != 0 and abs(v / ymax) >= threshold:
+                    # 使用绝对值阈值判断：只有当标签的绝对值大于等于阈值时才显示
+                    threshold = label_threshold if label_threshold is not None else 0.0
+                    if abs(v) >= threshold:
                         # 构建标签文本参数
                         text_kwargs = {
                             "x": pos_x,
@@ -806,7 +800,7 @@ class PlotBarh(Plot):
         stacked: bool = True,
         show_label: bool = True,
         label_formatter: str = "{abs}",
-        label_threshold: float = 0.02,
+        label_threshold: float = 0.0,
         label_pos: Literal["smart", "center", "outer"] = "smart",
         show_total_label: bool = False,
         **kwargs: Any,
@@ -820,7 +814,7 @@ class PlotBarh(Plot):
             show_total_bar (bool, optional): 是否显示一个总体表现外框. Defaults to False.
             show_total_label (bool, optional): 是否在条形图整体外侧右边显示堆积之和数字标签. Defaults to False.
             show_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
-            label_threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
+            label_threshold (float, optional): 显示数字标签的阈值，标签的绝对值大于等于此值才显示. Defaults to 0.0.
             label_pos (Literal["smart", "center", "outer"], optional): 标签位置，smart为自动判断，center为居中，outer为外侧. Defaults to "smart".
 
         Returns:
@@ -962,15 +956,9 @@ class PlotBarh(Plot):
                         ha = "center"
                         fontcolor = "white"
 
-                    threshold = label_threshold if label_threshold is not None else 0.02
-                    # 对于堆积图，使用 share_total（系列占堆积之和的比例）
-                    # 对于非堆积图，使用 max_v 计算比例（因为在绘制过程中 xlim 可能还没有设置）
-                    if stacked and df.shape[1] > 1:
-                        # 堆积图：使用占比判断
-                        should_show = abs(share_total) >= threshold
-                    else:
-                        # 非堆积图：使用 max_v 计算比例
-                        should_show = max_v != 0 and abs(v / max_v) >= threshold
+                    # 使用绝对值阈值判断：只有当标签的绝对值大于等于阈值时才显示
+                    threshold = label_threshold if label_threshold is not None else 0.0
+                    should_show = abs(v) >= threshold
 
                     if should_show:
                         # 构建标签文本参数

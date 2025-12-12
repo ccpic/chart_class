@@ -43,7 +43,7 @@ export default function BarParamsEditor({ subplot }: Props) {
   const showGrText = params.show_gr_text ?? false;
   const secondaryLineColumn = params.secondary_line_column ?? null;
   const showAvgLine = params.show_avg_line ?? false;
-  const labelThreshold = params.label_threshold ?? 0.02;
+  const labelThreshold = params.label_threshold ?? 0.0;
   const adjustLabels = params.adjust_labels ?? false;
   const adjustLabelsDrawLines = params.adjust_labels_draw_lines ?? true;
   const adjustLabelsLinecolor = params.adjust_labels_linecolor || 'black';
@@ -181,23 +181,20 @@ export default function BarParamsEditor({ subplot }: Props) {
                 </div>
 
                 <div className="space-y-2 pl-6">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="label_threshold" className="text-sm">
-                      标签显示阈值
-                    </Label>
-                    <span className="text-xs text-gray-500">{(labelThreshold * 100).toFixed(0)}%</span>
-                  </div>
-                  <Slider
+                  <Label htmlFor="label_threshold" className="text-sm">
+                    标签显示阈值
+                  </Label>
+                  <Input
                     id="label_threshold"
-                    min={0}
-                    max={0.2}
-                    step={0.01}
-                    value={[labelThreshold]}
-                    onValueChange={(value) => updateParam('label_threshold', value[0])}
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={labelThreshold}
+                    onChange={(e) => updateParam('label_threshold', parseFloat(e.target.value) || 0)}
                     className="w-full"
                   />
                   <p className="text-xs text-gray-500">
-                    系列占堆积之和的比例大于此值才显示标签
+                    标签的绝对值大于等于此值才显示（默认 0，表示显示所有标签）
                   </p>
                 </div>
 
