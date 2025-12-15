@@ -113,7 +113,7 @@ class PlotBar(Plot):
         show_gr_text: bool = False,
         secondary_line_column: Optional[str] = None,
         show_avg_line: bool = False,
-        label_threshold: float = 0.02,
+        label_threshold: float = 0.0,
         total_bar_width: float = 0.6,
         **kwargs: Any,
     ) -> PlotBar:
@@ -128,7 +128,7 @@ class PlotBar(Plot):
             show_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
             secondary_line_column (Optional[str], optional): 次坐标轴折线图要绘制的列名.
                                                              如果指定，则在次坐标轴上绘制该列的原始值折线图；如果为None，则不显示折线图. Defaults to None.
-            label_threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
+            label_threshold (float, optional): 显示数字标签的阈值，标签的绝对值大于等于此值才显示. Defaults to 0.0.
             total_bar_width (float, optional): 总体表现外框的宽度. Defaults to 0.6.
 
         Returns:
@@ -183,6 +183,10 @@ class PlotBar(Plot):
                 "secondary_line_marker": "o",  # 次坐标轴折线标记
                 "secondary_line_markersize": 3,  # 次坐标轴折线标记大小
                 "secondary_line_label_fmt": None,  # 次坐标轴折线标签格式，None则使用fmt_abs
+                "secondary_line_label_fontsize": 11,  # 次坐标轴折线标签字体大小，默认11
+                "secondary_line_label_color": "black",  # 次坐标轴折线标签颜色，默认黑色
+                "secondary_line_label_weight": None,  # 次坐标轴折线标签字重：normal, bold, italic
+                "secondary_line_label_bbox": None,  # 次坐标轴折线标签背景框配置
             },
             **kwargs,
         )
@@ -323,15 +327,9 @@ class PlotBar(Plot):
                         va = "center"
                         fontcolor = "white"
 
-                    # 确保 ylim 和 label_threshold 都不是 None
-                    ylim = self.ax.get_ylim()
-                    ymax = (
-                        ylim[1]
-                        if ylim and len(ylim) > 1 and ylim[1] is not None
-                        else 1.0
-                    )
-                    threshold = label_threshold if label_threshold is not None else 0.02
-                    if ymax != 0 and abs(v / ymax) >= threshold:
+                    # 使用绝对值阈值判断：只有当标签的绝对值大于等于阈值时才显示
+                    threshold = label_threshold if label_threshold is not None else 0.0
+                    if abs(v) >= threshold:
                         # 构建标签文本参数
                         text_kwargs = {
                             "x": pos_x,
@@ -548,6 +546,23 @@ class PlotBar(Plot):
             # 增加次坐标轴
             ax2 = self.ax.twinx()
 
+            # 应用次坐标轴标题、范围、可见性（来自通用样式）
+            y2label = getattr(self.style, "_y2label", None)
+            y2label_fontsize = getattr(self.style, "_y2label_fontsize", None)
+            y2lim = getattr(self.style, "_y2lim", None)
+            hide_y2axis = getattr(self.style, "_hide_y2axis", False)
+
+            if y2label is not None:
+                ax2.set_ylabel(y2label, fontsize=y2label_fontsize or self.fontsize)
+            if (
+                y2lim is not None
+                and isinstance(y2lim, (list, tuple))
+                and len(y2lim) == 2
+            ):
+                ax2.set_ylim(y2lim[0], y2lim[1])
+            if hide_y2axis:
+                ax2.yaxis.set_visible(False)
+
             # 根据样式设置控制次坐标轴的边框
             # 次坐标轴应该遵循主坐标轴的边框设置
             if (
@@ -611,6 +626,12 @@ class PlotBar(Plot):
             )
 
             # 绘制标签
+            # 获取标签样式参数
+            label_fontsize = d_style.get("secondary_line_label_fontsize") or 11
+            label_color = d_style.get("secondary_line_label_color")
+            label_weight = d_style.get("secondary_line_label_weight")
+            label_bbox = d_style.get("secondary_line_label_bbox")
+
             for i in range(len(line_data)):
                 value = float(line_data.values[i])
                 if not np.isnan(value) and not np.isinf(value):
@@ -621,18 +642,68 @@ class PlotBar(Plot):
                             # 如果格式化失败，使用默认格式
                             formatted_value = self.fmt.format(value)
 
-                        t = ax2.text(
-                            x=line_data.index[i],
-                            y=value,
-                            s=formatted_value,
-                            ha="center",
-                            va="bottom",
-                            fontsize=self.fontsize,
-                            color="white",
-                        )
-                        t.set_bbox(
-                            dict(facecolor=color_line, alpha=0.7, edgecolor=color_line)
-                        )
+                        # 构建标签文本参数
+                        text_kwargs = {
+                            "x": line_data.index[i],
+                            "y": value,
+                            "s": formatted_value,
+                            "ha": "center",
+                            "va": "bottom",
+                            "fontsize": label_fontsize,
+                        }
+
+                        # 标签颜色：优先使用 label_color，否则使用黑色
+                        if label_color:
+                            text_kwargs["color"] = label_color
+                        else:
+                            text_kwargs["color"] = "black"
+
+                        # 字体样式：weight 用于加粗，style 用于斜体
+                        if label_weight:
+                            if label_weight == "italic":
+                                text_kwargs["style"] = "italic"
+                                text_kwargs["weight"] = "normal"
+                            elif label_weight == "bold":
+                                text_kwargs["weight"] = "bold"
+                                text_kwargs["style"] = "normal"
+
+                        t = ax2.text(**text_kwargs)
+
+                        # 应用 label_bbox 配置（仅在启用时）
+                        if label_bbox and label_bbox.get("enabled"):
+                            bbox_style = {}
+                            if label_bbox.get("boxstyle"):
+                                bbox_style["boxstyle"] = label_bbox["boxstyle"]
+                            if label_bbox.get("facecolor"):
+                                bbox_style["facecolor"] = label_bbox["facecolor"]
+                            else:
+                                # 如果没有指定 facecolor，使用折线颜色
+                                bbox_style["facecolor"] = color_line
+
+                            # show_border 控制是否显示边框（默认为 True）
+                            show_border = label_bbox.get("show_border", True)
+                            if show_border:
+                                if label_bbox.get("edgecolor"):
+                                    bbox_style["edgecolor"] = label_bbox["edgecolor"]
+                                else:
+                                    # 如果没有指定 edgecolor，使用折线颜色
+                                    bbox_style["edgecolor"] = color_line
+                                linewidth = label_bbox.get("linewidth")
+                                if linewidth is not None:
+                                    bbox_style["linewidth"] = float(linewidth)
+                            else:
+                                # 不显示边框时，明确设置 linewidth 为 0
+                                bbox_style["linewidth"] = 0
+
+                            # 确保 alpha 不是 None
+                            alpha = label_bbox.get("alpha")
+                            if alpha is not None:
+                                bbox_style["alpha"] = float(alpha)
+                            else:
+                                bbox_style["alpha"] = 0.7
+
+                            t.set_bbox(bbox_style)
+                        # 如果未启用 label_bbox，不设置 bbox，完全由前端控件控制
 
             # 次坐标轴标签格式
             ax2.yaxis.set_major_formatter(
@@ -806,7 +877,7 @@ class PlotBarh(Plot):
         stacked: bool = True,
         show_label: bool = True,
         label_formatter: str = "{abs}",
-        label_threshold: float = 0.02,
+        label_threshold: float = 0.0,
         label_pos: Literal["smart", "center", "outer"] = "smart",
         show_total_label: bool = False,
         **kwargs: Any,
@@ -820,7 +891,7 @@ class PlotBarh(Plot):
             show_total_bar (bool, optional): 是否显示一个总体表现外框. Defaults to False.
             show_total_label (bool, optional): 是否在条形图整体外侧右边显示堆积之和数字标签. Defaults to False.
             show_gr_text (bool, optional): 是否显示增长率数字. Defaults to False.
-            label_threshold (float, optional): 显示数字标签的阈值，系列占堆积之和的比例大于此值才显示. Defaults to 0.02.
+            label_threshold (float, optional): 显示数字标签的阈值，标签的绝对值大于等于此值才显示. Defaults to 0.0.
             label_pos (Literal["smart", "center", "outer"], optional): 标签位置，smart为自动判断，center为居中，outer为外侧. Defaults to "smart".
 
         Returns:
@@ -962,15 +1033,9 @@ class PlotBarh(Plot):
                         ha = "center"
                         fontcolor = "white"
 
-                    threshold = label_threshold if label_threshold is not None else 0.02
-                    # 对于堆积图，使用 share_total（系列占堆积之和的比例）
-                    # 对于非堆积图，使用 max_v 计算比例（因为在绘制过程中 xlim 可能还没有设置）
-                    if stacked and df.shape[1] > 1:
-                        # 堆积图：使用占比判断
-                        should_show = abs(share_total) >= threshold
-                    else:
-                        # 非堆积图：使用 max_v 计算比例
-                        should_show = max_v != 0 and abs(v / max_v) >= threshold
+                    # 使用绝对值阈值判断：只有当标签的绝对值大于等于阈值时才显示
+                    threshold = label_threshold if label_threshold is not None else 0.0
+                    should_show = abs(v) >= threshold
 
                     if should_show:
                         # 构建标签文本参数

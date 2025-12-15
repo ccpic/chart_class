@@ -43,7 +43,7 @@ export default function BarParamsEditor({ subplot }: Props) {
   const showGrText = params.show_gr_text ?? false;
   const secondaryLineColumn = params.secondary_line_column ?? null;
   const showAvgLine = params.show_avg_line ?? false;
-  const labelThreshold = params.label_threshold ?? 0.02;
+  const labelThreshold = params.label_threshold ?? 0.0;
   const adjustLabels = params.adjust_labels ?? false;
   const adjustLabelsDrawLines = params.adjust_labels_draw_lines ?? true;
   const adjustLabelsLinecolor = params.adjust_labels_linecolor || 'black';
@@ -181,23 +181,20 @@ export default function BarParamsEditor({ subplot }: Props) {
                 </div>
 
                 <div className="space-y-2 pl-6">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="label_threshold" className="text-sm">
-                      标签显示阈值
-                    </Label>
-                    <span className="text-xs text-gray-500">{(labelThreshold * 100).toFixed(0)}%</span>
-                  </div>
-                  <Slider
+                  <Label htmlFor="label_threshold" className="text-sm">
+                    标签显示阈值
+                  </Label>
+                  <Input
                     id="label_threshold"
-                    min={0}
-                    max={0.2}
-                    step={0.01}
-                    value={[labelThreshold]}
-                    onValueChange={(value) => updateParam('label_threshold', value[0])}
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={labelThreshold}
+                    onChange={(e) => updateParam('label_threshold', parseFloat(e.target.value) || 0)}
                     className="w-full"
                   />
                   <p className="text-xs text-gray-500">
-                    系列占堆积之和的比例大于此值才显示标签
+                    标签的绝对值大于等于此值才显示（默认 0，表示显示所有标签）
                   </p>
                 </div>
 
@@ -551,6 +548,76 @@ export default function BarParamsEditor({ subplot }: Props) {
                   <p className="text-xs text-gray-500">
                     用于格式化折线图上数据点的标签。如果留空，将使用绝对值格式 (fmt_abs)
                   </p>
+                  
+                  <div className="pt-3 border-t">
+                    <LabelStyleEditor
+                      value={{
+                        fontsize: params.secondary_line_label_fontsize ?? 11,
+                        color: params.secondary_line_label_color || 'black',
+                        weight: params.secondary_line_label_weight,
+                        bbox: params.secondary_line_label_bbox ? {
+                          enabled: true,
+                          boxstyle: params.secondary_line_label_bbox?.boxstyle,
+                          facecolor: params.secondary_line_label_bbox?.facecolor,
+                          show_border: params.secondary_line_label_bbox?.show_border ?? true,
+                          edgecolor: params.secondary_line_label_bbox?.edgecolor,
+                          linewidth: params.secondary_line_label_bbox?.linewidth,
+                          alpha: params.secondary_line_label_bbox?.alpha,
+                        } : { enabled: false },
+                      }}
+                      onChange={(labelStyle: LabelStyle) => {
+                        const updates: any = {};
+                        if (labelStyle.fontsize !== undefined) {
+                          updates.secondary_line_label_fontsize = labelStyle.fontsize;
+                        }
+                        if (labelStyle.color !== undefined) {
+                          updates.secondary_line_label_color = labelStyle.color || null;
+                        }
+                        if (labelStyle.weight !== undefined) {
+                          updates.secondary_line_label_weight = labelStyle.weight === 'normal' ? undefined : labelStyle.weight;
+                        }
+                        // 处理 bbox 配置
+                        if (labelStyle.bbox !== undefined) {
+                          if (labelStyle.bbox.enabled) {
+                            // 只传递已定义的字段，避免传递 undefined/null
+                            const bboxConfig: any = {
+                              enabled: true,  // 必须传递 enabled 字段
+                            };
+                            if (labelStyle.bbox.boxstyle !== undefined) {
+                              bboxConfig.boxstyle = labelStyle.bbox.boxstyle;
+                            }
+                            if (labelStyle.bbox.facecolor !== undefined) {
+                              bboxConfig.facecolor = labelStyle.bbox.facecolor;
+                            }
+                            // show_border 控制是否显示边框
+                            const showBorder = labelStyle.bbox.show_border !== false; // 默认为 true
+                            if (showBorder) {
+                              // 只有在显示边框时才传递边框相关参数
+                              if (labelStyle.bbox.edgecolor !== undefined) {
+                                bboxConfig.edgecolor = labelStyle.bbox.edgecolor;
+                              }
+                              if (labelStyle.bbox.linewidth !== undefined && labelStyle.bbox.linewidth !== null) {
+                                bboxConfig.linewidth = labelStyle.bbox.linewidth;
+                              }
+                            }
+                            // show_border 参数传递给后端
+                            bboxConfig.show_border = showBorder;
+                            if (labelStyle.bbox.alpha !== undefined && labelStyle.bbox.alpha !== null) {
+                              bboxConfig.alpha = labelStyle.bbox.alpha;
+                            }
+                            updates.secondary_line_label_bbox = bboxConfig;
+                          } else {
+                            // enabled 为 false 时，设置为 null
+                            updates.secondary_line_label_bbox = null;
+                          }
+                        }
+                        updateSubplot(subplot.subplotId, {
+                          params: { ...subplot.params, ...updates },
+                        });
+                      }}
+                      label="标签字体和文本框样式"
+                    />
+                  </div>
                 </div>
               </div>
             </>

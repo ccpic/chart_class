@@ -33,6 +33,11 @@ export interface PlotStyle {
   ylabel_fontsize?: number | null;
   xlim?: [number | null, number | null] | null;
   ylim?: [number | null, number | null] | null;
+  // 次坐标轴（Y2）
+  y2label?: string;
+  y2label_fontsize?: number | null;
+  y2lim?: [number | null, number | null] | null;
+  hide_y2axis?: boolean; // 隐藏整体次坐标轴
   hide_xaxis?: boolean;  // 隐藏整体 x 轴
   hide_yaxis?: boolean;  // 隐藏整体 y 轴
   

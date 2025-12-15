@@ -106,6 +106,9 @@ class Plot:
                 "xlim": None,  # x轴边界(最小值, 最大值)
                 "ylim": None,  # y轴边界(最小值, 最大值)
                 "y2lim": None,  # y轴次坐标轴边界(最小值, 最大值)
+                "y2label": None,  # 次坐标轴标题
+                "y2label_fontsize": plot.fontsize,  # 次坐标轴标题字体大小
+                "hide_y2axis": False,  # 隐藏整体次坐标轴
                 "hide_xaxis": False,  # 隐藏整体 x 轴
                 "hide_yaxis": False,  # 隐藏整体 y 轴
                 # 刻度相关的风格

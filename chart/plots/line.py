@@ -53,10 +53,11 @@ class PlotLine(Plot):
                 "marker": "o",  # 标记点样式
                 "markersize": 5,  # 标记点大小
                 "line_color": None,  # 线条颜色
-                "label_fontsize": self.fontsize,  # 标签字体大小
-                "label_color": None,  # 标签颜色
+                "label_fontsize": 11,  # 标签字体大小，默认11
+                "label_color": "black",  # 标签颜色，默认黑色
                 "label_weight": None,  # 标签字重：normal, bold, italic
                 "label_bbox": None,  # 标签背景框配置
+                "label_fmt": None,  # 标签数值格式，None则使用self.fmt
             },
             **kwargs,
         )
@@ -119,11 +120,19 @@ class PlotLine(Plot):
                     # 保存当前文本对应的颜色
                     text_colors.append(color)
 
+                    # 使用指定的标签格式，如果没有则使用 self.fmt
+                    label_fmt = d_style.get("label_fmt") or self.fmt
+                    try:
+                        formatted_value = label_fmt.format(value)
+                    except (ValueError, KeyError):
+                        # 如果格式化失败，使用默认格式
+                        formatted_value = self.fmt.format(value)
+
                     # 构建标签文本参数
                     text_kwargs = {
                         "x": x_pos,
                         "y": value,
-                        "s": self.fmt.format(value),
+                        "s": formatted_value,
                         "va": "center",
                         "zorder": (
                             100
@@ -136,7 +145,7 @@ class PlotLine(Plot):
                     if d_style.get("label_fontsize"):
                         text_kwargs["size"] = d_style.get("label_fontsize")
                     else:
-                        text_kwargs["size"] = self.fontsize
+                        text_kwargs["size"] = 11
 
                     # 标签颜色：优先使用 label_color，否则使用白色
                     label_color = d_style.get("label_color")
@@ -256,11 +265,11 @@ class PlotLine(Plot):
                                 dict(facecolor=color, alpha=0.7, edgecolor=color)
                             )
 
-                        # 设置文本颜色：优先使用 label_color，否则使用白色
+                        # 设置文本颜色：优先使用 label_color，否则使用黑色
                         if label_color:
                             new_text.set_color(label_color)
                         else:
-                            new_text.set_color("white")
+                            new_text.set_color("black")
 
                         # 应用字体样式
                         label_weight = d_style.get("label_weight")
@@ -325,11 +334,11 @@ class PlotLine(Plot):
                         # 如果没有启用 label_bbox，使用默认样式（向后兼容）
                         text.set_bbox(dict(facecolor=color, alpha=0.7, edgecolor=color))
 
-                    # 设置文本颜色：优先使用 label_color，否则使用白色
+                    # 设置文本颜色：优先使用 label_color，否则使用黑色
                     if label_color:
                         text.set_color(label_color)
                     else:
-                        text.set_color("white")
+                        text.set_color("black")
 
                     # 应用字体样式
                     label_weight = d_style.get("label_weight")
@@ -491,7 +500,7 @@ class PlotArea(Plot):
                     if d_style.get("label_fontsize"):
                         text_kwargs["size"] = d_style.get("label_fontsize")
                     else:
-                        text_kwargs["size"] = self.fontsize
+                        text_kwargs["size"] = 11
 
                     # 标签颜色：优先使用 label_color，否则使用白色
                     label_color = d_style.get("label_color")
@@ -607,11 +616,11 @@ class PlotArea(Plot):
                                 dict(facecolor=color, alpha=0.7, edgecolor=color)
                             )
 
-                        # 设置文本颜色：优先使用 label_color，否则使用白色
+                        # 设置文本颜色：优先使用 label_color，否则使用黑色
                         if label_color:
                             new_text.set_color(label_color)
                         else:
-                            new_text.set_color("white")
+                            new_text.set_color("black")
 
                         # 应用字体样式
                         label_weight = d_style.get("label_weight")
@@ -676,11 +685,11 @@ class PlotArea(Plot):
                         # 如果没有启用 label_bbox，使用默认样式（向后兼容）
                         text.set_bbox(dict(facecolor=color, alpha=0.7, edgecolor=color))
 
-                    # 设置文本颜色：优先使用 label_color，否则使用白色
+                    # 设置文本颜色：优先使用 label_color，否则使用黑色
                     if label_color:
                         text.set_color(label_color)
                     else:
-                        text.set_color("white")
+                        text.set_color("black")
 
                     # 应用字体样式
                     label_weight = d_style.get("label_weight")

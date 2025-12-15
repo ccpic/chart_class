@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import ColorPicker from '@/components/color/ColorPicker';
 import LabelStyleEditor, { LabelStyle } from '@/components/ui/label-style-editor';
+import NumberFormatEditor from '@/components/ui/number-format-editor';
 
 interface Props {
   subplot: SubplotConfig;
@@ -325,10 +326,25 @@ export default function LineParamsEditor({ subplot }: Props) {
             <p className="text-xs text-gray-500">
               标签样式仅对"标签设置"中选择的系列生效
             </p>
-            <LabelStyleEditor
+            
+            {/* 标签数值格式 */}
+            <div className="space-y-2">
+              <NumberFormatEditor
+                label="标签数值格式"
+                value={params.label_fmt || '{:,.0f}'}
+                onChange={(fmt) => updateParam('label_fmt', fmt)}
+                showHelp={true}
+              />
+              <p className="text-xs text-gray-500">
+                用于格式化折线图上数据点的标签。如果留空，将使用默认格式 <code className="bg-gray-100 px-1 rounded">{'{:,.0f}'}</code>
+              </p>
+            </div>
+
+            <div className="pt-3 border-t">
+              <LabelStyleEditor
               value={{
-                fontsize: params.label_fontsize,
-                color: params.label_color,
+                fontsize: params.label_fontsize ?? 11,
+                color: params.label_color || 'black',
                 weight: params.label_weight,
                 bbox: params.label_bbox ? {
                   enabled: true,
@@ -355,7 +371,9 @@ export default function LineParamsEditor({ subplot }: Props) {
                 if (labelStyle.bbox !== undefined) {
                   if (labelStyle.bbox.enabled) {
                     // 只传递已定义的字段，避免传递 undefined/null
-                    const bboxConfig: any = {};
+                    const bboxConfig: any = {
+                      enabled: true,  // 必须传递 enabled 字段
+                    };
                     if (labelStyle.bbox.boxstyle !== undefined) {
                       bboxConfig.boxstyle = labelStyle.bbox.boxstyle;
                     }
@@ -378,7 +396,7 @@ export default function LineParamsEditor({ subplot }: Props) {
                     if (labelStyle.bbox.alpha !== undefined && labelStyle.bbox.alpha !== null) {
                       bboxConfig.alpha = labelStyle.bbox.alpha;
                     }
-                    updates.label_bbox = Object.keys(bboxConfig).length > 0 ? bboxConfig : null;
+                    updates.label_bbox = bboxConfig;
                   } else {
                     // enabled 为 false 时，设置为 null
                     updates.label_bbox = null;
@@ -387,9 +405,10 @@ export default function LineParamsEditor({ subplot }: Props) {
                 updateSubplot(subplot.subplotId, {
                   params: { ...subplot.params, ...updates },
                 });
-              }}
-              label="标签样式"
-            />
+                }}
+                label="标签样式"
+              />
+            </div>
           </div>
         </TabsContent>
       </Tabs>
