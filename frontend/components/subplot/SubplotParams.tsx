@@ -40,6 +40,7 @@ export default function SubplotParams({ subplot }: Props) {
         <BaseStyleEditor 
           style={subplot.params.style || {}} 
           onChange={handleStyleChange}
+          hasSecondaryAxis={!!subplot.params?.secondary_line_column}
         />
       </div>
 
