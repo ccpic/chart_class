@@ -114,6 +114,9 @@ class PlotBar(Plot):
         secondary_line_column: Optional[str] = None,
         show_avg_line: bool = False,
         label_threshold: float = 0.0,
+        label_pos: Literal[
+            "smart", "center", "inside_bottom", "inside_top", "outer"
+        ] = "smart",
         total_bar_width: float = 0.6,
         **kwargs: Any,
     ) -> PlotBar:
@@ -311,38 +314,70 @@ class PlotBar(Plot):
                     )
 
                 if show_label is True:
-                    if (
-                        stacked is False or df.shape[1] == 1
-                    ):  # 非堆叠图或只有一列数的情况（非堆叠）
-                        # 根据数据判断标签是否需要微调
-                        if abs(v) <= range_v * 0.2:
-                            pos_y = v * 1.1
-                            va = "bottom" if v >= 0 else "top"
-                            fontcolor = (
-                                color if d_style.get("bbox") is None else "white"
-                            )
-
-                        # if 0 <= v < max_v * 0.05:
-                        #     pos_y = v * 1.1
-                        #     va = "bottom"
-                        #     fontcolor = (
-                        #         color if d_style.get("bbox") is None else "white"
-                        #     )
-                        # elif min_v * 0.05 < v < 0:
-                        #     pos_y = v * 0.9
-                        #     va = "top"
-                        #     fontcolor = (
-                        #         color if d_style.get("bbox") is None else "white"
-                        #     )
-                        else:
-                            pos_y = v / 2
+                    # 根据 label_pos 参数确定标签位置
+                    if label_pos == "smart":
+                        # 智能位置（当前方案）
+                        if (
+                            stacked is False or df.shape[1] == 1
+                        ):  # 非堆叠图或只有一列数的情况（非堆叠）
+                            # 根据数据判断标签是否需要微调
+                            if abs(v) <= range_v * 0.2:
+                                pos_y = v * 1.1
+                                va = "bottom" if v >= 0 else "top"
+                                fontcolor = (
+                                    color if d_style.get("bbox") is None else "white"
+                                )
+                            else:
+                                pos_y = v / 2
+                                va = "center"
+                                fontcolor = "white"
+                        else:  # 堆叠的情况
+                            pos_y = bottom + v / 2
                             va = "center"
                             fontcolor = "white"
-
-                    else:  # 堆叠的情况
-                        pos_y = bottom + v / 2
+                    elif label_pos == "center":
+                        # 居中：标签在柱子中间
+                        if stacked:
+                            pos_y = bottom + v / 2
+                        else:
+                            pos_y = v / 2
                         va = "center"
                         fontcolor = "white"
+                    elif label_pos == "inside_bottom":
+                        # 内侧底部：标签在柱子底部内侧
+                        if stacked:
+                            pos_y = (
+                                bottom + abs(v) * 0.05
+                                if v >= 0
+                                else bottom - abs(v) * 0.05
+                            )
+                        else:
+                            pos_y = abs(v) * 0.05 if v >= 0 else -abs(v) * 0.05
+                        va = "bottom" if v >= 0 else "top"
+                        fontcolor = "white"
+                    elif label_pos == "inside_top":
+                        # 内侧顶部：标签在柱子顶部内侧
+                        if stacked:
+                            pos_y = (
+                                bottom + v - abs(v) * 0.05
+                                if v >= 0
+                                else bottom + v + abs(v) * 0.05
+                            )
+                        else:
+                            pos_y = v - abs(v) * 0.05 if v >= 0 else v + abs(v) * 0.05
+                        va = "top" if v >= 0 else "bottom"
+                        fontcolor = "white"
+                    elif label_pos == "outer":
+                        # 外侧：标签在柱子外侧
+                        margin = range_v * 0.02
+                        if stacked:
+                            pos_y = (
+                                bottom + v + margin if v >= 0 else bottom + v - margin
+                            )
+                        else:
+                            pos_y = v + margin if v >= 0 else v - margin
+                        va = "bottom" if v >= 0 else "top"
+                        fontcolor = color if d_style.get("bbox") is None else "white"
 
                     # 使用绝对值阈值判断：只有当标签的绝对值大于等于阈值时才显示
                     threshold = label_threshold if label_threshold is not None else 0.0
@@ -895,7 +930,9 @@ class PlotBarh(Plot):
         show_label: bool = True,
         label_formatter: str = "{abs}",
         label_threshold: float = 0.0,
-        label_pos: Literal["smart", "center", "outer"] = "smart",
+        label_pos: Literal[
+            "smart", "center", "inside_bottom", "inside_top", "outer"
+        ] = "smart",
         show_total_label: bool = False,
         **kwargs: Any,
     ) -> PlotBarh:
@@ -954,6 +991,7 @@ class PlotBarh(Plot):
         # 绝对值bar图和增长率标注
         max_v = np.nanmax(df.values)
         min_v = np.nanmin(df.values)
+        range_v = max_v - min_v
         # 收集所有标签文本对象，用于 adjust_labels 处理
         texts = []
         text_colors = []  # 保存每个标签的颜色，用于 adjust_labels 后恢复
@@ -1031,21 +1069,17 @@ class PlotBarh(Plot):
                 )
 
                 if show_label is True:
-                    margin = self.ax.get_xlim()[1] * 0.02
+                    # 根据 label_pos 参数确定标签位置（水平方向）
+                    margin = range_v * 0.02
                     if label_pos == "smart":
+                        # 智能位置（当前方案）
                         if (
                             stacked is False or df.shape[1] == 1
                         ):  # 非堆叠图或只有一列数的情况（非堆叠）
                             # 根据数据判断标签是否需要微调
-                            if 0 <= v < max_v * 0.2:
-                                pos_x = v + margin
-                                ha = "left"
-                                fontcolor = (
-                                    color if d_style.get("bbox") is None else "white"
-                                )
-                            elif min_v * 0.2 < v < 0:
-                                pos_x = v - margin
-                                ha = "right"
+                            if abs(v) <= range_v * 0.2:
+                                pos_x = v + margin if v >= 0 else v - margin
+                                ha = "left" if v >= 0 else "right"
                                 fontcolor = (
                                     color if d_style.get("bbox") is None else "white"
                                 )
@@ -1053,19 +1087,48 @@ class PlotBarh(Plot):
                                 pos_x = v / 2
                                 ha = "center"
                                 fontcolor = "white"
-
                         else:  # 堆叠的情况
                             pos_x = left + v / 2
                             ha = "center"
                             fontcolor = "white"
-                    elif label_pos == "outer":
-                        pos_x = v + margin
-                        ha = "left"
-                        fontcolor = color
                     elif label_pos == "center":
-                        pos_x = left + v / 2
+                        # 居中：标签在柱子中间
+                        if stacked:
+                            pos_x = left + v / 2
+                        else:
+                            pos_x = v / 2
                         ha = "center"
                         fontcolor = "white"
+                    elif label_pos == "inside_bottom":
+                        # 内侧底部（左侧）：标签在柱子左侧内侧（靠近原点）
+                        if stacked:
+                            pos_x = (
+                                left + abs(v) * 0.05 if v >= 0 else left - abs(v) * 0.05
+                            )
+                        else:
+                            pos_x = abs(v) * 0.05 if v >= 0 else -abs(v) * 0.05
+                        ha = "left" if v >= 0 else "right"
+                        fontcolor = "white"
+                    elif label_pos == "inside_top":
+                        # 内侧顶部（右侧）：标签在柱子右侧内侧（远离原点）
+                        if stacked:
+                            pos_x = (
+                                left + v - abs(v) * 0.05
+                                if v >= 0
+                                else left + v + abs(v) * 0.05
+                            )
+                        else:
+                            pos_x = v - abs(v) * 0.05 if v >= 0 else v + abs(v) * 0.05
+                        ha = "right" if v >= 0 else "left"
+                        fontcolor = "white"
+                    elif label_pos == "outer":
+                        # 外侧：标签在柱子外侧
+                        if stacked:
+                            pos_x = left + v + margin if v >= 0 else left + v - margin
+                        else:
+                            pos_x = v + margin if v >= 0 else v - margin
+                        ha = "left" if v >= 0 else "right"
+                        fontcolor = color if d_style.get("bbox") is None else "white"
 
                     # 使用绝对值阈值判断：只有当标签的绝对值大于等于阈值时才显示
                     threshold = label_threshold if label_threshold is not None else 0.0

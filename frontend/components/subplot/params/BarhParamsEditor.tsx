@@ -251,13 +251,15 @@ export default function BarhParamsEditor({ subplot }: Props) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="smart">智能定位</SelectItem>
+                      <SelectItem value="smart">智能（当前方案）</SelectItem>
                       <SelectItem value="center">居中</SelectItem>
+                      <SelectItem value="inside_bottom">内侧底部（左侧）</SelectItem>
+                      <SelectItem value="inside_top">内侧顶部（右侧）</SelectItem>
                       <SelectItem value="outer">外侧</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-gray-500">
-                    smart: 根据数据值自动判断位置；center: 标签居中显示；outer: 标签显示在条形外侧
+                    选择标签在条形上的显示位置（内侧/外侧指左右方向）
                   </p>
                 </div>
 

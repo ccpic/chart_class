@@ -227,6 +227,32 @@ export default function BarParamsEditor({ subplot }: Props) {
             </div>
 
             {showLabel && (
+              <div className="space-y-2">
+                <Label htmlFor="label_pos" className="text-sm font-medium">
+                  标签位置
+                </Label>
+                <Select
+                  value={params.label_pos || 'smart'}
+                  onValueChange={(value) => updateParam('label_pos', value)}
+                >
+                  <SelectTrigger id="label_pos">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="smart">智能（当前方案）</SelectItem>
+                    <SelectItem value="center">居中</SelectItem>
+                    <SelectItem value="inside_bottom">内侧底部</SelectItem>
+                    <SelectItem value="inside_top">内侧顶部</SelectItem>
+                    <SelectItem value="outer">外侧</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">
+                  选择标签在柱子上的显示位置
+                </p>
+              </div>
+            )}
+
+            {showLabel && (
               <>
                 <div className="space-y-2 pl-6">
                   <Label htmlFor="label_formatter" className="text-sm font-medium">

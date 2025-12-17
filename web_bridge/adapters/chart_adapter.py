@@ -444,7 +444,6 @@ class WebChartAdapter:
                         cmap_name = params.pop("cmap")
                         if cmap_name:
                             try:
-                                import matplotlib.pyplot as plt
                                 cmap_norm = plt.get_cmap(cmap_name)
                             except Exception as e:
                                 print(f"警告: 无法加载 colormap '{cmap_name}': {e}")
