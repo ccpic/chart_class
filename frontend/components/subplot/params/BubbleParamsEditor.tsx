@@ -14,6 +14,7 @@ import { HelpCircle, Plus, Trash2 } from 'lucide-react';
 import ColorPicker from '@/components/color/ColorPicker';
 import NumberFormatEditor from '@/components/ui/number-format-editor';
 import { Button } from '@/components/ui/button';
+import { CmapPicker } from '@/components/ui/cmap-picker';
 
 interface Props {
   subplot: SubplotConfig;
@@ -36,6 +37,31 @@ export default function BubbleParamsEditor({ subplot }: Props) {
   const columnOptions = subplot.data.columns || [];
   // 获取数据行数
   const rowCount = subplot.data.index?.length || subplot.data.data?.length || 0;
+
+  // 判断列是否为数值类型
+  const isNumericColumn = (columnName: string): boolean => {
+    if (!columnName || !subplot.data.data || subplot.data.data.length === 0) {
+      return false;
+    }
+    
+    const colIndex = subplot.data.columns.indexOf(columnName);
+    if (colIndex === -1) return false;
+    
+    // 检查该列的所有值是否都可以转换为数字
+    const values = subplot.data.data.map(row => row[colIndex]);
+    const numericCount = values.filter(v => {
+      if (v === null || v === undefined || v === '') return true; // 空值视为有效
+      const num = typeof v === 'number' ? v : parseFloat(String(v));
+      return !isNaN(num);
+    }).length;
+    
+    // 如果超过80%的值是数字，则认为该列是数值类型
+    return numericCount / values.length >= 0.8;
+  };
+
+  // 获取当前 hue 列
+  const hueColumn = subplot.params.hue;
+  const isHueNumeric = hueColumn ? isNumericColumn(hueColumn) : false;
 
   return (
     <div className="space-y-4">
@@ -135,6 +161,22 @@ export default function BubbleParamsEditor({ subplot }: Props) {
               选择字段后，气泡颜色将按该字段的值自动分配
             </p>
           </div>
+
+          {/* 数值类型 hue 的 colormap 选择器 */}
+          {isHueNumeric && (
+            <div className="space-y-2">
+              <CmapPicker
+                value={subplot.params.cmap || 'PiYG'}
+                onChange={(value) => updateParam('cmap', value)}
+                label="颜色映射方案 (cmap)"
+                showPreview={true}
+                showReverse={true}
+              />
+              <p className="text-xs text-gray-500">
+                当颜色字段为数值类型时，使用此颜色映射方案
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="alpha-slider" className="text-sm font-medium">

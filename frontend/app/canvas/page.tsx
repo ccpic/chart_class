@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useCanvasStore } from '@/store/canvasStore';
+import { useChartStore } from '@/store/chartStore';
 import MainContent from '@/components/layout/MainContent';
 import RightPanel from '@/components/layout/RightPanel';
 import GridControls from '@/components/canvas/GridControls';
@@ -14,6 +15,7 @@ import { Button } from '@/components/ui/button';
 
 function CanvasPageContent() {
   const { canvas, subplots, renderedImage, renderError, setRenderedImage, setRenderError } = useCanvasStore();
+  const { currentChart, currentChartId } = useChartStore();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('grid');
 
@@ -38,9 +40,17 @@ function CanvasPageContent() {
   const handleDownload = () => {
     if (!renderedImage) return;
     
+    // 获取图表名称，如果未保存则使用"未保存图表"
+    const chartName = currentChartId && currentChart 
+      ? currentChart.name 
+      : '未保存图表';
+    
+    // 清理文件名中的非法字符（Windows 文件名不能包含：< > : " / \ | ? *）
+    const sanitizedName = chartName.replace(/[<>:"/\\|?*]/g, '_');
+    
     const link = document.createElement('a');
     link.href = renderedImage;
-    link.download = `canvas-${Date.now()}.png`;
+    link.download = `${sanitizedName}-${Date.now()}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

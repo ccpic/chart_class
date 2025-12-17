@@ -14,6 +14,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Table2, Trash2, Plus } from 'lucide-react';
 import NumberFormatEditor from '@/components/ui/number-format-editor';
 import ColorPicker from '@/components/color/ColorPicker';
+import { CmapPicker } from '@/components/ui/cmap-picker';
 
 interface Props {
   subplot: SubplotConfig;
@@ -876,36 +877,14 @@ export default function TableParamsEditor({ subplot }: Props) {
                             {colDef.cmap_config?.mode === 'numeric' && (
                               <div className="grid grid-cols-2 gap-2 pl-2 border-l border-gray-200">
                                 {/* Colormap选择 */}
-                                <div className="col-span-2 space-y-1.5">
-                                  <Label htmlFor={`cmap-${index}`} className="text-xs">
-                                    Colormap
-                                  </Label>
-                                  <Select
+                                <div className="col-span-2">
+                                  <CmapPicker
                                     value={getCmapNumericConfig(colDef.cmap_config)?.cmap || 'PiYG'}
-                                    onValueChange={(value) => updateCmapConfig(index, 'numeric', { cmap: value })}
-                                  >
-                                    <SelectTrigger id={`cmap-${index}`} className="h-8 text-sm">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="YlOrRd">黄橙红</SelectItem>
-                                      <SelectItem value="RdYlGn">红黄绿</SelectItem>
-                                      <SelectItem value="Blues">蓝色系</SelectItem>
-                                      <SelectItem value="Greens">绿色系</SelectItem>
-                                      <SelectItem value="Reds">红色系</SelectItem>
-                                      <SelectItem value="Oranges">橙色系</SelectItem>
-                                      <SelectItem value="Purples">紫色系</SelectItem>
-                                      <SelectItem value="RdPu">红紫色</SelectItem>
-                                      <SelectItem value="YlGn">黄绿色</SelectItem>
-                                      <SelectItem value="YlGnBu">黄绿蓝</SelectItem>
-                                      <SelectItem value="PiYG">粉绿色</SelectItem>
-                                      <SelectItem value="RdBu">红蓝色</SelectItem>
-                                      <SelectItem value="Spectral">光谱色</SelectItem>
-                                      <SelectItem value="coolwarm">冷暖色</SelectItem>
-                                      <SelectItem value="viridis">Viridis</SelectItem>
-                                      <SelectItem value="plasma">Plasma</SelectItem>
-                                    </SelectContent>
-                                  </Select>
+                                    onChange={(value) => updateCmapConfig(index, 'numeric', { cmap: value })}
+                                    label="Colormap"
+                                    showPreview={true}
+                                    showReverse={true}
+                                  />
                                 </div>
 
                                 {/* 标准差倍数 */}
@@ -1084,36 +1063,14 @@ export default function TableParamsEditor({ subplot }: Props) {
                             {colDef.text_cmap_config?.mode === 'numeric' && (
                               <div className="grid grid-cols-2 gap-2 pl-2 border-l border-gray-200">
                                 {/* Colormap选择 */}
-                                <div className="col-span-2 space-y-1.5">
-                                  <Label htmlFor={`text-cmap-${index}`} className="text-xs">
-                                    Colormap
-                                  </Label>
-                                  <Select
+                                <div className="col-span-2">
+                                  <CmapPicker
                                     value={getCmapNumericConfig(colDef.text_cmap_config)?.cmap || 'PiYG'}
-                                    onValueChange={(value) => updateTextCmapConfig(index, 'numeric', { cmap: value })}
-                                  >
-                                    <SelectTrigger id={`text-cmap-${index}`} className="h-8 text-sm">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="PiYG">粉绿色</SelectItem>
-                                      <SelectItem value="YlOrRd">黄橙红</SelectItem>
-                                      <SelectItem value="RdYlGn">红黄绿</SelectItem>
-                                      <SelectItem value="Blues">蓝色系</SelectItem>
-                                      <SelectItem value="Greens">绿色系</SelectItem>
-                                      <SelectItem value="Reds">红色系</SelectItem>
-                                      <SelectItem value="Oranges">橙色系</SelectItem>
-                                      <SelectItem value="Purples">紫色系</SelectItem>
-                                      <SelectItem value="RdPu">红紫色</SelectItem>
-                                      <SelectItem value="YlGn">黄绿色</SelectItem>
-                                      <SelectItem value="YlGnBu">黄绿蓝</SelectItem>
-                                      <SelectItem value="RdBu">红蓝色</SelectItem>
-                                      <SelectItem value="Spectral">光谱色</SelectItem>
-                                      <SelectItem value="coolwarm">冷暖色</SelectItem>
-                                      <SelectItem value="viridis">Viridis</SelectItem>
-                                      <SelectItem value="plasma">Plasma</SelectItem>
-                                    </SelectContent>
-                                  </Select>
+                                    onChange={(value) => updateTextCmapConfig(index, 'numeric', { cmap: value })}
+                                    label="Colormap"
+                                    showPreview={true}
+                                    showReverse={true}
+                                  />
                                 </div>
 
                                 {/* 标准差倍数 */}
