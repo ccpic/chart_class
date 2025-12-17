@@ -45,6 +45,9 @@ export default function BarhParamsEditor({ subplot }: Props) {
   const labelPos = params.label_pos ?? 'smart';
   const barHeight = params.bar_height ?? 0.8;
   const barColor = params.bar_color ?? null;
+  // 向后兼容：如果设置了 bar_color 但没有设置 color_scheme，默认使用统一颜色模式
+  const colorScheme = params.color_scheme ?? (barColor ? 'uniform' : 'dict'); // 'uniform' 或 'dict'
+  const colorBy = params.color_by ?? 'series'; // 'series' 或 'category'
   const fmtAbs = params.fmt_abs ?? '{:,.0f}';
   const fmtShare = params.fmt_share ?? '{:.1%}';
   const fmtGr = params.fmt_gr ?? '{:+.1%}';
@@ -107,16 +110,78 @@ export default function BarhParamsEditor({ subplot }: Props) {
           <div className="space-y-3 pt-3 border-t">
             <h4 className="text-sm font-semibold text-gray-800">颜色设置</h4>
             
-            <div className="space-y-2">
-              <ColorPicker
-                label="条形图颜色 (bar_color)"
-                value={barColor || ''}
-                onChange={(color) => updateParam('bar_color', color || null)}
-                showColorValue={true}
-              />
-              <p className="text-xs text-gray-500">
-                指定条形图的统一颜色，留空则使用默认颜色方案
-              </p>
+            <div className="space-y-3">
+              {/* 颜色方案选择 */}
+              <div className="space-y-2">
+                <Label htmlFor="color_scheme" className="text-sm font-medium">
+                  颜色方案
+                </Label>
+                <Select
+                  value={colorScheme}
+                  onValueChange={(value) => {
+                    updateParam('color_scheme', value);
+                    // 如果切换到统一颜色且没有设置颜色，设置默认颜色
+                    if (value === 'uniform' && !barColor) {
+                      updateParam('bar_color', '#3b82f6');
+                    }
+                  }}
+                >
+                  <SelectTrigger id="color_scheme">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="uniform">统一颜色</SelectItem>
+                    <SelectItem value="dict">按颜色字典</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 统一颜色模式 */}
+              {colorScheme === 'uniform' && (
+                <div className="space-y-2">
+                  <ColorPicker
+                    label="条形图颜色 (bar_color)"
+                    value={barColor || '#3b82f6'}
+                    onChange={(color) => {
+                      // 确保在统一颜色模式下始终显式写回 color_scheme，避免旧数据只有 bar_color 没有 color_scheme
+                      if (!params.color_scheme) {
+                        updateParam('color_scheme', 'uniform');
+                      }
+                      updateParam('bar_color', color || '#3b82f6');
+                    }}
+                    showColorValue={true}
+                  />
+                  <p className="text-xs text-gray-500">
+                    所有条形使用相同的颜色
+                  </p>
+                </div>
+              )}
+
+              {/* 按颜色字典模式 */}
+              {colorScheme === 'dict' && (
+                <div className="space-y-2">
+                  <Label htmlFor="color_by" className="text-sm font-medium">
+                    着色方式
+                  </Label>
+                  <Select
+                    value={colorBy}
+                    onValueChange={(value) => updateParam('color_by', value)}
+                  >
+                    <SelectTrigger id="color_by">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="series">按系列（列）</SelectItem>
+                      <SelectItem value="category">按分类（索引）</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
+                    {colorBy === 'series' 
+                      ? '每个数据系列（列）使用不同的颜色，根据颜色字典映射'
+                      : '每个分类（索引）使用不同的颜色，根据颜色字典映射'}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </TabsContent>

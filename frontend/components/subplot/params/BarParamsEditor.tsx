@@ -113,7 +113,7 @@ export default function BarParamsEditor({ subplot }: Props) {
                 <Label htmlFor="bar_width" className="text-sm">
                   柱宽 (bar_width)
                 </Label>
-                <span className="text-xs text-gray-500">{barWidth.toFixed(1)}</span>
+                <span className="text-xs text-gray-500">{barWidth.toFixed(2)}</span>
               </div>
               <Slider
                 id="bar_width"
@@ -1421,7 +1421,7 @@ export default function BarParamsEditor({ subplot }: Props) {
                   <Label htmlFor="total_bar_width" className="text-sm">
                     总体表现外框宽度 (total_bar_width)
                   </Label>
-                  <span className="text-xs text-gray-500">{totalBarWidth.toFixed(1)}</span>
+                  <span className="text-xs text-gray-500">{totalBarWidth.toFixed(2)}</span>
                 </div>
                 <Slider
                   id="total_bar_width"
