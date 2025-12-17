@@ -10,9 +10,10 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Plus, Trash2 } from 'lucide-react';
 import ColorPicker from '@/components/color/ColorPicker';
 import NumberFormatEditor from '@/components/ui/number-format-editor';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   subplot: SubplotConfig;
@@ -304,84 +305,6 @@ export default function BubbleParamsEditor({ subplot }: Props) {
         {/* Tab 4: 气泡和标签 */}
         <TabsContent value="bubble" className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="bubble-scale-slider" className="text-sm font-medium">
-              气泡缩放系数: {(subplot.params.bubble_scale ?? 1).toFixed(1)}
-            </Label>
-            <Slider
-              id="bubble-scale-slider"
-              min={0.1}
-              max={10}
-              step={0.1}
-              value={[subplot.params.bubble_scale ?? 1]}
-              onValueChange={([value]) => updateParam('bubble_scale', value)}
-              className="w-full"
-            />
-            <p className="text-xs text-gray-500">控制气泡整体大小</p>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="label-limit-slider" className="text-sm font-medium">
-                标签显示数量
-              </Label>
-              <div className="group relative">
-                <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
-                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                  显示前 N 个气泡标签，0 为不显示
-                </div>
-              </div>
-            </div>
-            <Slider
-              id="label-limit-slider"
-              min={0}
-              max={rowCount || 20}
-              step={1}
-              value={[subplot.params.label_limit ?? 0]}
-              onValueChange={([value]) => updateParam('label_limit', value)}
-              className="w-full"
-            />
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">
-                {subplot.params.label_limit ?? 0} 个标签
-              </span>
-              <span className="text-xs text-gray-500">
-                (最多 {rowCount || 20} 个)
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="label-topy-slider" className="text-sm font-medium">
-                按 Y 值标注前 N 个
-              </Label>
-              <div className="group relative">
-                <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
-                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                  按 Y 值排序后标注前 N 个，0 表示不限制
-                </div>
-              </div>
-            </div>
-            <Slider
-              id="label-topy-slider"
-              min={0}
-              max={rowCount || 20}
-              step={1}
-              value={[subplot.params.label_topy ?? 0]}
-              onValueChange={([value]) => updateParam('label_topy', value)}
-              className="w-full"
-            />
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">
-                {subplot.params.label_topy ?? 0} 个标签
-              </span>
-              <span className="text-xs text-gray-500">
-                (最多 {rowCount || 20} 个)
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="label-formatter" className="text-sm font-medium">
               标签格式化 <span className="text-gray-400">(Shift+Enter换行)</span>
             </Label>
@@ -398,7 +321,235 @@ export default function BubbleParamsEditor({ subplot }: Props) {
             </p>
           </div>
 
-          {(subplot.params.label_limit ?? 0) > 1 && (
+          <div className="space-y-2">
+            <Label htmlFor="bubble-scale-slider" className="text-sm font-medium">
+              气泡缩放系数: {(subplot.params.bubble_scale ?? 1).toFixed(1)}
+            </Label>
+            <Slider
+              id="bubble-scale-slider"
+              min={0.1}
+              max={10}
+              step={0.1}
+              value={[subplot.params.bubble_scale ?? 1]}
+              onValueChange={([value]) => updateParam('bubble_scale', value)}
+              className="w-full"
+            />
+            <p className="text-xs text-gray-500">控制气泡整体大小</p>
+          </div>
+
+          {/* 极值标签控制：按 x/y/z 轴极值自动标注 */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Label className="text-sm font-medium">
+                极值标签（按轴极值）
+              </Label>
+              <div className="group relative">
+                <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
+                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-72 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                  为每个轴设置显示多少个极值标签，可选择按最大值或最小值排序选择前 N 个。
+                  同一条记录可能同时是多个轴的极值，标签会重复出现。
+                </div>
+              </div>
+            </div>
+            
+            {/* X 轴极值 */}
+            <div className="space-y-2 p-3 bg-gray-50 rounded-md border border-gray-200">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">X 轴极值</Label>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-600">选择方式</span>
+                  <Select
+                    value={subplot.params.label_x_extreme_mode || 'max'}
+                    onValueChange={(value: string) => updateParam('label_x_extreme_mode', value)}
+                  >
+                    <SelectTrigger className="h-7 w-24 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="max">最大值</SelectItem>
+                      <SelectItem value="min">最小值</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Slider
+                min={0}
+                max={rowCount || 20}
+                step={1}
+                value={[subplot.params.label_x_extreme_count ?? 0]}
+                onValueChange={([value]) => updateParam('label_x_extreme_count', value)}
+                className="w-full"
+              />
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-600">
+                  {subplot.params.label_x_extreme_count ?? 0} 个标签
+                </span>
+                <span className="text-xs text-gray-500">
+                  (最多 {rowCount || 20} 个)
+                </span>
+              </div>
+            </div>
+
+            {/* Y 轴极值 */}
+            <div className="space-y-2 p-3 bg-gray-50 rounded-md border border-gray-200">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Y 轴极值</Label>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-600">选择方式</span>
+                  <Select
+                    value={subplot.params.label_y_extreme_mode || 'max'}
+                    onValueChange={(value: string) => updateParam('label_y_extreme_mode', value)}
+                  >
+                    <SelectTrigger className="h-7 w-24 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="max">最大值</SelectItem>
+                      <SelectItem value="min">最小值</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Slider
+                min={0}
+                max={rowCount || 20}
+                step={1}
+                value={[subplot.params.label_y_extreme_count ?? 0]}
+                onValueChange={([value]) => updateParam('label_y_extreme_count', value)}
+                className="w-full"
+              />
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-600">
+                  {subplot.params.label_y_extreme_count ?? 0} 个标签
+                </span>
+                <span className="text-xs text-gray-500">
+                  (最多 {rowCount || 20} 个)
+                </span>
+              </div>
+            </div>
+
+            {/* Z 轴极值 */}
+            <div className="space-y-2 p-3 bg-gray-50 rounded-md border border-gray-200">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Z 轴极值</Label>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-600">选择方式</span>
+                  <Select
+                    value={subplot.params.label_z_extreme_mode || 'max'}
+                    onValueChange={(value: string) => updateParam('label_z_extreme_mode', value)}
+                  >
+                    <SelectTrigger className="h-7 w-24 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="max">最大值</SelectItem>
+                      <SelectItem value="min">最小值</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Slider
+                min={0}
+                max={rowCount || 20}
+                step={1}
+                value={[subplot.params.label_z_extreme_count ?? 0]}
+                onValueChange={([value]) => updateParam('label_z_extreme_count', value)}
+                className="w-full"
+              />
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-600">
+                  {subplot.params.label_z_extreme_count ?? 0} 个标签
+                </span>
+                <span className="text-xs text-gray-500">
+                  (最多 {rowCount || 20} 个)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 高亮标签：指定要高亮显示标签的项目 */}
+          <div className="space-y-3 pt-3 border-t">
+            <div className="flex items-center space-x-2">
+              <Label className="text-sm font-medium">
+                高亮标签
+              </Label>
+              <div className="group relative">
+                <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
+                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-72 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                  指定要高亮显示标签的项目。如果输入的文本匹配项目的行索引（部分匹配），将强制显示标签并使用指定的颜色。
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {Object.entries(subplot.params.label_highlight_items || {}).map(([pattern, color], idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <Textarea
+                    value={pattern}
+                    onChange={(e) => {
+                      const newPattern = e.target.value;
+                      const items = { ...(subplot.params.label_highlight_items || {}) };
+                      delete items[pattern];
+                      // 允许空值，仅在用户删除该项时才移除配置
+                      items[newPattern] = color as string;
+                      updateParam('label_highlight_items', items);
+                    }}
+                    placeholder="匹配文本（如：北京、总计）"
+                    className="min-h-[32px] text-sm flex-1 min-w-[200px] resize-y"
+                    rows={1}
+                  />
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <ColorPicker
+                      value={(color as string) || '#FF0000'}
+                      onChange={(newColor) => {
+                        const items = { ...(subplot.params.label_highlight_items || {}), [pattern]: newColor };
+                        updateParam('label_highlight_items', items);
+                      }}
+                      variant="button"
+                      showColorValue={true}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const items = { ...(subplot.params.label_highlight_items || {}) };
+                        delete items[pattern];
+                        updateParam('label_highlight_items', Object.keys(items).length > 0 ? items : undefined);
+                      }}
+                      className="h-8 w-8 p-0 flex-shrink-0"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const existing = subplot.params.label_highlight_items || {};
+                  // 生成唯一的键名
+                  let newKey = '新项目';
+                  let counter = 1;
+                  while (existing[newKey]) {
+                    newKey = `新项目${counter}`;
+                    counter++;
+                  }
+                  const items = { ...existing, [newKey]: '#FF0000' };
+                  updateParam('label_highlight_items', items);
+                }}
+                className="h-8 text-xs"
+              >
+                <Plus className="h-4 w-4 mr-1" /> 添加高亮项
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500">
+              输入的文本会与行索引进行部分匹配，匹配成功的项目将强制显示标签并使用指定的颜色
+            </p>
+          </div>
+
+          {((subplot.params.label_x_extreme_count ?? 0) > 0 || 
+            (subplot.params.label_y_extreme_count ?? 0) > 0 || 
+            (subplot.params.label_z_extreme_count ?? 0) > 0) && (
             <div className="space-y-3 pt-3 border-t">
               <h5 className="text-sm font-medium text-gray-700">标签调整选项</h5>
               

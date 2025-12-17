@@ -224,7 +224,7 @@ class PlotLine(Plot):
                     if idx < len(text_colors):
                         color = text_colors[idx]
 
-                        # 应用 label_bbox 配置（如果启用）
+                        # 应用 label_bbox 配置（仅在启用时）
                         if label_bbox and label_bbox.get("enabled"):
                             bbox_style = {}
                             if label_bbox.get("boxstyle"):
@@ -259,11 +259,6 @@ class PlotLine(Plot):
                                 bbox_style["alpha"] = 0.7
 
                             new_text.set_bbox(bbox_style)
-                        else:
-                            # 如果没有启用 label_bbox，使用默认样式（向后兼容）
-                            new_text.set_bbox(
-                                dict(facecolor=color, alpha=0.7, edgecolor=color)
-                            )
 
                         # 设置文本颜色：优先使用 label_color，否则使用黑色
                         if label_color:
@@ -295,7 +290,7 @@ class PlotLine(Plot):
                 if idx < len(text_colors):
                     color = text_colors[idx]
 
-                    # 应用 label_bbox 配置（如果启用）
+                    # 应用 label_bbox 配置（仅在启用时）
                     if label_bbox and label_bbox.get("enabled"):
                         bbox_style = {}
                         if label_bbox.get("boxstyle"):
@@ -330,9 +325,6 @@ class PlotLine(Plot):
                             bbox_style["alpha"] = 0.7
 
                         text.set_bbox(bbox_style)
-                    else:
-                        # 如果没有启用 label_bbox，使用默认样式（向后兼容）
-                        text.set_bbox(dict(facecolor=color, alpha=0.7, edgecolor=color))
 
                     # 设置文本颜色：优先使用 label_color，否则使用黑色
                     if label_color:
@@ -646,7 +638,7 @@ class PlotArea(Plot):
                 if idx < len(text_colors):
                     color = text_colors[idx]
 
-                    # 应用 label_bbox 配置（如果启用）
+                    # 应用 label_bbox 配置（仅在启用时）
                     if label_bbox and label_bbox.get("enabled"):
                         bbox_style = {}
                         if label_bbox.get("boxstyle"):
@@ -681,9 +673,6 @@ class PlotArea(Plot):
                             bbox_style["alpha"] = 0.7
 
                         text.set_bbox(bbox_style)
-                    else:
-                        # 如果没有启用 label_bbox，使用默认样式（向后兼容）
-                        text.set_bbox(dict(facecolor=color, alpha=0.7, edgecolor=color))
 
                     # 设置文本颜色：优先使用 label_color，否则使用黑色
                     if label_color:
