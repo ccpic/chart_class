@@ -438,8 +438,19 @@ class WebChartAdapter:
                                 col_defs_objects if col_defs_objects else None
                             )
 
+                    # 处理气泡图的 cmap 参数：转换为 matplotlib Colormap 对象
+                    cmap_norm = None
+                    if chart_type == "bubble" and "cmap" in params:
+                        cmap_name = params.pop("cmap")
+                        if cmap_name:
+                            try:
+                                import matplotlib.pyplot as plt
+                                cmap_norm = plt.get_cmap(cmap_name)
+                            except Exception as e:
+                                print(f"警告: 无法加载 colormap '{cmap_name}': {e}")
+
                     # 调用 f.plot() 绘制子图
-                    f.plot(kind=chart_type, data=df, ax_index=ax_index, **params)
+                    f.plot(kind=chart_type, data=df, ax_index=ax_index, cmap_norm=cmap_norm, **params)
 
                     # 如果存在连接线参数，绘制连接线（仅对柱状图有效）
                     if (

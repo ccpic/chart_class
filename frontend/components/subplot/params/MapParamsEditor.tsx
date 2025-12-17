@@ -14,6 +14,7 @@ import { Plus, Trash2, Map as MapIcon } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import ColorPicker from '@/components/color/ColorPicker';
 import NumberFormatEditor from '@/components/ui/number-format-editor';
+import { CmapPicker } from '@/components/ui/cmap-picker';
 
 interface Props {
   subplot: SubplotConfig;
@@ -88,25 +89,6 @@ export default function MapParamsEditor({ subplot }: Props) {
     '南宁', '海口', '沈阳', '长春', '哈尔滨', '大连', '青岛', '厦门',
   ];
 
-  // ColorMap 选项
-  const colormapOptions = [
-    { value: 'PiYG', label: '粉绿色' },
-    { value: 'YlOrRd', label: '黄橙红' },
-    { value: 'RdYlGn', label: '红黄绿' },
-    { value: 'Blues', label: '蓝色系' },
-    { value: 'Greens', label: '绿色系' },
-    { value: 'Reds', label: '红色系' },
-    { value: 'Oranges', label: '橙色系' },
-    { value: 'Purples', label: '紫色系' },
-    { value: 'RdPu', label: '红紫色' },
-    { value: 'YlGn', label: '黄绿色' },
-    { value: 'YlGnBu', label: '黄绿蓝' },
-    { value: 'RdBu', label: '红蓝色' },
-    { value: 'Spectral', label: '光谱色' },
-    { value: 'coolwarm', label: '冷暖色' },
-    { value: 'viridis', label: 'Viridis' },
-    { value: 'plasma', label: 'Plasma' },
-  ];
 
   return (
     <div className="space-y-4">
@@ -688,24 +670,13 @@ export default function MapParamsEditor({ subplot }: Props) {
             <h4 className="text-sm font-semibold text-gray-800">颜色映射</h4>
             
             <div className="space-y-2">
-              <Label htmlFor="cmap" className="text-sm">
-                颜色映射方案 (cmap)
-              </Label>
-              <Select
+              <CmapPicker
                 value={cmap}
-                onValueChange={(value) => updateParam('cmap', value)}
-              >
-                <SelectTrigger id="cmap">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {colormapOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label} ({option.value})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => updateParam('cmap', value)}
+                label="颜色映射方案 (cmap)"
+                showPreview={true}
+                showReverse={true}
+              />
               <p className="text-xs text-gray-500">
                 选择热力图的颜色渐变方案
               </p>
