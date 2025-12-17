@@ -29,7 +29,6 @@ class PlotBubble(Plot):
         ylim: Optional[Tuple[float, float]] = None,
         x_avg: Optional[float] = None,
         y_avg: Optional[float] = None,
-        label_limit: int = 15,
         label_formatter: str = "{index}",
         label_topy: int = 0,
         # label_mustshow: List[str] = [],
@@ -49,7 +48,6 @@ class PlotBubble(Plot):
             ylim (Optional[Tuple[float, float]]): 手动指定y轴边界. Defaults to None.
             x_avg (Optional[float], optional): x轴平均值或其他分隔值，如提供则绘制x轴分隔竖线. Defaults to None.
             y_avg (Optional[float], optional): y轴平均值或其他分隔值，如提供则绘制y轴分隔水平线. Defaults to None.
-            label_limit (int, optional): 限制显示标签的个数. Defaults to 15.
             label_formatter (str, optional): 标签文字的格式，支持{index}, {x}, {y}, {z}, {hue}. Defaults to "{index}".
             label_topy (int, optional): 如>0则强制显示y轴值最高的n个item的标签. Defaults to 0.
             # label_mustshow (List[str], optional): 强制显示该列表中的标签. Defaults to [].
@@ -99,10 +97,15 @@ class PlotBubble(Plot):
                 "avg_linestyle": ":",
                 "avg_linewidth": 1,
                 "avg_color": "black",
-                # 极值标签控制：是否显示 x/y/z 轴的最大/最小值对应的点
-                "label_show_x_extreme": True,
-                "label_show_y_extreme": True,
-                "label_show_z_extreme": True,
+                # 极值标签控制：每个轴显示多少个极值，以及按最大值还是最小值排序
+                "label_x_extreme_count": 0,  # X 轴极值数量，0 为不显示
+                "label_x_extreme_mode": "max",  # 'max' 或 'min'
+                "label_y_extreme_count": 0,  # Y 轴极值数量，0 为不显示
+                "label_y_extreme_mode": "max",  # 'max' 或 'min'
+                "label_z_extreme_count": 0,  # Z 轴极值数量，0 为不显示
+                "label_z_extreme_mode": "max",  # 'max' 或 'min'
+                # 高亮标签：指定要高亮显示标签的项目，键是匹配文本（部分匹配），值是颜色
+                "label_highlight_items": {},  # 例如：{"北京": "#FF0000", "总计": "#0000FF"}
             },
             **kwargs,
         )
@@ -179,86 +182,115 @@ class PlotBubble(Plot):
         y_shown = y if ylim is None else y[y.between(ylim[0], ylim[1])]
         index_shown = x_shown.index.intersection(y_shown.index)
 
-        # 预先计算需要显示的索引集合
-        top_y_cities = set()
-        if label_topy > 0 and not pd.api.types.is_categorical_dtype(y):
-            top_y_cities = set(y.loc[index_shown].nlargest(label_topy).index)
-
-        # 计算 x/y/z 轴的最大/最小值对应的索引（仅在数值型时启用）
+        # 计算 x/y/z 轴的极值对应的索引（仅在数值型时启用）
         extreme_indices = set()
-        if d_style.get("label_show_x_extreme", True) and pd.api.types.is_numeric_dtype(
-            x
-        ):
+        
+        # X 轴极值
+        x_extreme_count = max(0, int(d_style.get("label_x_extreme_count", 0)))
+        if x_extreme_count > 0 and pd.api.types.is_numeric_dtype(x):
             x_in = x.loc[index_shown]
             if not x_in.empty:
-                extreme_indices.add(x_in.idxmax())
-                extreme_indices.add(x_in.idxmin())
-
-        if d_style.get("label_show_y_extreme", True) and pd.api.types.is_numeric_dtype(
-            y
-        ):
+                x_mode = d_style.get("label_x_extreme_mode", "max")
+                if x_mode == "max":
+                    x_extreme_items = x_in.nlargest(x_extreme_count)
+                else:  # min
+                    x_extreme_items = x_in.nsmallest(x_extreme_count)
+                extreme_indices.update(x_extreme_items.index)
+        
+        # Y 轴极值
+        y_extreme_count = max(0, int(d_style.get("label_y_extreme_count", 0)))
+        if y_extreme_count > 0 and pd.api.types.is_numeric_dtype(y):
             y_in = y.loc[index_shown]
             if not y_in.empty:
-                extreme_indices.add(y_in.idxmax())
-                extreme_indices.add(y_in.idxmin())
-
-        if d_style.get("label_show_z_extreme", True) and pd.api.types.is_numeric_dtype(
-            z_raw
-        ):
+                y_mode = d_style.get("label_y_extreme_mode", "max")
+                if y_mode == "max":
+                    y_extreme_items = y_in.nlargest(y_extreme_count)
+                else:  # min
+                    y_extreme_items = y_in.nsmallest(y_extreme_count)
+                extreme_indices.update(y_extreme_items.index)
+        
+        # Z 轴极值
+        z_extreme_count = max(0, int(d_style.get("label_z_extreme_count", 0)))
+        if z_extreme_count > 0 and pd.api.types.is_numeric_dtype(z_raw):
             z_in = z_raw.loc[index_shown]
             if not z_in.empty:
-                extreme_indices.add(z_in.idxmax())
-                extreme_indices.add(z_in.idxmin())
+                z_mode = d_style.get("label_z_extreme_mode", "max")
+                if z_mode == "max":
+                    z_extreme_items = z_in.nlargest(z_extreme_count)
+                else:  # min
+                    z_extreme_items = z_in.nsmallest(z_extreme_count)
+                extreme_indices.update(z_extreme_items.index)
+
+        # 获取高亮标签配置
+        label_highlight_items = d_style.get("label_highlight_items", {})
 
         for i in range(len(index_shown)):
-            city_name = index_shown[i]
+            item_name = index_shown[i]
+            item_name_str = str(item_name)
+
+            # 检查是否匹配高亮模式
+            is_highlighted = False
+            highlight_color = None
+            if label_highlight_items:
+                for pattern, color in label_highlight_items.items():
+                    if pattern in item_name_str:
+                        is_highlighted = True
+                        highlight_color = color
+                        break
 
             if (
-                i < label_limit
-                or city_name in top_y_cities
-                or city_name in extreme_indices
-                # or (city_name in label_mustshow)
-                or (self.focus and city_name in self.focus)
-            ):  # 在label_limit内或者强制要求展示y值最大item / x,y,z 极值 或者在特别关注列表时
+                item_name in extreme_indices
+                or is_highlighted
+                # or (item_name in label_mustshow)
+                or (self.focus and item_name in self.focus)
+            ):  # 属于 x/y/z 极值，或匹配高亮模式，或在特别关注列表时
                 d_label = {
                     "x": (
-                        d_style.get("x_fmt").format(x.loc[city_name])
-                        if isinstance(x.loc[city_name], str) is False
-                        else x.loc[city_name]
+                        d_style.get("x_fmt").format(x.loc[item_name])
+                        if isinstance(x.loc[item_name], str) is False
+                        else x.loc[item_name]
                     ),
                     "y": (
-                        d_style.get("y_fmt").format(y.loc[city_name])
-                        if isinstance(y.loc[city_name], str) is False
-                        else y.loc[city_name]
+                        d_style.get("y_fmt").format(y.loc[item_name])
+                        if isinstance(y.loc[item_name], str) is False
+                        else y.loc[item_name]
                     ),
-                    "z": z.loc[city_name],
-                    "hue": (self.hue.loc[city_name] if self.hue is not None else None),
-                    "index": city_name,
+                    "z": z.loc[item_name],
+                    "hue": (self.hue.loc[item_name] if self.hue is not None else None),
+                    "index": item_name,
                 }
+
+                # 确定标签颜色：优先使用高亮颜色，其次关注项颜色，最后默认黑色
+                label_color = "black"
+                if is_highlighted and highlight_color:
+                    label_color = highlight_color
+                elif self.focus and item_name in self.focus:
+                    label_color = "red"
 
                 texts.append(
                     self.ax.text(
-                        x.loc[city_name],
-                        y.loc[city_name],
+                        x.loc[item_name],
+                        y.loc[item_name],
                         label_formatter.format(**d_label),
                         ha="center",
                         va="center",
                         multialignment="center",
                         fontsize=kwargs.get("label_fontsize", self.fontsize),
-                        color=(
-                            "red"
-                            if (self.focus and (city_name in self.focus))
-                            else "black"
-                        ),
+                        color=label_color,
                     )
                 )
 
         # 用textalloc包保证标签互不重叠
-        if label_limit > 1 and texts:
-            # 提取文本位置和内容
+        if len(texts) > 1:
+            # 提取文本位置和内容，同时保存每个文本的颜色（使用文本内容作为键）
             x_data = [t.get_position()[0] for t in texts]
             y_data = [t.get_position()[1] for t in texts]
             text_list = [t.get_text() for t in texts]
+            # 使用文本内容作为键保存颜色，避免顺序错乱
+            text_color_map = {t.get_text(): t.get_color() for t in texts}
+
+            # 记录调用前的文本对象集合
+            texts_before = set(self.ax.texts)
 
             # 移除原始文本对象
             for t in texts:
@@ -280,6 +312,16 @@ class PlotBubble(Plot):
                 linewidth=kwargs.get("label_linewidth", 0.8),
                 max_distance=kwargs.get("label_max_distance", 0.1),
             )
+
+            # 找到新创建的文本对象并恢复颜色（根据文本内容匹配，而不是顺序）
+            texts_after = set(self.ax.texts)
+            new_texts = list(texts_after - texts_before)
+
+            # 根据文本内容匹配颜色，避免顺序错乱
+            for new_text in new_texts:
+                text_content = new_text.get_text()
+                if text_content in text_color_map:
+                    new_text.set_color(text_color_map[text_content])
 
         # 添加轴label
         if self.style._xlabel is None:
