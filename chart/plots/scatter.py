@@ -79,6 +79,9 @@ class PlotBubble(Plot):
         y = self._get_column(y, 1)
         z = self._get_column(z, 2)
 
+        # 保留原始 z 值用于后续极值选择，绘图时使用标准化后的 z 作为气泡大小
+        z_raw = z.copy()
+
         # z列标准化并乘以系数以得到一般情况下都合适的气泡大小
         z = (z / z.max() * 100) ** 1.8 * bubble_scale
 
@@ -96,6 +99,10 @@ class PlotBubble(Plot):
                 "avg_linestyle": ":",
                 "avg_linewidth": 1,
                 "avg_color": "black",
+                # 极值标签控制：是否显示 x/y/z 轴的最大/最小值对应的点
+                "label_show_x_extreme": True,
+                "label_show_y_extreme": True,
+                "label_show_z_extreme": True,
             },
             **kwargs,
         )
@@ -172,10 +179,36 @@ class PlotBubble(Plot):
         y_shown = y if ylim is None else y[y.between(ylim[0], ylim[1])]
         index_shown = x_shown.index.intersection(y_shown.index)
 
-        # 预先计算需要显示的城市名称集合
+        # 预先计算需要显示的索引集合
         top_y_cities = set()
         if label_topy > 0 and not pd.api.types.is_categorical_dtype(y):
             top_y_cities = set(y.loc[index_shown].nlargest(label_topy).index)
+
+        # 计算 x/y/z 轴的最大/最小值对应的索引（仅在数值型时启用）
+        extreme_indices = set()
+        if d_style.get("label_show_x_extreme", True) and pd.api.types.is_numeric_dtype(
+            x
+        ):
+            x_in = x.loc[index_shown]
+            if not x_in.empty:
+                extreme_indices.add(x_in.idxmax())
+                extreme_indices.add(x_in.idxmin())
+
+        if d_style.get("label_show_y_extreme", True) and pd.api.types.is_numeric_dtype(
+            y
+        ):
+            y_in = y.loc[index_shown]
+            if not y_in.empty:
+                extreme_indices.add(y_in.idxmax())
+                extreme_indices.add(y_in.idxmin())
+
+        if d_style.get("label_show_z_extreme", True) and pd.api.types.is_numeric_dtype(
+            z_raw
+        ):
+            z_in = z_raw.loc[index_shown]
+            if not z_in.empty:
+                extreme_indices.add(z_in.idxmax())
+                extreme_indices.add(z_in.idxmin())
 
         for i in range(len(index_shown)):
             city_name = index_shown[i]
@@ -183,9 +216,10 @@ class PlotBubble(Plot):
             if (
                 i < label_limit
                 or city_name in top_y_cities
+                or city_name in extreme_indices
                 # or (city_name in label_mustshow)
                 or (self.focus and city_name in self.focus)
-            ):  # 在label_limit内或者强制要求展示y值最大item的标签或者在特别关注列表时
+            ):  # 在label_limit内或者强制要求展示y值最大item / x,y,z 极值 或者在特别关注列表时
                 d_label = {
                     "x": (
                         d_style.get("x_fmt").format(x.loc[city_name])

@@ -350,6 +350,51 @@ export default function BubbleParamsEditor({ subplot }: Props) {
             </div>
           </div>
 
+          {/* 极值标签控制：按 x/y/z 轴最大最小值自动标注 */}
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Label className="text-sm font-medium">
+                极值标签（按轴最大/最小值）
+              </Label>
+              <div className="group relative">
+                <HelpCircle className="w-4 h-4 text-gray-400 cursor-help" />
+                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-72 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                  始终为每个轴各自显示数值最大的和最小的气泡标签（如果为数值型）。
+                  同一条记录可能同时是多个轴的极值，标签会重复出现。
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-xs text-gray-700">
+              <label className="inline-flex items-center space-x-2">
+                <Checkbox
+                  checked={subplot.params.label_show_x_extreme ?? true}
+                  onCheckedChange={(checked) =>
+                    updateParam('label_show_x_extreme', checked)
+                  }
+                />
+                <span>X 轴极值</span>
+              </label>
+              <label className="inline-flex items-center space-x-2">
+                <Checkbox
+                  checked={subplot.params.label_show_y_extreme ?? true}
+                  onCheckedChange={(checked) =>
+                    updateParam('label_show_y_extreme', checked)
+                  }
+                />
+                <span>Y 轴极值</span>
+              </label>
+              <label className="inline-flex items-center space-x-2">
+                <Checkbox
+                  checked={subplot.params.label_show_z_extreme ?? true}
+                  onCheckedChange={(checked) =>
+                    updateParam('label_show_z_extreme', checked)
+                  }
+                />
+                <span>Z 轴极值</span>
+              </label>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
               <Label htmlFor="label-topy-slider" className="text-sm font-medium">
