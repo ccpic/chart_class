@@ -155,7 +155,9 @@ class PlotBar(Plot):
         d_style = self._merge_style_kwargs(
             {
                 "bar_width": 0.8,  # 柱宽
-                "bar_color": None,  # 柱指定颜色
+                "bar_color": None,  # 柱指定颜色（统一颜色模式下使用）
+                "color_scheme": "dict",  # 颜色方案：'uniform' 或 'dict'
+                "color_by": "series",  # 着色方式：'series' 或 'category'（仅在 color_scheme='dict' 时有效）
                 "label_fontsize": self.fontsize,  # 标签字体大小
                 "label_color": None,  # 标签颜色
                 "label_weight": None,  # 标签字重：normal, bold, italic
@@ -190,6 +192,10 @@ class PlotBar(Plot):
             },
             **kwargs,
         )
+
+        # 向后兼容：如果外部没有显式传入 color_scheme，但提供了 bar_color，则默认使用统一颜色模式
+        if "color_scheme" not in kwargs and d_style.get("bar_color"):
+            d_style["color_scheme"] = "uniform"
 
         # 绝对值bar图和增长率标注
 
@@ -244,12 +250,23 @@ class PlotBar(Plot):
                 }
 
                 # 使用基类方法获取颜色
-                if d_style.get("bar_color"):
-                    color = d_style.get("bar_color")
+                color_scheme = d_style.get("color_scheme", "dict")
+                if color_scheme == "uniform":
+                    # 统一颜色模式：使用 bar_color
+                    color = d_style.get("bar_color") or "#3b82f6"
                 else:
-                    color = self._get_color_for_item(
-                        col if stacked else index, stacked=stacked
-                    )
+                    # 按颜色字典模式：根据 color_by 决定按系列还是分类着色
+                    color_by = d_style.get("color_by", "series")
+                    if color_by == "series":
+                        # 按系列（列）着色
+                        color = self._get_color_for_item(
+                            col, stacked=True, use_dict=True, use_iter=True
+                        )
+                    else:
+                        # 按分类（索引）着色
+                        color = self._get_color_for_item(
+                            index, stacked=True, use_dict=True, use_iter=True
+                        )
 
                 # # 如果是关注的index，则特定着色
                 # if index == focus:
@@ -906,7 +923,9 @@ class PlotBarh(Plot):
         d_style = self._merge_style_kwargs(
             {
                 "bar_height": 0.8,  # bar高度
-                "bar_color": None,  # 柱指定颜色
+                "bar_color": None,  # 柱指定颜色（统一颜色模式下使用）
+                "color_scheme": "dict",  # 颜色方案：'uniform' 或 'dict'
+                "color_by": "series",  # 着色方式：'series' 或 'category'（仅在 color_scheme='dict' 时有效）
                 "label_fontsize": self.fontsize,  # 标签字体大小
                 "label_color": None,  # 标签颜色，如果指定则使用，否则自动计算
                 "label_weight": None,  # 标签字重：normal, bold, italic
@@ -927,6 +946,10 @@ class PlotBarh(Plot):
             },
             **kwargs,
         )
+
+        # 向后兼容：如果外部没有显式传入 color_scheme，但提供了 bar_color，则默认使用统一颜色模式
+        if "color_scheme" not in kwargs and d_style.get("bar_color"):
+            d_style["color_scheme"] = "uniform"
 
         # 绝对值bar图和增长率标注
         max_v = np.nanmax(df.values)
@@ -959,12 +982,23 @@ class PlotBarh(Plot):
                 }
 
                 # 使用基类方法获取颜色
-                if d_style.get("bar_color"):
-                    color = d_style.get("bar_color")
+                color_scheme = d_style.get("color_scheme", "dict")
+                if color_scheme == "uniform":
+                    # 统一颜色模式：使用 bar_color
+                    color = d_style.get("bar_color") or "#3b82f6"
                 else:
-                    color = self._get_color_for_item(
-                        col if stacked else index, stacked=stacked
-                    )
+                    # 按颜色字典模式：根据 color_by 决定按系列还是分类着色
+                    color_by = d_style.get("color_by", "series")
+                    if color_by == "series":
+                        # 按系列（列）着色
+                        color = self._get_color_for_item(
+                            col, stacked=True, use_dict=True, use_iter=True
+                        )
+                    else:
+                        # 按分类（索引）着色
+                        color = self._get_color_for_item(
+                            index, stacked=True, use_dict=True, use_iter=True
+                        )
 
                 if stacked:
                     if v >= 0:
