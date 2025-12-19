@@ -448,6 +448,24 @@ class WebChartAdapter:
                             except Exception as e:
                                 print(f"警告: 无法加载 colormap '{cmap_name}': {e}")
 
+                    # 处理地图的颜色映射参数
+                    if chart_type == "map":
+                        color_mapping_mode = params.get("color_mapping_mode", "colormap")
+                        if color_mapping_mode == "categorical":
+                            # 分类映射模式：提取 color_mapping 字典
+                            color_mapping = params.pop("color_mapping", {})
+                            params["color_mapping"] = color_mapping
+                            # 传递 color_mapping_mode 参数到 plot 方法
+                            params["color_mapping_mode"] = color_mapping_mode
+                            # 移除 colormap 相关参数（分类映射不使用）
+                            params.pop("cmap", None)
+                            params.pop("vmin", None)
+                            params.pop("vmax", None)
+                        else:
+                            # Colormap 模式：保持原有逻辑，移除分类映射参数
+                            params.pop("color_mapping", None)
+                            params.pop("color_mapping_mode", None)
+
                     # 调用 f.plot() 绘制子图
                     f.plot(kind=chart_type, data=df, ax_index=ax_index, cmap_norm=cmap_norm, **params)
 

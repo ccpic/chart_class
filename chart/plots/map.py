@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional, Literal, List
 import os
 import pandas as pd
+import numpy as np
 import geopandas as gpd
 import matplotlib as mpl
 from chart.plots.base import Plot
@@ -1087,6 +1088,9 @@ class PlotMap(Plot):
         show_colorbar: bool = True,
         dissolve_urban: bool = False,
         shapefile_dir: Optional[str] = None,
+        color_mapping: Optional[Dict[str, Any]] = None,
+        hatch_mapping: Optional[Dict[str, Any]] = None,
+        color_mapping_mode: Optional[str] = None,
         **kwargs: Any,
     ) -> PlotMap:
         """绘制中国地图热力图
@@ -1133,6 +1137,10 @@ class PlotMap(Plot):
             show_colorbar: 是否显示颜色条
             dissolve_urban: 是否合并市区轮廓（仅 county 层级且 scope='cities' 时有效）
             shapefile_dir: shapefile 文件目录，默认为项目 data/map 目录
+            color_mapping: 分类映射字典，格式为 {值: 颜色}，如 {"自营": "#FF0000", "招商": "#0000FF"}
+                         如果提供此参数，将使用分类映射而不是 colormap
+                         数值列的值如果匹配上映射中的键，则显示对应颜色；否则不上色（透明）
+                         支持向后兼容：如果值是字典格式 {color: string}，会提取 color 字段
             **kwargs: 其他样式参数
 
         Returns:
@@ -1232,16 +1240,14 @@ class PlotMap(Plot):
 
         # 过滤掉 value_column 为 NaN 的行（只保留有数据的区域）
         initial_count = len(self.plot_data)
-        self.plot_data = self.plot_data[
-            self.plot_data[value_column].notna()
-        ].copy()
-        
+        self.plot_data = self.plot_data[self.plot_data[value_column].notna()].copy()
+
         if self.plot_data.empty:
             raise ValueError(
                 f"所有区域的数值列 '{value_column}' 都是 NaN。\n"
                 "请检查数据是否正确匹配。"
             )
-        
+
         if len(self.plot_data) < initial_count:
             # 有部分区域没有数据，这是正常的（只显示有数据的区域）
             pass
@@ -1257,21 +1263,265 @@ class PlotMap(Plot):
         # 绘制底图
         self._plot_base_map(edgecolor=edgecolor, linewidth=linewidth)
 
-        # 绘制热力图
-        self.plot_data.plot(
-            column=value_column,
-            cmap=cmap,
-            legend=show_colorbar,
-            ax=self.ax,
-            edgecolor=edgecolor,
-            linewidth=linewidth,
-            vmin=vmin,
-            vmax=vmax,
-        )
+        # 判断是否使用分类映射
+        # 如果明确指定了 color_mapping_mode == "categorical"，即使 color_mapping 为空也使用分类映射模式
+        # 这种情况下所有区域都会显示透明（"none"）
+        if color_mapping_mode == "categorical":
+            use_categorical = True
+            # 如果 color_mapping 为空，设置为空字典
+            if color_mapping is None:
+                color_mapping = {}
+        else:
+            # 否则，只有当 color_mapping 不为空时才使用分类映射
+            use_categorical = color_mapping is not None and len(color_mapping) > 0
 
-        # 格式化 colorbar 刻度标签（使用与数据标签相同的格式）
-        if show_colorbar:
-            self._format_colorbar(label_value_format)
+        # 判断是否使用纹理映射
+        use_hatch_mapping = hatch_mapping is not None and len(hatch_mapping) > 0
+
+        # 准备纹理参数（如果使用纹理映射）
+        # 为每个区域计算 hatch_str 和 hatch_color，添加到临时列中
+        if use_hatch_mapping and value_column and hatch_mapping:
+            hatch_strs = []
+            hatch_colors_list = []
+
+            for idx, row in self.plot_data.iterrows():
+                value = row[value_column]
+
+                # 处理 NaN 和 None 值
+                try:
+                    is_na = pd.isna(value)
+                    # 确保 is_na 是布尔值，而不是数组
+                    if isinstance(is_na, (pd.Series, pd.DataFrame, np.ndarray)):
+                        is_na = bool(
+                            is_na.any() if hasattr(is_na, "any") else bool(is_na)
+                        )
+                    elif not isinstance(is_na, bool):
+                        is_na = bool(is_na)
+                except (TypeError, ValueError):
+                    is_na = value is None
+
+                # 确保 value is None 的判断不会与数组产生冲突
+                value_is_none = value is None
+                if is_na or value_is_none:
+                    hatch_str = ""  # 默认无纹理
+                    hatch_color = edgecolor  # 默认使用边界颜色
+                else:
+                    # 尝试多种匹配方式以提高匹配成功率
+                    value_str = (
+                        str(value).strip() if isinstance(value, str) else str(value)
+                    )
+
+                    # 先尝试精确匹配（去除空格后的字符串）
+                    mapping = hatch_mapping.get(value_str, None)
+
+                    # 如果精确匹配失败，尝试匹配原始值（如果是字符串类型）
+                    if mapping is None and isinstance(value, str):
+                        mapping = hatch_mapping.get(value, None)
+
+                    # 如果还是失败，尝试匹配去除空格后的值
+                    if mapping is None and isinstance(value, str):
+                        mapping = hatch_mapping.get(value.strip(), None)
+
+                    # 应用纹理映射
+                    if mapping is not None:
+                        # 提取纹理参数
+                        if isinstance(mapping, dict):
+                            hatch_pattern = mapping.get("hatch", "")
+                            density = mapping.get("density", 5)
+                            hatch_color = mapping.get("color", edgecolor)
+                        else:
+                            # 向后兼容：如果是字符串，当作 hatch 模式
+                            hatch_pattern = mapping
+                            density = 5
+                            hatch_color = edgecolor
+
+                        # 根据密度生成 hatch 字符串（重复 hatch 模式）
+                        hatch_str = hatch_pattern * max(1, int(density))
+                    else:
+                        hatch_str = ""  # 默认无纹理
+                        hatch_color = edgecolor  # 默认使用边界颜色
+
+                hatch_strs.append(hatch_str)
+                hatch_colors_list.append(hatch_color)
+
+            # 将 hatch 信息添加到 plot_data 的临时列中
+            self.plot_data["_hatch_str"] = hatch_strs
+            self.plot_data["_hatch_color"] = hatch_colors_list
+
+        if use_categorical:
+            # 分类映射模式：为每个区域根据值查找对应颜色
+            # 创建一个颜色列表，用于存储每个区域的颜色
+            colors = []
+            for idx, row in self.plot_data.iterrows():
+                value = row[value_column]
+
+                # 处理 NaN 和 None 值
+                try:
+                    is_na = pd.isna(value)
+                    # 确保 is_na 是布尔值，而不是数组
+                    if isinstance(is_na, (pd.Series, pd.DataFrame, np.ndarray)):
+                        is_na = bool(
+                            is_na.any() if hasattr(is_na, "any") else bool(is_na)
+                        )
+                    elif not isinstance(is_na, bool):
+                        is_na = bool(is_na)
+                except (TypeError, ValueError):
+                    is_na = value is None
+
+                # 确保 value is None 的判断不会与数组产生冲突
+                value_is_none = value is None
+                if is_na or value_is_none:
+                    color = None
+                else:
+                    # 尝试多种匹配方式以提高匹配成功率
+                    # 1. 直接使用原始值（如果是字符串）
+                    # 2. 转换为字符串
+                    # 3. 去除首尾空格（如果是字符串）
+                    value_str = (
+                        str(value).strip() if isinstance(value, str) else str(value)
+                    )
+
+                    # 先尝试精确匹配（去除空格后的字符串）
+                    mapping = color_mapping.get(value_str, None)
+
+                    # 如果精确匹配失败，尝试匹配原始值（如果是字符串类型）
+                    if mapping is None and isinstance(value, str):
+                        mapping = color_mapping.get(value, None)
+
+                    # 如果还是失败，尝试匹配去除空格后的值（再次尝试，以防万一）
+                    if mapping is None and isinstance(value, str):
+                        mapping = color_mapping.get(value.strip(), None)
+
+                    # 处理映射值：支持字符串格式（颜色）和字典格式（向后兼容）
+                    if mapping is not None:
+                        if isinstance(mapping, dict):
+                            # 字典格式：提取 color（忽略其他字段）
+                            color = mapping.get("color", None)
+                        else:
+                            # 字符串格式：直接是颜色
+                            color = mapping
+                    else:
+                        color = None
+
+                colors.append(color if color else "none")  # None 转换为 "none"（透明）
+
+            # 将颜色添加到 plot_data 的临时列中
+            self.plot_data["_color"] = colors
+
+            # 如果使用纹理映射，按 hatch 分组绘制
+            if use_hatch_mapping and "_hatch_str" in self.plot_data.columns:
+                # 按 hatch_str 分组
+                for hatch_str, group_data in self.plot_data.groupby("_hatch_str"):
+                    # 获取该组的颜色列表
+                    group_colors = group_data["_color"].tolist()
+                    # 获取该组的 hatch_color（用于 edgecolor）
+                    group_hatch_colors = (
+                        group_data["_hatch_color"].tolist()
+                        if "_hatch_color" in group_data.columns
+                        else [edgecolor] * len(group_data)
+                    )
+
+                    # 绘制该组数据
+                    plot_kwargs = {
+                        "ax": self.ax,
+                        "color": group_colors,
+                        "edgecolor": (
+                            group_hatch_colors[0] if group_hatch_colors else edgecolor
+                        ),  # 使用第一个 hatch_color 作为 edgecolor
+                        "linewidth": linewidth,
+                        "legend": False,
+                    }
+
+                    # 如果 hatch_str 不为空，添加 hatch 参数
+                    if hatch_str:
+                        plot_kwargs["hatch"] = hatch_str
+
+                    group_data.plot(**plot_kwargs)
+
+                    # 如果该组有多个不同的 hatch_color，需要单独设置每个 patch 的 edgecolor
+                    if len(set(group_hatch_colors)) > 1:
+                        patches = self.ax.patches
+                        patches_before = len(patches) - len(group_data)
+                        for i, hatch_color in enumerate(group_hatch_colors):
+                            patch_idx = patches_before + i
+                            if patch_idx < len(patches):
+                                patches[patch_idx].set_edgecolor(hatch_color)
+            else:
+                # 不使用纹理映射，直接绘制
+                plot_kwargs = {
+                    "ax": self.ax,
+                    "color": colors,
+                    "edgecolor": edgecolor,
+                    "linewidth": linewidth,
+                    "legend": False,
+                }
+                self.plot_data.plot(**plot_kwargs)
+        else:
+            # Colormap 模式：使用原有的颜色渐变方案
+            # 如果使用纹理映射，按 hatch 分组绘制
+            if use_hatch_mapping and "_hatch_str" in self.plot_data.columns:
+                # 按 hatch_str 分组
+                for hatch_str, group_data in self.plot_data.groupby("_hatch_str"):
+                    # 获取该组的 hatch_color（用于 edgecolor）
+                    group_hatch_colors = (
+                        group_data["_hatch_color"].tolist()
+                        if "_hatch_color" in group_data.columns
+                        else [edgecolor] * len(group_data)
+                    )
+
+                    # 绘制该组数据
+                    plot_kwargs = {
+                        "column": value_column,
+                        "cmap": cmap,
+                        "legend": (
+                            show_colorbar
+                            if hatch_str == self.plot_data["_hatch_str"].iloc[0]
+                            else False
+                        ),  # 只在第一组显示 colorbar
+                        "ax": self.ax,
+                        "edgecolor": (
+                            group_hatch_colors[0] if group_hatch_colors else edgecolor
+                        ),  # 使用第一个 hatch_color 作为 edgecolor
+                        "linewidth": linewidth,
+                        "vmin": vmin,
+                        "vmax": vmax,
+                    }
+
+                    # 如果 hatch_str 不为空，添加 hatch 参数
+                    if hatch_str:
+                        plot_kwargs["hatch"] = hatch_str
+
+                    group_data.plot(**plot_kwargs)
+
+                    # 如果该组有多个不同的 hatch_color，需要单独设置每个 patch 的 edgecolor
+                    if len(set(group_hatch_colors)) > 1:
+                        patches = self.ax.patches
+                        patches_before = len(patches) - len(group_data)
+                        for i, hatch_color in enumerate(group_hatch_colors):
+                            patch_idx = patches_before + i
+                            if patch_idx < len(patches):
+                                patches[patch_idx].set_edgecolor(hatch_color)
+
+                # 格式化 colorbar 刻度标签（使用与数据标签相同的格式）
+                if show_colorbar:
+                    self._format_colorbar(label_value_format)
+            else:
+                # 不使用纹理映射，直接绘制
+                plot_kwargs = {
+                    "column": value_column,
+                    "cmap": cmap,
+                    "legend": show_colorbar,
+                    "ax": self.ax,
+                    "edgecolor": edgecolor,
+                    "linewidth": linewidth,
+                    "vmin": vmin,
+                    "vmax": vmax,
+                }
+                self.plot_data.plot(**plot_kwargs)
+
+                # 格式化 colorbar 刻度标签（使用与数据标签相同的格式）
+                if show_colorbar:
+                    self._format_colorbar(label_value_format)
 
         # 绘制不同层级的边界
         self._draw_hierarchical_borders(
@@ -1302,6 +1552,18 @@ class PlotMap(Plot):
                 label_fontsize,
                 use_abbr,
             )
+
+        # 清理临时列
+        if hasattr(self.plot_data, "columns"):
+            columns_to_drop = []
+            if "_hatch_str" in self.plot_data.columns:
+                columns_to_drop.append("_hatch_str")
+            if "_hatch_color" in self.plot_data.columns:
+                columns_to_drop.append("_hatch_color")
+            if "_color" in self.plot_data.columns:
+                columns_to_drop.append("_color")
+            if columns_to_drop:
+                self.plot_data.drop(columns=columns_to_drop, inplace=True)
 
         # 应用样式
         self.apply_style()
@@ -1426,12 +1688,12 @@ class PlotMap(Plot):
 
         # 归一化用户数据的区域名称
         normalized_data = data.copy()
-        
+
         # 处理无下属区县的地级市：检测并降级处理
         cities_without_counties_normalized = [
             CITY_NAME_MAP.get(city, city) for city in CITIES_WITHOUT_COUNTIES
         ]
-        
+
         if self.map_level == "province":
             # 省级数据：使用PROVINCE_NAME_MAP归一化
             normalized_data[region_column] = normalized_data[region_column].map(
@@ -1443,9 +1705,9 @@ class PlotMap(Plot):
             # 区县数据：使用省市区县四级匹配
             # 归一化省市区县列
             if province_column and province_column in normalized_data.columns:
-                normalized_data[province_column] = normalized_data[
-                    province_column
-                ].map(lambda x: PROVINCE_NAME_MAP.get(x, x))
+                normalized_data[province_column] = normalized_data[province_column].map(
+                    lambda x: PROVINCE_NAME_MAP.get(x, x)
+                )
             if city_column and city_column in normalized_data.columns:
                 normalized_data[city_column] = normalized_data[city_column].map(
                     lambda x: CITY_NAME_MAP.get(x, x)
@@ -1521,7 +1783,7 @@ class PlotMap(Plot):
                 # 区县数据：根据地级市筛选
                 if "地级" not in self.map_data_regional.columns:
                     raise ValueError("县级数据缺少地级市列")
-                
+
                 # 检查是否有无下属区县的地级市
                 cities_without_counties_normalized = [
                     CITY_NAME_MAP.get(city, city) for city in CITIES_WITHOUT_COUNTIES
@@ -1534,7 +1796,7 @@ class PlotMap(Plot):
                     for city in regions_normalized
                     if city in cities_without_counties_normalized
                 ]
-                
+
                 # 筛选有区县的地级市
                 if cities_without_counties_in_regions:
                     # 分离有区县和无区县的地级市
@@ -1603,9 +1865,13 @@ class PlotMap(Plot):
                 data_without_counties = normalized_data[
                     normalized_data[city_column].isin(cities_without_counties_in_data)
                 ].copy()
-                
+
                 # 如果 scope == "provinces"，需要根据省份范围过滤无区县的地级市数据
-                if scope == "provinces" and regions and province_column in normalized_data.columns:
+                if (
+                    scope == "provinces"
+                    and regions
+                    and province_column in normalized_data.columns
+                ):
                     # 只保留属于选择省份的这些城市
                     data_without_counties = data_without_counties[
                         data_without_counties[province_column].isin(regions)
@@ -1616,14 +1882,19 @@ class PlotMap(Plot):
                 if not data_with_counties.empty:
                     # 处理直辖市：直辖市的省份和地级市名称相同
                     municipalities = ["北京市", "天津市", "上海市", "重庆市"]
-                    is_municipality = data_with_counties[province_column].isin(municipalities) & (
-                        data_with_counties[province_column] == data_with_counties[city_column]
+                    is_municipality = data_with_counties[province_column].isin(
+                        municipalities
+                    ) & (
+                        data_with_counties[province_column]
+                        == data_with_counties[city_column]
                     )
                     municipalities_data = data_with_counties[is_municipality].copy()
-                    non_municipalities_data = data_with_counties[~is_municipality].copy()
-                    
+                    non_municipalities_data = data_with_counties[
+                        ~is_municipality
+                    ].copy()
+
                     plot_data_list = []
-                    
+
                     # 非直辖市：使用标准匹配
                     if not non_municipalities_data.empty:
                         plot_data_non_municipality = self.map_data_regional.merge(
@@ -1634,13 +1905,13 @@ class PlotMap(Plot):
                         )
                         if not plot_data_non_municipality.empty:
                             plot_data_list.append(plot_data_non_municipality)
-                    
+
                     # 直辖市：尝试多种匹配方式
                     if not municipalities_data.empty:
                         map_data_municipality = self.map_data_regional[
                             self.map_data_regional["省份"].isin(municipalities)
                         ].copy()
-                        
+
                         # 方式1：标准匹配
                         plot_data_municipality_1 = map_data_municipality.merge(
                             municipalities_data,
@@ -1648,7 +1919,7 @@ class PlotMap(Plot):
                             right_on=[province_column, city_column, county_column],
                             how="inner",
                         )
-                        
+
                         if not plot_data_municipality_1.empty:
                             plot_data_list.append(plot_data_municipality_1)
                         else:
@@ -1661,10 +1932,12 @@ class PlotMap(Plot):
                             )
                             if not plot_data_municipality_2.empty:
                                 plot_data_list.append(plot_data_municipality_2)
-                    
+
                     # 合并所有匹配结果
                     if plot_data_list:
-                        plot_data_with_counties = pd.concat(plot_data_list, ignore_index=True)
+                        plot_data_with_counties = pd.concat(
+                            plot_data_list, ignore_index=True
+                        )
 
                 # 无区县的地级市：降级为地级市显示
                 # 需要加载地级市 shapefile 来显示这些城市
@@ -1690,17 +1963,21 @@ class PlotMap(Plot):
                         )
                         if prefecture_data.crs is not None:
                             prefecture_data = prefecture_data.to_crs(epsg=2343)
-                        
+
                         # 筛选无区县的地级市
                         prefecture_data_filtered = prefecture_data[
-                            prefecture_data["地名"].isin(cities_without_counties_in_data)
+                            prefecture_data["地名"].isin(
+                                cities_without_counties_in_data
+                            )
                         ].copy()
-                        
+
                         # 根据当前范围（scope）进一步筛选
                         if scope == "provinces" and regions:
                             # 省份范围：只显示属于选择省份的这些城市
                             prov_col = (
-                                "省级" if "省级" in prefecture_data_filtered.columns else "省份"
+                                "省级"
+                                if "省级" in prefecture_data_filtered.columns
+                                else "省份"
                             )
                             if prov_col in prefecture_data_filtered.columns:
                                 prefecture_data_filtered = prefecture_data_filtered[
@@ -1712,10 +1989,12 @@ class PlotMap(Plot):
                                 CITY_NAME_MAP.get(region, region) for region in regions
                             ]
                             prefecture_data_filtered = prefecture_data_filtered[
-                                prefecture_data_filtered["地名"].isin(regions_normalized)
+                                prefecture_data_filtered["地名"].isin(
+                                    regions_normalized
+                                )
                             ].copy()
                         # scope == "national" 或 "counties" 时，显示所有匹配的城市
-                        
+
                         # 合并数据（使用地级市名称匹配）
                         plot_data_without_counties = prefecture_data_filtered.merge(
                             data_without_counties_dedup,
@@ -1725,15 +2004,24 @@ class PlotMap(Plot):
                         )
 
                 # 合并两部分数据
-                if plot_data_with_counties is not None and not plot_data_with_counties.empty:
-                    if plot_data_without_counties is not None and not plot_data_without_counties.empty:
+                if (
+                    plot_data_with_counties is not None
+                    and not plot_data_with_counties.empty
+                ):
+                    if (
+                        plot_data_without_counties is not None
+                        and not plot_data_without_counties.empty
+                    ):
                         self.plot_data = pd.concat(
                             [plot_data_with_counties, plot_data_without_counties],
                             ignore_index=True,
                         )
                     else:
                         self.plot_data = plot_data_with_counties
-                elif plot_data_without_counties is not None and not plot_data_without_counties.empty:
+                elif (
+                    plot_data_without_counties is not None
+                    and not plot_data_without_counties.empty
+                ):
                     self.plot_data = plot_data_without_counties
                 else:
                     # 如果两部分都为空，使用空数据
@@ -1743,18 +2031,18 @@ class PlotMap(Plot):
                 # 处理直辖市：直辖市的省份和地级市名称相同
                 # 在shapefile中，直辖市的"地级"列可能是省份名称或其他值
                 # 需要特殊处理
-                
+
                 municipalities = ["北京市", "天津市", "上海市", "重庆市"]
-                
+
                 # 分离直辖市数据和非直辖市数据
-                is_municipality = normalized_data[province_column].isin(municipalities) & (
-                    normalized_data[province_column] == normalized_data[city_column]
-                )
+                is_municipality = normalized_data[province_column].isin(
+                    municipalities
+                ) & (normalized_data[province_column] == normalized_data[city_column])
                 municipalities_data = normalized_data[is_municipality].copy()
                 non_municipalities_data = normalized_data[~is_municipality].copy()
-                
+
                 plot_data_list = []
-                
+
                 # 非直辖市：使用标准匹配（省份、地级、区县）
                 if not non_municipalities_data.empty:
                     plot_data_non_municipality = self.map_data_regional.merge(
@@ -1765,14 +2053,14 @@ class PlotMap(Plot):
                     )
                     if not plot_data_non_municipality.empty:
                         plot_data_list.append(plot_data_non_municipality)
-                
+
                 # 直辖市：尝试多种匹配方式
                 if not municipalities_data.empty:
                     # 筛选直辖市的区县数据
                     map_data_municipality = self.map_data_regional[
                         self.map_data_regional["省份"].isin(municipalities)
                     ].copy()
-                    
+
                     # 方式1：标准匹配（省份、地级、区县）
                     plot_data_municipality_1 = map_data_municipality.merge(
                         municipalities_data,
@@ -1780,7 +2068,7 @@ class PlotMap(Plot):
                         right_on=[province_column, city_column, county_column],
                         how="inner",
                     )
-                    
+
                     if not plot_data_municipality_1.empty:
                         plot_data_list.append(plot_data_municipality_1)
                     else:
@@ -1794,7 +2082,7 @@ class PlotMap(Plot):
                         )
                         if not plot_data_municipality_2.empty:
                             plot_data_list.append(plot_data_municipality_2)
-                
+
                 # 合并所有匹配结果
                 if plot_data_list:
                     self.plot_data = pd.concat(plot_data_list, ignore_index=True)
