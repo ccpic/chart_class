@@ -55,7 +55,10 @@ export default function MapParamsEditor({ subplot }: Props) {
   const useAbbr = params.use_abbr ?? false;
   
   // 样式参数
+  const colorMappingMode = params.color_mapping_mode ?? 'colormap'; // 'colormap' | 'categorical'
   const cmap = params.cmap ?? 'PiYG';
+  const colorMapping = params.color_mapping ?? {}; // 分类映射的键值对 {value: color}
+  const hatchMapping = params.hatch_mapping ?? {}; // 纹理映射的键值对 {value: {hatch: string, density: number, color: string}}
   const vmin = params.vmin;
   const vmax = params.vmax;
   const edgecolor = params.edgecolor ?? 'black';
@@ -669,68 +672,320 @@ export default function MapParamsEditor({ subplot }: Props) {
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-800">颜色映射</h4>
             
+            {/* 颜色映射模式选择 */}
             <div className="space-y-2">
-              <CmapPicker
-                value={cmap}
-                onChange={(value) => updateParam('cmap', value)}
-                label="颜色映射方案 (cmap)"
-                showPreview={true}
-                showReverse={true}
-              />
+              <Label htmlFor="color_mapping_mode" className="text-sm">
+                映射模式 (color_mapping_mode)
+              </Label>
+              <Select
+                value={colorMappingMode}
+                onValueChange={(value) => {
+                  updateParam('color_mapping_mode', value);
+                  // 如果切换到colormap模式，清空分类映射
+                  if (value === 'colormap') {
+                    updateParam('color_mapping', {});
+                  }
+                }}
+              >
+                <SelectTrigger id="color_mapping_mode">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="colormap">颜色渐变 (colormap)</SelectItem>
+                  <SelectItem value="categorical">分类映射 (categorical)</SelectItem>
+                </SelectContent>
+              </Select>
               <p className="text-xs text-gray-500">
-                选择热力图的颜色渐变方案
+                {colorMappingMode === 'colormap' 
+                  ? '使用颜色渐变方案，根据数值大小映射颜色'
+                  : '使用手动指定的值-颜色映射对，匹配上的值显示对应颜色，否则不上色'}
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="vmin" className="text-sm">
-                  最小值 (vmin)
-                </Label>
-                <Input
-                  id="vmin"
-                  type="number"
-                  value={vmin ?? ''}
-                  onChange={(e) => updateParam('vmin', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  placeholder="自动"
-                  className="text-sm"
-                />
-                <p className="text-xs text-gray-500">
-                  颜色范围的最小值，留空则自动计算
+            {/* Colormap 模式配置 */}
+            {colorMappingMode === 'colormap' && (
+              <>
+                <div className="space-y-2 pl-2 border-l-2 border-gray-200">
+                  <CmapPicker
+                    value={cmap}
+                    onChange={(value) => updateParam('cmap', value)}
+                    label="颜色映射方案 (cmap)"
+                    showPreview={true}
+                    showReverse={true}
+                  />
+                  <p className="text-xs text-gray-500">
+                    选择热力图的颜色渐变方案
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pl-2 border-l-2 border-gray-200">
+                  <div className="space-y-2">
+                    <Label htmlFor="vmin" className="text-sm">
+                      最小值 (vmin)
+                    </Label>
+                    <Input
+                      id="vmin"
+                      type="number"
+                      value={vmin ?? ''}
+                      onChange={(e) => updateParam('vmin', e.target.value ? parseFloat(e.target.value) : undefined)}
+                      placeholder="自动"
+                      className="text-sm"
+                    />
+                    <p className="text-xs text-gray-500">
+                      颜色范围的最小值，留空则自动计算
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="vmax" className="text-sm">
+                      最大值 (vmax)
+                    </Label>
+                    <Input
+                      id="vmax"
+                      type="number"
+                      value={vmax ?? ''}
+                      onChange={(e) => updateParam('vmax', e.target.value ? parseFloat(e.target.value) : undefined)}
+                      placeholder="自动"
+                      className="text-sm"
+                    />
+                    <p className="text-xs text-gray-500">
+                      颜色范围的最大值，留空则自动计算
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Categorical 模式配置 */}
+            {colorMappingMode === 'categorical' && (
+              <div className="space-y-2 pl-2 border-l-2 border-gray-200">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">值-颜色映射</Label>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => {
+                      const newKey = `值${Object.keys(colorMapping).length + 1}`;
+                      // 简化格式：直接使用颜色字符串
+                      updateParam('color_mapping', { ...colorMapping, [newKey]: '#000000' });
+                    }}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    添加
+                  </Button>
+                </div>
+                
+                {Object.entries(colorMapping || {}).map(([value, mapping], index) => {
+                  // 向后兼容：如果 mapping 是字符串，直接使用；如果是对象，提取 color
+                  const color = typeof mapping === 'string' ? mapping : (mapping as any)?.color || '#000000';
+                  
+                  return (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={value}
+                        onChange={(e) => {
+                          const newMap = { ...colorMapping };
+                          const newValue = e.target.value;
+                          // 如果新值和旧值不同，更新键名
+                          if (newValue !== value) {
+                            const oldMapping = newMap[value];
+                            delete newMap[value];
+                            // 即使新值为空，也保留映射项（使用空字符串作为键）
+                            newMap[newValue] = oldMapping;
+                          }
+                          updateParam('color_mapping', newMap);
+                        }}
+                        placeholder="值"
+                        className="h-8 text-sm flex-1"
+                      />
+                      <ColorPicker
+                        value={color}
+                        onChange={(newColor) => {
+                          // 简化格式：直接使用颜色字符串，不再使用对象格式
+                          updateParam('color_mapping', { 
+                            ...colorMapping, 
+                            [value]: newColor 
+                          });
+                        }}
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                          const newMap = { ...colorMapping };
+                          delete newMap[value];
+                          updateParam('color_mapping', newMap);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
+                
+                {Object.keys(colorMapping || {}).length === 0 && (
+                  <p className="text-xs text-gray-400 italic">
+                    暂无映射规则，点击"添加"按钮创建值-颜色映射对
+                  </p>
+                )}
+                
+                <p className="text-xs text-gray-500 mt-2">
+                  数值列的值如果匹配上映射中的键，则显示对应颜色；否则该区域不上色（透明）
                 </p>
               </div>
+            )}
 
-              <div className="space-y-2">
-                <Label htmlFor="vmax" className="text-sm">
-                  最大值 (vmax)
-                </Label>
-                <Input
-                  id="vmax"
-                  type="number"
-                  value={vmax ?? ''}
-                  onChange={(e) => updateParam('vmax', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  placeholder="自动"
-                  className="text-sm"
-                />
-                <p className="text-xs text-gray-500">
-                  颜色范围的最大值，留空则自动计算
+            {/* 颜色条控件：仅在 colormap 模式下显示 */}
+            {colorMappingMode === 'colormap' && (
+              <>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="show_colorbar"
+                    checked={showColorbar}
+                    onCheckedChange={(checked) => updateParam('show_colorbar', checked)}
+                  />
+                  <Label htmlFor="show_colorbar" className="text-sm cursor-pointer">
+                    显示颜色条 (show_colorbar)
+                  </Label>
+                </div>
+                <p className="text-xs text-gray-500 pl-6">
+                  在地图旁显示颜色图例条
                 </p>
-              </div>
-            </div>
+              </>
+            )}
+            
+            {/* 分类映射模式下提示 */}
+            {colorMappingMode === 'categorical' && (
+              <p className="text-xs text-gray-400 italic pl-6">
+                分类映射模式下不显示颜色条
+              </p>
+            )}
+          </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="show_colorbar"
-                checked={showColorbar}
-                onCheckedChange={(checked) => updateParam('show_colorbar', checked)}
-              />
-              <Label htmlFor="show_colorbar" className="text-sm cursor-pointer">
-                显示颜色条 (show_colorbar)
-              </Label>
+          {/* 纹理映射配置 */}
+          <div className="space-y-3 pt-3 border-t">
+            <h4 className="text-sm font-semibold text-gray-800">纹理映射</h4>
+            <div className="space-y-2 pl-2 border-l-2 border-gray-200">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">值-纹理映射</Label>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => {
+                    const newKey = `值${Object.keys(hatchMapping).length + 1}`;
+                    updateParam('hatch_mapping', { 
+                      ...hatchMapping, 
+                      [newKey]: { hatch: '/', density: 5, color: '#000000' } 
+                    });
+                  }}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  添加
+                </Button>
+              </div>
+              
+              {Object.entries(hatchMapping || {}).map(([value, mapping], index) => {
+                const hatch = (mapping as any)?.hatch || '/';
+                const density = (mapping as any)?.density ?? 5;
+                const color = (mapping as any)?.color || '#000000';
+                
+                return (
+                  <div key={index} className="flex items-center gap-2 flex-wrap">
+                    <Input
+                      value={value}
+                      onChange={(e) => {
+                        const newMap = { ...hatchMapping };
+                        const newValue = e.target.value;
+                        if (newValue !== value) {
+                          const oldMapping = newMap[value];
+                          delete newMap[value];
+                          newMap[newValue] = oldMapping;
+                        }
+                        updateParam('hatch_mapping', newMap);
+                      }}
+                      placeholder="值"
+                      className="h-8 text-sm flex-1 min-w-[100px]"
+                    />
+                    <Select
+                      value={hatch}
+                      onValueChange={(newHatch) => {
+                        updateParam('hatch_mapping', { 
+                          ...hatchMapping, 
+                          [value]: { ...(mapping as any), hatch: newHatch } 
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-20 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="/">/</SelectItem>
+                        <SelectItem value="\\">\</SelectItem>
+                        <SelectItem value="|">|</SelectItem>
+                        <SelectItem value="-">-</SelectItem>
+                        <SelectItem value="+">+</SelectItem>
+                        <SelectItem value="x">x</SelectItem>
+                        <SelectItem value="o">o</SelectItem>
+                        <SelectItem value="O">O</SelectItem>
+                        <SelectItem value=".">.</SelectItem>
+                        <SelectItem value="*">*</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="flex items-center gap-1">
+                      <Label className="text-xs whitespace-nowrap">密度:</Label>
+                      <Input
+                        type="number"
+                        value={density}
+                        onChange={(e) => {
+                          const newDensity = parseInt(e.target.value) || 1;
+                          updateParam('hatch_mapping', { 
+                            ...hatchMapping, 
+                            [value]: { ...(mapping as any), density: newDensity } 
+                          });
+                        }}
+                        min={1}
+                        max={20}
+                        className="h-8 w-16 text-xs"
+                      />
+                    </div>
+                    <ColorPicker
+                      value={color}
+                      onChange={(newColor) => {
+                        updateParam('hatch_mapping', { 
+                          ...hatchMapping, 
+                          [value]: { ...(mapping as any), color: newColor } 
+                        });
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 flex-shrink-0"
+                      onClick={() => {
+                        const newMap = { ...hatchMapping };
+                        delete newMap[value];
+                        updateParam('hatch_mapping', newMap);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+              
+              {Object.keys(hatchMapping || {}).length === 0 && (
+                <p className="text-xs text-gray-400 italic">
+                  暂无映射规则，点击"添加"按钮创建值-纹理映射对
+                </p>
+              )}
+              
+              <p className="text-xs text-gray-500 mt-2">
+                数值列的值如果匹配上映射中的键，则显示对应的纹理、密度和颜色
+              </p>
             </div>
-            <p className="text-xs text-gray-500 pl-6">
-              在地图旁显示颜色图例条
-            </p>
           </div>
 
           <div className="space-y-3 pt-3 border-t">
