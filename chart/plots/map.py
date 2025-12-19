@@ -1077,6 +1077,7 @@ class PlotMap(Plot):
         label_value_format: str = "{:,.0f}",
         label_fontsize: Optional[float] = None,
         use_abbr: bool = False,
+        label_style: Optional[Dict[str, Any]] = None,
         cmap: str = "PiYG",
         vmin: Optional[float] = None,
         vmax: Optional[float] = None,
@@ -1421,6 +1422,9 @@ class PlotMap(Plot):
                         else [edgecolor] * len(group_data)
                     )
 
+                    # 记录绘制前的 patches 数量
+                    patches_before_count = len(self.ax.patches)
+
                     # 绘制该组数据
                     plot_kwargs = {
                         "ax": self.ax,
@@ -1441,11 +1445,15 @@ class PlotMap(Plot):
                     # 如果该组有多个不同的 hatch_color，需要单独设置每个 patch 的 edgecolor
                     if len(set(group_hatch_colors)) > 1:
                         patches = self.ax.patches
-                        patches_before = len(patches) - len(group_data)
-                        for i, hatch_color in enumerate(group_hatch_colors):
-                            patch_idx = patches_before + i
+                        patches_after_count = len(patches)
+                        # 计算新添加的 patches 数量
+                        new_patches_count = patches_after_count - patches_before_count
+
+                        # 确保索引不越界，并且只处理新添加的 patches
+                        for i in range(min(new_patches_count, len(group_hatch_colors))):
+                            patch_idx = patches_before_count + i
                             if patch_idx < len(patches):
-                                patches[patch_idx].set_edgecolor(hatch_color)
+                                patches[patch_idx].set_edgecolor(group_hatch_colors[i])
             else:
                 # 不使用纹理映射，直接绘制
                 plot_kwargs = {
@@ -1468,6 +1476,9 @@ class PlotMap(Plot):
                         if "_hatch_color" in group_data.columns
                         else [edgecolor] * len(group_data)
                     )
+
+                    # 记录绘制前的 patches 数量
+                    patches_before_count = len(self.ax.patches)
 
                     # 绘制该组数据
                     plot_kwargs = {
@@ -1496,11 +1507,15 @@ class PlotMap(Plot):
                     # 如果该组有多个不同的 hatch_color，需要单独设置每个 patch 的 edgecolor
                     if len(set(group_hatch_colors)) > 1:
                         patches = self.ax.patches
-                        patches_before = len(patches) - len(group_data)
-                        for i, hatch_color in enumerate(group_hatch_colors):
-                            patch_idx = patches_before + i
+                        patches_after_count = len(patches)
+                        # 计算新添加的 patches 数量
+                        new_patches_count = patches_after_count - patches_before_count
+
+                        # 确保索引不越界，并且只处理新添加的 patches
+                        for i in range(min(new_patches_count, len(group_hatch_colors))):
+                            patch_idx = patches_before_count + i
                             if patch_idx < len(patches):
-                                patches[patch_idx].set_edgecolor(hatch_color)
+                                patches[patch_idx].set_edgecolor(group_hatch_colors[i])
 
                 # 格式化 colorbar 刻度标签（使用与数据标签相同的格式）
                 if show_colorbar:
@@ -1551,6 +1566,7 @@ class PlotMap(Plot):
                 label_value_format,
                 label_fontsize,
                 use_abbr,
+                label_style,
             )
 
         # 清理临时列
@@ -2251,6 +2267,7 @@ class PlotMap(Plot):
         label_value_format: str = "{:,.0f}",
         label_fontsize: Optional[float] = None,
         use_abbr: bool = False,
+        label_style: Optional[Dict[str, Any]] = None,
     ) -> None:
         """在地图上添加文字标签
 
@@ -2259,10 +2276,22 @@ class PlotMap(Plot):
             level: 地图层级
             label_format: 标签格式化字符串，支持 {index} 和 {value} 占位符（默认 '{index}'）
             label_value_format: 数值格式化字符串
-            label_fontsize: 自定义字体大小
+            label_fontsize: 自定义字体大小（向后兼容，优先使用 label_style.fontsize）
             use_abbr: 是否使用简称
+            label_style: 标签样式字典，包含 fontsize, color, weight, bbox 等
         """
-        # 字体大小：优先使用自定义值，否则根据层级调整
+        # 从 label_style 中提取样式参数，如果没有则使用默认值或 label_fontsize
+        if label_style:
+            label_fontsize = label_style.get("fontsize", label_fontsize)
+            label_color = label_style.get("color")
+            label_weight = label_style.get("weight", "normal")
+            label_bbox = label_style.get("bbox")
+        else:
+            label_color = None
+            label_weight = "normal"
+            label_bbox = None
+
+        # 字体大小：优先使用 label_style.fontsize，然后是 label_fontsize，最后根据层级调整
         if label_fontsize is None:
             fontsize_map = {
                 "province": self.fontsize * 0.7,
@@ -2318,11 +2347,64 @@ class PlotMap(Plot):
 
                 centroid = row.geometry.centroid
 
-                self.ax.text(
-                    centroid.x,
-                    centroid.y,
-                    label,
-                    fontsize=label_fontsize,
-                    ha="center",
-                    va="center",
-                )
+                # 构建文本参数
+                text_kwargs = {
+                    "x": centroid.x,
+                    "y": centroid.y,
+                    "s": label,
+                    "fontsize": label_fontsize,
+                    "ha": "center",
+                    "va": "center",
+                }
+
+                # 设置颜色
+                if label_color:
+                    text_kwargs["color"] = label_color
+
+                # 设置字体样式：weight 用于加粗，style 用于斜体
+                if label_weight == "italic":
+                    text_kwargs["style"] = "italic"
+                    text_kwargs["weight"] = "normal"
+                elif label_weight == "bold":
+                    text_kwargs["weight"] = "bold"
+                    text_kwargs["style"] = "normal"
+                # normal 不需要设置这些参数
+
+                # 设置文本框（bbox）
+                if label_bbox and label_bbox.get("enabled"):
+                    bbox_style = {}
+
+                    # 形状
+                    boxstyle = label_bbox.get("boxstyle", "round")
+                    if boxstyle:
+                        bbox_style["boxstyle"] = boxstyle
+
+                    # 背景颜色和透明度
+                    facecolor = label_bbox.get("facecolor", "#FFFFFF")
+                    alpha = label_bbox.get("alpha", 0.7)
+                    if facecolor:
+                        # 如果颜色包含 alpha 通道，直接使用；否则添加 alpha
+                        if len(facecolor) > 7:  # 包含 alpha 通道（如 #FFFFFFFF）
+                            bbox_style["facecolor"] = facecolor
+                        else:
+                            # 将颜色转换为 RGBA
+                            from matplotlib.colors import to_rgba
+
+                            rgba = to_rgba(facecolor, alpha=alpha)
+                            bbox_style["facecolor"] = rgba
+
+                    # 边框
+                    if label_bbox.get("show_border", True):
+                        edgecolor = label_bbox.get("edgecolor", "#000000")
+                        linewidth = label_bbox.get("linewidth", 1)
+                        if edgecolor:
+                            bbox_style["edgecolor"] = edgecolor
+                        if linewidth is not None:
+                            bbox_style["linewidth"] = linewidth
+                    else:
+                        bbox_style["edgecolor"] = "none"
+                        bbox_style["linewidth"] = 0
+
+                    text_kwargs["bbox"] = bbox_style
+
+                self.ax.text(**text_kwargs)
