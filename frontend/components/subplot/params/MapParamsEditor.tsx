@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCanvasStore } from '@/store/canvasStore';
 import { SubplotConfig } from '@/types/canvas';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import ColorPicker from '@/components/color/ColorPicker';
 import NumberFormatEditor from '@/components/ui/number-format-editor';
 import { CmapPicker } from '@/components/ui/cmap-picker';
+import LabelStyleEditor, { LabelStyle } from '@/components/ui/label-style-editor';
 
 interface Props {
   subplot: SubplotConfig;
@@ -26,7 +27,7 @@ interface Props {
  */
 export default function MapParamsEditor({ subplot }: Props) {
   const { updateSubplot } = useCanvasStore();
-
+  
   const updateParam = (key: string, value: any) => {
     updateSubplot(subplot.subplotId, {
       params: { ...subplot.params, [key]: value },
@@ -53,12 +54,96 @@ export default function MapParamsEditor({ subplot }: Props) {
   const labelValueFormat = params.label_value_format ?? '{:,.0f}';
   const labelFontsize = params.label_fontsize ?? 8;
   const useAbbr = params.use_abbr ?? false;
+  const labelStyle: LabelStyle = params.label_style ?? {};
   
   // 样式参数
   const colorMappingMode = params.color_mapping_mode ?? 'colormap'; // 'colormap' | 'categorical'
   const cmap = params.cmap ?? 'PiYG';
   const colorMapping = params.color_mapping ?? {}; // 分类映射的键值对 {value: color}
   const hatchMapping = params.hatch_mapping ?? {}; // 纹理映射的键值对 {value: {hatch: string, density: number, color: string}}
+  
+  // 使用数组来维护映射项的顺序，每个项有稳定的 ID
+  // 数组项格式：{id: string, key: string}
+  const [colorMappingOrder, setColorMappingOrder] = useState<Array<{id: string, key: string}>>([]);
+  const [hatchMappingOrder, setHatchMappingOrder] = useState<Array<{id: string, key: string}>>([]);
+  
+  // ID 计数器（用于生成唯一 ID）
+  const colorIdCounterRef = useRef(0);
+  const hatchIdCounterRef = useRef(0);
+  
+  // 同步颜色映射的顺序（当映射变化时更新）
+  // 只处理添加和删除，不处理键值改变（键值改变由 onChange 处理）
+  useEffect(() => {
+    const colorKeys = Object.keys(colorMapping || {});
+    const currentKeys = new Set(colorMappingOrder.map(item => item.key));
+    const newKeys = new Set(colorKeys);
+    
+    // 检查是否有新增或删除的项
+    const hasNewItems = colorKeys.some(key => !currentKeys.has(key));
+    const hasRemovedItems = colorMappingOrder.some(item => !newKeys.has(item.key));
+    
+    // 只有当有新增或删除时才更新
+    if (hasNewItems || hasRemovedItems) {
+      // 创建新的顺序数组
+      const newOrder: Array<{id: string, key: string}> = [];
+      
+      // 首先，保留仍然存在的项（按原顺序）
+      colorMappingOrder.forEach(item => {
+        if (newKeys.has(item.key)) {
+          newOrder.push(item);
+        }
+      });
+      
+      // 然后，添加新的项
+      colorKeys.forEach(key => {
+        if (!currentKeys.has(key)) {
+          newOrder.push({
+            id: `color_${++colorIdCounterRef.current}_${Date.now()}`,
+            key: key
+          });
+        }
+      });
+      
+      setColorMappingOrder(newOrder);
+    }
+  }, [colorMapping, colorMappingOrder]); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  // 同步纹理映射的顺序（当映射变化时更新）
+  // 只处理添加和删除，不处理键值改变（键值改变由 onChange 处理）
+  useEffect(() => {
+    const hatchKeys = Object.keys(hatchMapping || {});
+    const currentKeys = new Set(hatchMappingOrder.map(item => item.key));
+    const newKeys = new Set(hatchKeys);
+    
+    // 检查是否有新增或删除的项
+    const hasNewItems = hatchKeys.some(key => !currentKeys.has(key));
+    const hasRemovedItems = hatchMappingOrder.some(item => !newKeys.has(item.key));
+    
+    // 只有当有新增或删除时才更新
+    if (hasNewItems || hasRemovedItems) {
+      // 创建新的顺序数组
+      const newOrder: Array<{id: string, key: string}> = [];
+      
+      // 首先，保留仍然存在的项（按原顺序）
+      hatchMappingOrder.forEach(item => {
+        if (newKeys.has(item.key)) {
+          newOrder.push(item);
+        }
+      });
+      
+      // 然后，添加新的项
+      hatchKeys.forEach(key => {
+        if (!currentKeys.has(key)) {
+          newOrder.push({
+            id: `hatch_${++hatchIdCounterRef.current}_${Date.now()}`,
+            key: key
+          });
+        }
+      });
+      
+      setHatchMappingOrder(newOrder);
+    }
+  }, [hatchMapping, hatchMappingOrder]); // eslint-disable-line react-hooks/exhaustive-deps
   const vmin = params.vmin;
   const vmax = params.vmax;
   const edgecolor = params.edgecolor ?? 'black';
@@ -643,23 +728,13 @@ export default function MapParamsEditor({ subplot }: Props) {
             </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="label_fontsize" className="text-sm">
-                      标签字体大小 (label_fontsize)
-                    </Label>
-                    <span className="text-xs text-gray-500">{labelFontsize}</span>
-                  </div>
-                  <Slider
-                    id="label_fontsize"
-                    min={6}
-                    max={20}
-                    step={1}
-                    value={[labelFontsize]}
-                    onValueChange={(value) => updateParam('label_fontsize', value[0])}
-                    className="w-full"
+                  <LabelStyleEditor
+                    value={labelStyle}
+                    onChange={(style) => updateParam('label_style', style)}
+                    label="标签样式"
                   />
                   <p className="text-xs text-gray-500">
-                    控制标签文字大小（6-20，默认8）
+                    控制标签的字体大小、颜色、样式和文本框外观
                   </p>
                 </div>
               </>
@@ -776,12 +851,16 @@ export default function MapParamsEditor({ subplot }: Props) {
                   </Button>
                 </div>
                 
-                {Object.entries(colorMapping || {}).map(([value, mapping], index) => {
+                {colorMappingOrder.map((orderItem) => {
+                  const value = orderItem.key;
+                  const mapping = colorMapping[value];
+                  if (mapping === undefined) return null; // 如果映射已被删除，跳过
+                  
                   // 向后兼容：如果 mapping 是字符串，直接使用；如果是对象，提取 color
                   const color = typeof mapping === 'string' ? mapping : (mapping as any)?.color || '#000000';
                   
                   return (
-                    <div key={index} className="flex items-center gap-2">
+                    <div key={orderItem.id} className="flex items-center gap-2">
                       <Input
                         value={value}
                         onChange={(e) => {
@@ -793,6 +872,10 @@ export default function MapParamsEditor({ subplot }: Props) {
                             delete newMap[value];
                             // 即使新值为空，也保留映射项（使用空字符串作为键）
                             newMap[newValue] = oldMapping;
+                            // 更新顺序数组中的键
+                            setColorMappingOrder(prev => 
+                              prev.map(item => item.id === orderItem.id ? { ...item, key: newValue } : item)
+                            );
                           }
                           updateParam('color_mapping', newMap);
                         }}
@@ -816,6 +899,8 @@ export default function MapParamsEditor({ subplot }: Props) {
                         onClick={() => {
                           const newMap = { ...colorMapping };
                           delete newMap[value];
+                          // 从顺序数组中移除该项
+                          setColorMappingOrder(prev => prev.filter(item => item.id !== orderItem.id));
                           updateParam('color_mapping', newMap);
                         }}
                       >
@@ -887,13 +972,17 @@ export default function MapParamsEditor({ subplot }: Props) {
                 </Button>
               </div>
               
-              {Object.entries(hatchMapping || {}).map(([value, mapping], index) => {
+              {hatchMappingOrder.map((orderItem) => {
+                const value = orderItem.key;
+                const mapping = hatchMapping[value];
+                if (mapping === undefined) return null; // 如果映射已被删除，跳过
+                
                 const hatch = (mapping as any)?.hatch || '/';
                 const density = (mapping as any)?.density ?? 5;
                 const color = (mapping as any)?.color || '#000000';
                 
                 return (
-                  <div key={index} className="flex items-center gap-2 flex-wrap">
+                  <div key={orderItem.id} className="flex items-center gap-2 flex-wrap">
                     <Input
                       value={value}
                       onChange={(e) => {
@@ -902,7 +991,12 @@ export default function MapParamsEditor({ subplot }: Props) {
                         if (newValue !== value) {
                           const oldMapping = newMap[value];
                           delete newMap[value];
+                          // 即使新值为空，也保留映射项（使用空字符串作为键）
                           newMap[newValue] = oldMapping;
+                          // 更新顺序数组中的键
+                          setHatchMappingOrder(prev => 
+                            prev.map(item => item.id === orderItem.id ? { ...item, key: newValue } : item)
+                          );
                         }
                         updateParam('hatch_mapping', newMap);
                       }}
@@ -967,6 +1061,8 @@ export default function MapParamsEditor({ subplot }: Props) {
                       onClick={() => {
                         const newMap = { ...hatchMapping };
                         delete newMap[value];
+                        // 从顺序数组中移除该项
+                        setHatchMappingOrder(prev => prev.filter(item => item.id !== orderItem.id));
                         updateParam('hatch_mapping', newMap);
                       }}
                     >
