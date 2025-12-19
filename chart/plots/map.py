@@ -1308,20 +1308,55 @@ class PlotMap(Plot):
                     hatch_color = edgecolor  # 默认使用边界颜色
                 else:
                     # 尝试多种匹配方式以提高匹配成功率
-                    value_str = (
-                        str(value).strip() if isinstance(value, str) else str(value)
-                    )
+                    # 前端传递的 hatch_mapping 的键都是字符串类型（JSON 序列化后）
+                    # 但数据中的值可能是数字、字符串等不同类型
+                    mapping = None
 
-                    # 先尝试精确匹配（去除空格后的字符串）
-                    mapping = hatch_mapping.get(value_str, None)
-
-                    # 如果精确匹配失败，尝试匹配原始值（如果是字符串类型）
-                    if mapping is None and isinstance(value, str):
+                    # 1. 先尝试直接匹配原始值（如果是字符串）
+                    if isinstance(value, str):
                         mapping = hatch_mapping.get(value, None)
+                        if mapping is None:
+                            # 尝试去除空格后的字符串
+                            value_stripped = value.strip()
+                            if value_stripped != value:
+                                mapping = hatch_mapping.get(value_stripped, None)
+                        # 如果还是失败，尝试匹配字典中去除空格后的键
+                        if mapping is None:
+                            for key, val in hatch_mapping.items():
+                                if (
+                                    isinstance(key, str)
+                                    and key.strip() == value.strip()
+                                ):
+                                    mapping = val
+                                    break
 
-                    # 如果还是失败，尝试匹配去除空格后的值
-                    if mapping is None and isinstance(value, str):
-                        mapping = hatch_mapping.get(value.strip(), None)
+                    # 2. 尝试转换为字符串匹配（适用于数字、布尔值等）
+                    # 这是最重要的匹配方式，因为前端传递的键都是字符串
+                    if mapping is None:
+                        value_str = str(value)
+                        mapping = hatch_mapping.get(value_str, None)
+                        # 如果失败，尝试匹配字典中去除空格后的键
+                        if mapping is None:
+                            value_str_stripped = value_str.strip()
+                            if value_str_stripped != value_str:
+                                mapping = hatch_mapping.get(value_str_stripped, None)
+                            # 如果还是失败，遍历字典键尝试匹配
+                            if mapping is None:
+                                for key, val in hatch_mapping.items():
+                                    if (
+                                        isinstance(key, str)
+                                        and key.strip() == value_str_stripped
+                                    ):
+                                        mapping = val
+                                        break
+
+                    # 3. 如果原始值是浮点数，尝试匹配去除小数点后零的格式（如 123.0 -> "123"）
+                    if (
+                        mapping is None
+                        and isinstance(value, float)
+                        and value.is_integer()
+                    ):
+                        mapping = hatch_mapping.get(str(int(value)), None)
 
                     # 应用纹理映射
                     if mapping is not None:
@@ -1375,23 +1410,55 @@ class PlotMap(Plot):
                     color = None
                 else:
                     # 尝试多种匹配方式以提高匹配成功率
-                    # 1. 直接使用原始值（如果是字符串）
-                    # 2. 转换为字符串
-                    # 3. 去除首尾空格（如果是字符串）
-                    value_str = (
-                        str(value).strip() if isinstance(value, str) else str(value)
-                    )
+                    # 前端传递的 color_mapping 的键都是字符串类型（JSON 序列化后）
+                    # 但数据中的值可能是数字、字符串等不同类型
+                    mapping = None
 
-                    # 先尝试精确匹配（去除空格后的字符串）
-                    mapping = color_mapping.get(value_str, None)
-
-                    # 如果精确匹配失败，尝试匹配原始值（如果是字符串类型）
-                    if mapping is None and isinstance(value, str):
+                    # 1. 先尝试直接匹配原始值（如果是字符串）
+                    if isinstance(value, str):
                         mapping = color_mapping.get(value, None)
+                        if mapping is None:
+                            # 尝试去除空格后的字符串
+                            value_stripped = value.strip()
+                            if value_stripped != value:
+                                mapping = color_mapping.get(value_stripped, None)
+                        # 如果还是失败，尝试匹配字典中去除空格后的键
+                        if mapping is None:
+                            for key, val in color_mapping.items():
+                                if (
+                                    isinstance(key, str)
+                                    and key.strip() == value.strip()
+                                ):
+                                    mapping = val
+                                    break
 
-                    # 如果还是失败，尝试匹配去除空格后的值（再次尝试，以防万一）
-                    if mapping is None and isinstance(value, str):
-                        mapping = color_mapping.get(value.strip(), None)
+                    # 2. 尝试转换为字符串匹配（适用于数字、布尔值等）
+                    # 这是最重要的匹配方式，因为前端传递的键都是字符串
+                    if mapping is None:
+                        value_str = str(value)
+                        mapping = color_mapping.get(value_str, None)
+                        # 如果失败，尝试匹配字典中去除空格后的键
+                        if mapping is None:
+                            value_str_stripped = value_str.strip()
+                            if value_str_stripped != value_str:
+                                mapping = color_mapping.get(value_str_stripped, None)
+                            # 如果还是失败，遍历字典键尝试匹配
+                            if mapping is None:
+                                for key, val in color_mapping.items():
+                                    if (
+                                        isinstance(key, str)
+                                        and key.strip() == value_str_stripped
+                                    ):
+                                        mapping = val
+                                        break
+
+                    # 3. 如果原始值是数字，尝试匹配去除小数点后零的格式（如 123.0 -> "123"）
+                    if (
+                        mapping is None
+                        and isinstance(value, float)
+                        and value.is_integer()
+                    ):
+                        mapping = color_mapping.get(str(int(value)), None)
 
                     # 处理映射值：支持字符串格式（颜色）和字典格式（向后兼容）
                     if mapping is not None:
@@ -1411,16 +1478,32 @@ class PlotMap(Plot):
 
             # 如果使用纹理映射，按 hatch 分组绘制
             if use_hatch_mapping and "_hatch_str" in self.plot_data.columns:
-                # 按 hatch_str 分组
-                for hatch_str, group_data in self.plot_data.groupby("_hatch_str"):
+                # 按 (hatch_str, hatch_color) 组合分组，确保相同 hatch 但不同颜色的区域被分到不同组
+                # 创建一个组合键用于分组
+                self.plot_data["_hatch_group_key"] = (
+                    self.plot_data["_hatch_str"].astype(str)
+                    + "|"
+                    + self.plot_data["_hatch_color"].astype(str)
+                )
+                # 按组合键分组
+                for group_key, group_data in self.plot_data.groupby("_hatch_group_key"):
+                    # 从组合键中提取 hatch_str（所有组内元素的 hatch_str 应该相同）
+                    hatch_str = (
+                        group_data["_hatch_str"].iloc[0] if len(group_data) > 0 else ""
+                    )
                     # 获取该组的颜色列表
                     group_colors = group_data["_color"].tolist()
-                    # 获取该组的 hatch_color（用于 edgecolor）
-                    group_hatch_colors = (
-                        group_data["_hatch_color"].tolist()
-                        if "_hatch_color" in group_data.columns
-                        else [edgecolor] * len(group_data)
+                    # 获取该组的统一 hatch_color（组内所有元素的 hatch_color 应该相同）
+                    group_hatch_color = (
+                        group_data["_hatch_color"].iloc[0]
+                        if "_hatch_color" in group_data.columns and len(group_data) > 0
+                        else edgecolor
                     )
+                    # 为了兼容后续代码，仍然创建列表
+                    group_hatch_colors = [group_hatch_color] * len(group_data)
+
+                    # 保存 group_data 的索引，用于后续匹配
+                    group_indices = group_data.index.tolist()
 
                     # 记录绘制前的 patches 数量
                     patches_before_count = len(self.ax.patches)
@@ -1442,18 +1525,29 @@ class PlotMap(Plot):
 
                     group_data.plot(**plot_kwargs)
 
-                    # 如果该组有多个不同的 hatch_color，需要单独设置每个 patch 的 edgecolor
-                    if len(set(group_hatch_colors)) > 1:
-                        patches = self.ax.patches
-                        patches_after_count = len(patches)
-                        # 计算新添加的 patches 数量
-                        new_patches_count = patches_after_count - patches_before_count
+                    # 设置每个 patch 的 edgecolor 和 hatch（确保每个区域都使用正确的颜色和密度）
+                    patches = self.ax.patches
+                    patches_after_count = len(patches)
+                    # 计算新添加的 patches 数量
+                    new_patches_count = patches_after_count - patches_before_count
 
-                        # 确保索引不越界，并且只处理新添加的 patches
-                        for i in range(min(new_patches_count, len(group_hatch_colors))):
-                            patch_idx = patches_before_count + i
-                            if patch_idx < len(patches):
-                                patches[patch_idx].set_edgecolor(group_hatch_colors[i])
+                    # 获取该组的 hatch_str 列表（用于单独设置每个 patch 的 hatch）
+                    group_hatch_strs = (
+                        group_data["_hatch_str"].tolist()
+                        if "_hatch_str" in group_data.columns
+                        else [hatch_str] * len(group_data)
+                    )
+
+                    # 确保索引不越界，并且只处理新添加的 patches
+                    # 重要：group_data.plot() 应该保持数据顺序，所以我们可以直接按索引设置
+                    for i in range(min(new_patches_count, len(group_hatch_colors))):
+                        patch_idx = patches_before_count + i
+                        if patch_idx < len(patches):
+                            # 为每个 patch 设置对应的 hatch_color
+                            patches[patch_idx].set_edgecolor(group_hatch_colors[i])
+                            # 为每个 patch 设置对应的 hatch_str（确保密度正确）
+                            if i < len(group_hatch_strs) and group_hatch_strs[i]:
+                                patches[patch_idx].set_hatch(group_hatch_strs[i])
             else:
                 # 不使用纹理映射，直接绘制
                 plot_kwargs = {
@@ -1468,14 +1562,28 @@ class PlotMap(Plot):
             # Colormap 模式：使用原有的颜色渐变方案
             # 如果使用纹理映射，按 hatch 分组绘制
             if use_hatch_mapping and "_hatch_str" in self.plot_data.columns:
-                # 按 hatch_str 分组
-                for hatch_str, group_data in self.plot_data.groupby("_hatch_str"):
+                # 按 (hatch_str, hatch_color) 组合分组，确保相同 hatch 但不同颜色的区域被分到不同组
+                # 创建一个组合键用于分组
+                self.plot_data["_hatch_group_key"] = (
+                    self.plot_data["_hatch_str"].astype(str)
+                    + "|"
+                    + self.plot_data["_hatch_color"].astype(str)
+                )
+                # 按组合键分组
+                for group_key, group_data in self.plot_data.groupby("_hatch_group_key"):
+                    # 从组合键中提取 hatch_str（所有组内元素的 hatch_str 应该相同）
+                    hatch_str = (
+                        group_data["_hatch_str"].iloc[0] if len(group_data) > 0 else ""
+                    )
                     # 获取该组的 hatch_color（用于 edgecolor）
                     group_hatch_colors = (
                         group_data["_hatch_color"].tolist()
                         if "_hatch_color" in group_data.columns
                         else [edgecolor] * len(group_data)
                     )
+
+                    # 保存 group_data 的索引，用于后续匹配
+                    group_indices = group_data.index.tolist()
 
                     # 记录绘制前的 patches 数量
                     patches_before_count = len(self.ax.patches)
@@ -1504,18 +1612,29 @@ class PlotMap(Plot):
 
                     group_data.plot(**plot_kwargs)
 
-                    # 如果该组有多个不同的 hatch_color，需要单独设置每个 patch 的 edgecolor
-                    if len(set(group_hatch_colors)) > 1:
-                        patches = self.ax.patches
-                        patches_after_count = len(patches)
-                        # 计算新添加的 patches 数量
-                        new_patches_count = patches_after_count - patches_before_count
+                    # 设置每个 patch 的 edgecolor 和 hatch（确保每个区域都使用正确的颜色和密度）
+                    patches = self.ax.patches
+                    patches_after_count = len(patches)
+                    # 计算新添加的 patches 数量
+                    new_patches_count = patches_after_count - patches_before_count
 
-                        # 确保索引不越界，并且只处理新添加的 patches
-                        for i in range(min(new_patches_count, len(group_hatch_colors))):
-                            patch_idx = patches_before_count + i
-                            if patch_idx < len(patches):
-                                patches[patch_idx].set_edgecolor(group_hatch_colors[i])
+                    # 获取该组的 hatch_str 列表（用于单独设置每个 patch 的 hatch）
+                    group_hatch_strs = (
+                        group_data["_hatch_str"].tolist()
+                        if "_hatch_str" in group_data.columns
+                        else [hatch_str] * len(group_data)
+                    )
+
+                    # 确保索引不越界，并且只处理新添加的 patches
+                    # 重要：group_data.plot() 应该保持数据顺序，所以我们可以直接按索引设置
+                    for i in range(min(new_patches_count, len(group_hatch_colors))):
+                        patch_idx = patches_before_count + i
+                        if patch_idx < len(patches):
+                            # 为每个 patch 设置对应的 hatch_color
+                            patches[patch_idx].set_edgecolor(group_hatch_colors[i])
+                            # 为每个 patch 设置对应的 hatch_str（确保密度正确）
+                            if i < len(group_hatch_strs) and group_hatch_strs[i]:
+                                patches[patch_idx].set_hatch(group_hatch_strs[i])
 
                 # 格式化 colorbar 刻度标签（使用与数据标签相同的格式）
                 if show_colorbar:
@@ -1576,6 +1695,8 @@ class PlotMap(Plot):
                 columns_to_drop.append("_hatch_str")
             if "_hatch_color" in self.plot_data.columns:
                 columns_to_drop.append("_hatch_color")
+            if "_hatch_group_key" in self.plot_data.columns:
+                columns_to_drop.append("_hatch_group_key")
             if "_color" in self.plot_data.columns:
                 columns_to_drop.append("_color")
             if columns_to_drop:
@@ -2312,16 +2433,17 @@ class PlotMap(Plot):
                         region_name = COUNTY_ABBR_MAP[region_name]
                     else:
                         # 去除常见后缀，得到简称
+                        # 注意：更具体的后缀要放在更通用的后缀之前，例如"维吾尔自治区"要在"自治区"之前
                         for suffix in [
                             "省",
                             "市",
-                            "自治区",
+                            "维吾尔自治区",  # 新疆维吾尔自治区 -> 新疆
+                            "壮族自治区",  # 广西壮族自治区 -> 广西
+                            "回族自治区",  # 宁夏回族自治区 -> 宁夏
+                            "自治区",  # 西藏自治区 -> 西藏，内蒙古自治区 -> 内蒙古
                             "特别行政区",
-                            "壮族自治区",
-                            "回族自治区",
-                            "维吾尔自治区",
                             "藏族羌族自治州",
-                            "藏族自治区",
+                            "藏族自治区",  # 用于其他可能的场景
                             "地区",
                             "盟",
                             "自治州",
@@ -2347,10 +2469,30 @@ class PlotMap(Plot):
 
                 centroid = row.geometry.centroid
 
+                # 为特定省份定制标签位置（解决标签重叠问题）
+                # 仅在省级地图时应用偏移
+                # 偏移量是相对于 centroid 的偏移，单位为投影坐标系单位（EPSG:2343）
+                # 格式: {省份名: (x_offset, y_offset)}
+                label_x = centroid.x
+                label_y = centroid.y
+                if level == "province":
+                    label_offset_map = {
+                        "北京市": (-10000, 10000),  # 向上偏移
+                        "天津市": (30000, -10000),  # 向右下偏移
+                        "河北省": (-40000, -60000),  # 向左下偏移
+                        "北京": (-10000, 10000),  # 向上偏移
+                        "天津": (30000, -10000),  # 向右下偏移
+                        "河北": (-40000, -60000),  # 向左下偏移
+                    }
+                    if region_name in label_offset_map:
+                        offset_x, offset_y = label_offset_map[region_name]
+                        label_x += offset_x
+                        label_y += offset_y
+
                 # 构建文本参数
                 text_kwargs = {
-                    "x": centroid.x,
-                    "y": centroid.y,
+                    "x": label_x,
+                    "y": label_y,
                     "s": label,
                     "fontsize": label_fontsize,
                     "ha": "center",
